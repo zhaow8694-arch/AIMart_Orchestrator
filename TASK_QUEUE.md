@@ -151,7 +151,7 @@ done_criteria:
 ## TASK-012 最终收尾
 
 ```yaml
-status: pending
+status: done
 phase: finalize
 dependencies: [TASK-011]
 done_criteria:

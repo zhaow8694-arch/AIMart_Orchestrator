@@ -1,4 +1,4 @@
-# Implementation Report
+﻿# Implementation Report
 
 ## Scope
 
