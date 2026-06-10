@@ -1,0 +1,9 @@
+﻿
+
+Algorithm : SHA256
+Hash      : 72C668B05F3115E581AD4BB7F000C76FB02BE78F89B636C447B4A3FBC6C9C22C
+Path      : E:\AIMart_Orchestrator\AIMart_Orchestrator_v0.1_CodexOnly_BuildPack\releases\v0.1.0\samples\todo-api-genera
+            ted-execution-pack.zip
+
+
+

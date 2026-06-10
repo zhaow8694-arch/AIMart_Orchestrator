@@ -1,0 +1,45 @@
+﻿AIMart Orchestrator Release Manifest
+===================================
+
+Version:
+v0.1.0
+
+Generated At:
+2026-06-10 13:07:18
+
+Project Root:
+E:\AIMart_Orchestrator\AIMart_Orchestrator_v0.1_CodexOnly_BuildPack
+
+Artifact:
+aimart-orchestrator-v0.1.0-20260610_130715.zip
+
+Artifact Path:
+E:\AIMart_Orchestrator\AIMart_Orchestrator_v0.1_CodexOnly_BuildPack\releases\v0.1.0\aimart-orchestrator-v0.1.0-20260610_130715.zip
+
+SHA256 File:
+E:\AIMart_Orchestrator\AIMart_Orchestrator_v0.1_CodexOnly_BuildPack\releases\v0.1.0\SHA256.txt
+
+Git Commit:
+84cab7e
+
+Git Status:
+?? releases/
+
+Git Tags:
+v0.1.0
+
+Included Release Files:
+- aimart-orchestrator-v0.1.0-20260610_130715.zip
+- ASSUMPTIONS.md
+- FINAL_DELIVERY_CHECK.md
+- IMPLEMENTATION_REPORT.md
+- PROGRESS_LOG.md
+- RELEASE_NOTES.md
+- SHA256.txt
+- TASK_QUEUE.md
+
+
+Notes:
+- This release package excludes node_modules, .next, .git, releases, caches, build outputs, logs, ZIP files, and .env files.
+- This package is intended as a frozen v0.1.0 artifact.
+- Do not continue feature development on this frozen artifact.

@@ -17,3 +17,4 @@ Codex 每完成一个任务后更新这里。
 | 2026-06-09 | TASK-010 实现 Web UI 最小闭环 | done | 已实现单页表单、本地 API 生成 ZIP、ProjectSpec 摘要和下载链接；完整测试、lint、build 通过，并通过浏览器交互验证。 |
 | 2026-06-09 | TASK-011 测试和修复 | done | 已补充 ZIP 目录结构快照测试；完整测试 12 个文件 25 个测试通过，lint 和 build 均通过。 |
 | 2026-06-09 | TASK-012 最终收尾 | done | `scripts/finalize.ps1` 受 Windows 执行策略阻止后，已使用进程级 `-ExecutionPolicy Bypass` 安全运行；生成备份、报告、包产物并创建本地 tag `v0.1.0`。 |
+| 2026-06-10 | V0.1 验收审计 | done | 只做审计并生成 `V0.1_ACCEPTANCE_AUDIT.md`、`V0.1_KNOWN_ISSUES.md`；未修改业务代码；lint/test/build 均通过。 |
