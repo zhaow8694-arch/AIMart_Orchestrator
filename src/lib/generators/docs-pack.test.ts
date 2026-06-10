@@ -69,6 +69,25 @@ describe("generateDocsPack", () => {
     expect(security).toContain("queue_for_approval");
     expect(nextSteps).toContain("Known Limitations");
   });
+
+  it("uses the standardized forbidden items wording", () => {
+    const projectSpec = createProjectSpec(
+      {
+        projectName: "Tiny Planner",
+        rawDiscussion: "Build a local MVP for planning coding tasks.",
+        forbiddenItems: "No cloud runner"
+      },
+      { now: fixedNow }
+    );
+    const taskQueue = generateTaskQueue(projectSpec, { now: fixedNow });
+    const runtimePack = generateRuntimePack(projectSpec);
+
+    const docsPack = generateDocsPack(projectSpec, taskQueue, runtimePack);
+    const readme = findFile(docsPack.files, "docs/README.md");
+
+    expect(readme).toContain("## Forbidden items");
+    expect(readme).not.toContain("Forbidden Items");
+  });
 });
 
 function findFile(files: { path: string; content: string }[], path: string): string {

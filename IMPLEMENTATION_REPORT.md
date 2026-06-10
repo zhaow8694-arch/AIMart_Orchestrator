@@ -2,7 +2,7 @@
 
 ## Scope
 
-AIMart Orchestrator v0.1 implements a local Codex-only execution pack generator.
+AIMart Orchestrator v0.1.1 implements a local Codex-only execution pack generator and resolves the v0.1 audit follow-ups.
 
 ## Completed
 
@@ -12,6 +12,7 @@ AIMart Orchestrator v0.1 implements a local Codex-only execution pack generator.
 - TaskQueue, Runtime Pack, script, Codex adapter, docs, and ZIP generators.
 - Local Web UI with ZIP download and ProjectSpec summary.
 - PowerShell and Bash finalization scripts.
+- v0.1.1 loading-state, wording, packaging, manifest, and version fixes.
 
 ## Verification
 

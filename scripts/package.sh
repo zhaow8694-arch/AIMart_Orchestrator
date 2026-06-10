@@ -4,27 +4,16 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 STAMP="$(date +%Y%m%d_%H%M%S)"
+VERSION="$(node -e "try{const p=require('./package.json'); process.stdout.write(p.version || '0.1.1')}catch(e){process.stdout.write('0.1.1')}")"
 OUT_DIR=".aimart_artifacts"
 mkdir -p "$OUT_DIR"
-OUT="$OUT_DIR/aimart-orchestrator-v0.1-$STAMP.zip"
+OUT="$OUT_DIR/aimart-orchestrator-v$VERSION-$STAMP.zip"
 
 echo "[package] creating $OUT"
 
-if command -v zip >/dev/null 2>&1; then
-  zip -r "$OUT" . \
-    -x "node_modules/*" ".next/*" "dist/*" "coverage/*" ".git/*" ".aimart/*" ".aimart_backups/*" ".aimart_artifacts/*" ".env*"
-else
-  tar \
-    --exclude='./node_modules' \
-    --exclude='./.next' \
-    --exclude='./dist' \
-    --exclude='./coverage' \
-    --exclude='./.git' \
-    --exclude='./.aimart' \
-    --exclude='./.aimart_backups' \
-    --exclude='./.aimart_artifacts' \
-    --exclude='./.env*' \
-    -czf "${OUT%.zip}.tar.gz" .
-fi
+zip -r "$OUT" . \
+  -x "node_modules/*" ".next/*" "dist/*" "coverage/*" ".git/*" \
+  -x ".aimart" ".aimart/*" ".aimart_backups" ".aimart_backups/*" \
+  -x ".aimart_artifacts" ".aimart_artifacts/*" "releases" "releases/*" ".env*"
 
 echo "[package] done"

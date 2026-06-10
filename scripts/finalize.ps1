@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 $RootDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $RootDir
 
-Write-Host "[finalize] AIMart Orchestrator v0.1 finalization started"
+Write-Host "[finalize] AIMart Orchestrator v0.1.1 finalization started"
 
 & .\scripts\preflight.ps1
 & .\scripts\backup.ps1
@@ -14,7 +14,7 @@ Write-Host "[finalize] AIMart Orchestrator v0.1 finalization started"
 
 ## Scope
 
-AIMart Orchestrator v0.1 implements a local Codex-only execution pack generator.
+AIMart Orchestrator v0.1.1 implements a local Codex-only execution pack generator and resolves the v0.1 audit follow-ups.
 
 ## Completed
 
@@ -24,6 +24,7 @@ AIMart Orchestrator v0.1 implements a local Codex-only execution pack generator.
 - TaskQueue, Runtime Pack, script, Codex adapter, docs, and ZIP generators.
 - Local Web UI with ZIP download and ProjectSpec summary.
 - PowerShell and Bash finalization scripts.
+- v0.1.1 loading-state, wording, packaging, manifest, and version fixes.
 
 ## Verification
 
@@ -46,7 +47,9 @@ Remote pushes, production deployment, cloud resource mutation, and secret reads 
 - [x] Backup generated
 - [x] Local Git tag created or already present
 - [x] Package artifact generated
-- [x] README/RUN_APP docs present
+- [x] Generated execution pack includes docs/README.md and docs/RUN_APP.md
+- [x] Source release ZIP is documented separately from the generated execution-pack ZIP
+- [x] Generated execution-pack sample is published under releases/v0.1.1/samples
 - [x] No mixed-agent development used
 "@ | Set-Content -Encoding UTF8 FINAL_DELIVERY_CHECK.md
 
@@ -55,7 +58,7 @@ Remote pushes, production deployment, cloud resource mutation, and secret reads 
 
 ## Scope
 
-AIMart Orchestrator v0.1 Codex-only build.
+AIMart Orchestrator v0.1.1 Codex-only patch release.
 
 ## Included
 
@@ -67,6 +70,14 @@ AIMart Orchestrator v0.1 Codex-only build.
 - Documentation generation.
 - ZIP packaging and download.
 - Test coverage for schemas, generators, scripts, adapter output, and ZIP output.
+
+## v0.1.1 Fixes
+
+- Fixed Web UI loading state so stale generated output is hidden while a new pack is being created.
+- Standardized "Forbidden items" wording in generated pack docs and adapter output.
+- Clarified that the source release ZIP is the repository delivery artifact, while a generated execution-pack ZIP is the runtime pack produced by the app.
+- Corrected final delivery wording for generated docs/README.md and docs/RUN_APP.md.
+- Required `zip` in Unix preflight instead of silently falling back to tar.gz packaging.
 
 ## Notes
 

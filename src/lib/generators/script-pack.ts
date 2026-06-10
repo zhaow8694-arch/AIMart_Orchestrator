@@ -56,7 +56,7 @@ ROOT_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 echo "[preflight] ${projectSpec.projectName}"
-for command_name in node pnpm git; do
+for command_name in node pnpm git zip; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "Missing required command: $command_name" >&2
     exit 1
@@ -266,11 +266,11 @@ for item in common runtime scripts agent_adapters docs; do
   fi
 done
 
-if [ "\${#ITEMS[@]}" -gt 0 ] && command -v zip >/dev/null 2>&1; then
+if [ "\${#ITEMS[@]}" -gt 0 ]; then
   zip -qr "$ARCHIVE" "\${ITEMS[@]}"
   echo "[package] $ARCHIVE"
 else
-  echo "[package] no generated pack directories found or zip unavailable"
+  echo "[package] no generated pack directories found"
 fi
 `;
 }

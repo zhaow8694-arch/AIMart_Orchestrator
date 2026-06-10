@@ -1,0 +1,87 @@
+﻿AIMart Orchestrator Release Manifest
+===================================
+
+Version:
+v0.1.1
+
+Generated At:
+2026-06-10 14:55:25
+
+Project Root:
+E:\AIMart_Orchestrator\AIMart_Orchestrator_v0.1_CodexOnly_BuildPack
+
+Source Release ZIP:
+aimart-orchestrator-v0.1.1-20260610_145237.zip
+
+Source Release ZIP Path:
+E:\AIMart_Orchestrator\AIMart_Orchestrator_v0.1_CodexOnly_BuildPack\releases\v0.1.1\aimart-orchestrator-v0.1.1-20260610_145237.zip
+
+Source Release SHA256:
+A5C22E5E1E89ED599CFA3252487BC4611EC255813699E8975BFE044FA905D829
+
+Generated Execution-Pack Sample ZIP:
+samples/todo-api-generated-execution-pack.zip
+
+Generated Execution-Pack Sample SHA256:
+7961F9B6FA23E92B7A536786E8CABA6A0D2EE6214AA1DBE0FA8A65CDBBEE7A9F  todo-api-generated-execution-pack.zip
+
+Git Commit:
+34337b5
+
+Git Status:
+M FINAL_DELIVERY_CHECK.md
+ M IMPLEMENTATION_REPORT.md
+ M PROGRESS_LOG.md
+ M RELEASE_NOTES.md
+ M TASK_QUEUE.md
+ M package.json
+ M scripts/finalize.ps1
+ M scripts/finalize.sh
+ M scripts/package.ps1
+ M scripts/package.sh
+ M scripts/preflight.sh
+ M src/components/generator-form.test.tsx
+ M src/components/generator-form.tsx
+ M src/lib/adapters/codex.test.ts
+ M src/lib/core/version.test.ts
+ M src/lib/core/version.ts
+ M src/lib/generators/docs-pack.test.ts
+ M src/lib/generators/docs-pack.ts
+ M src/lib/generators/script-pack.test.ts
+ M src/lib/generators/script-pack.ts
+?? V0.1.1_FIX_PLAN.md
+?? releases/v0.1.1/
+?? src/lib/release-scripts.test.ts
+
+Git Tags:
+v0.1.1
+
+Included Release Files:
+- aimart-orchestrator-v0.1.1-20260610_145237.zip
+- SHA256.txt
+- ASSUMPTIONS.md
+- FINAL_DELIVERY_CHECK.md
+- IMPLEMENTATION_REPORT.md
+- PROGRESS_LOG.md
+- RELEASE_NOTES.md
+- TASK_QUEUE.md
+- V0.1.1_FIX_PLAN.md
+- samples/todo-api-generated-execution-pack.zip
+- samples/todo-api-generated-execution-pack.SHA256.txt
+
+Packaging Exclusions:
+- node_modules
+- .next
+- dist
+- coverage
+- .git
+- .aimart
+- .aimart_backups
+- .aimart_artifacts
+- releases
+- .env*
+
+Notes:
+- The source release ZIP is the repository delivery artifact.
+- The generated execution-pack ZIP is a runtime pack produced by the app API and saved separately under samples/.
+- Remote tag push and production deployment were not performed.

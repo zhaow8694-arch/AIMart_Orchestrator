@@ -27,6 +27,44 @@ type GenerateResponse = {
   error?: string;
 };
 
+type DownloadState = {
+  url: string;
+  fileName: string;
+};
+
+type GenerationDisplayInput = {
+  isGenerating: boolean;
+  summary: GenerateResponse["projectSpec"] | null;
+  download: DownloadState | null;
+};
+
+export function getGenerationDisplayState({
+  isGenerating,
+  summary,
+  download
+}: GenerationDisplayInput): {
+  buttonLabel: string;
+  buttonAriaBusy: boolean;
+  summary: GenerateResponse["projectSpec"] | null;
+  download: DownloadState | null;
+} {
+  if (isGenerating) {
+    return {
+      buttonLabel: "Generating ZIP...",
+      buttonAriaBusy: true,
+      summary: null,
+      download: null
+    };
+  }
+
+  return {
+    buttonLabel: "Generate ZIP",
+    buttonAriaBusy: false,
+    summary,
+    download
+  };
+}
+
 const initialFormState: FormState = {
   projectName: "",
   background: "",
@@ -43,17 +81,25 @@ export function GeneratorForm() {
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [download, setDownload] = useState<{ url: string; fileName: string } | null>(
-    null
-  );
+  const [download, setDownload] = useState<DownloadState | null>(null);
   const [summary, setSummary] = useState<GenerateResponse["projectSpec"] | null>(
     null
   );
+  const displayState = getGenerationDisplayState({
+    isGenerating,
+    summary,
+    download
+  });
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (download) {
+      URL.revokeObjectURL(download.url);
+    }
     setIsGenerating(true);
     setError(null);
+    setDownload(null);
+    setSummary(null);
 
     try {
       const response = await fetch("/api/generate", {
@@ -71,10 +117,6 @@ export function GeneratorForm() {
 
       const blob = base64ToZipBlob(data.zipBase64);
       const url = URL.createObjectURL(blob);
-
-      if (download) {
-        URL.revokeObjectURL(download.url);
-      }
 
       setDownload({ url, fileName: data.fileName });
       setSummary(data.projectSpec);
@@ -151,23 +193,41 @@ export function GeneratorForm() {
           value={formState.securityBoundaries}
           onChange={(value) => updateField("securityBoundaries", value)}
         />
-        <button className="primary" type="submit" disabled={isGenerating}>
-          {isGenerating ? "Generating..." : "Generate ZIP"}
+        <button
+          aria-busy={displayState.buttonAriaBusy}
+          className="primary"
+          type="submit"
+          disabled={isGenerating}
+        >
+          {displayState.buttonLabel}
         </button>
         {error ? <p className="error">{error}</p> : null}
       </form>
 
       <aside className="summary" aria-label="ProjectSpec Summary">
         <h2>ProjectSpec Summary</h2>
-        {summary ? (
+        {displayState.summary ? (
           <>
-            <p className="summary-name">{summary.projectName}</p>
-            <SummaryList title="MVP" items={summary.mvpScope} />
-            <SummaryList title="Requirements" items={summary.explicitRequirements} />
-            <SummaryList title="Assumptions" items={summary.inferredAssumptions} />
-            <SummaryList title="Open Questions" items={summary.openQuestions} />
-            {download ? (
-              <a className="download" href={download.url} download={download.fileName}>
+            <p className="summary-name">{displayState.summary.projectName}</p>
+            <SummaryList title="MVP" items={displayState.summary.mvpScope} />
+            <SummaryList
+              title="Requirements"
+              items={displayState.summary.explicitRequirements}
+            />
+            <SummaryList
+              title="Assumptions"
+              items={displayState.summary.inferredAssumptions}
+            />
+            <SummaryList
+              title="Open Questions"
+              items={displayState.summary.openQuestions}
+            />
+            {displayState.download ? (
+              <a
+                className="download"
+                href={displayState.download.url}
+                download={displayState.download.fileName}
+              >
                 Download ZIP
               </a>
             ) : null}

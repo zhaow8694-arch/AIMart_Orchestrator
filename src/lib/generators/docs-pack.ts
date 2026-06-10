@@ -53,7 +53,7 @@ This execution pack describes the local v0.1 delivery plan for ${projectSpec.pro
 
 ${asBullets(projectSpec.mvpScope)}
 
-## Forbidden Items
+## Forbidden items
 
 ${asBullets(projectSpec.forbiddenItems)}
 

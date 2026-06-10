@@ -83,6 +83,24 @@ describe("generateScriptPack", () => {
     expect(tagPs1).not.toContain("git push");
     expect(tagSh).not.toContain("git push");
   });
+
+  it("requires zip before generated Unix packaging runs", () => {
+    const projectSpec = createProjectSpec(
+      {
+        projectName: "Tiny Planner",
+        rawDiscussion: "Build a local MVP for planning coding tasks."
+      },
+      { now: fixedNow }
+    );
+
+    const scriptPack = generateScriptPack(projectSpec);
+    const preflightSh = findFile(scriptPack.files, "scripts/preflight.sh");
+    const packageSh = findFile(scriptPack.files, "scripts/package.sh");
+
+    expect(preflightSh).toContain("node pnpm git zip");
+    expect(packageSh).toContain('zip -qr "$ARCHIVE"');
+    expect(packageSh).not.toContain("zip unavailable");
+  });
 });
 
 function findFile(files: { path: string; content: string }[], path: string): string {

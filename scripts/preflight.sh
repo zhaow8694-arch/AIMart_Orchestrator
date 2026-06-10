@@ -17,6 +17,7 @@ require_cmd() {
 require_cmd git
 require_cmd node
 require_cmd pnpm
+require_cmd zip
 
 if [ -f package.json ]; then
   echo "[preflight] package.json found"

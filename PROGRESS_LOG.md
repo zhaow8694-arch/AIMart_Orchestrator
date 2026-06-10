@@ -4,6 +4,18 @@ Codex 每完成一个任务后更新这里。
 
 | Time | Task | Status | Notes |
 |---|---|---|---|
+| 2026-06-10 | TASK-013 Create v0.1.1 Fix Plan | done | Created `V0.1.1_FIX_PLAN.md` and added TASK-013 through TASK-024 to `TASK_QUEUE.md`. |
+| 2026-06-10 | TASK-014 Fix Web UI Loading State | done | Added loading-state display logic and tests; stale summary/download output is hidden while generation is in progress. |
+| 2026-06-10 | TASK-015 Standardize Forbidden Items Wording | done | Standardized generated docs and adapter wording to `Forbidden items`; focused tests pass. |
+| 2026-06-10 | TASK-016 Distinguish Source Release ZIP From Generated Execution Pack ZIP | done | Updated release notes and final delivery check wording to distinguish source release ZIPs from generated execution-pack ZIPs. |
+| 2026-06-10 | TASK-017 Correct FINAL_DELIVERY_CHECK Wording | done | Updated root delivery check and finalize templates to reference generated execution-pack docs explicitly. |
+| 2026-06-10 | TASK-018 Fix RELEASE_MANIFEST / Packaging Exclusion Mismatch | done | Created v0.1.1 release manifest with actual exclusions and verified source ZIP excludes internal artifact directories. |
+| 2026-06-10 | TASK-019 Handle package.sh zip Dependency | done | Unix preflight now requires `zip`; source package.sh no longer falls back to tar.gz; generated package.sh no longer reports zip fallback. |
+| 2026-06-10 | TASK-020 Update Version To 0.1.1 | done | Updated package and application version metadata to 0.1.1. |
+| 2026-06-10 | TASK-021 Update Tests | done | Added focused regression tests for loading state, forbidden wording, release scripts, and version metadata; focused test run passed. |
+| 2026-06-10 | TASK-022 Run lint/test/build | done | `pnpm.cmd run test` passed 13 files / 32 tests; `pnpm.cmd run lint` and `pnpm.cmd run build` both exited 0. |
+| 2026-06-10 | TASK-023 Generate v0.1.1 Delivery Documents | done | `scripts/finalize.ps1` regenerated IMPLEMENTATION_REPORT.md, RELEASE_NOTES.md, and FINAL_DELIVERY_CHECK.md for v0.1.1. |
+| 2026-06-10 | TASK-024 Generate v0.1.1 Release Artifact | done | Generated `releases/v0.1.1` with source release ZIP, SHA256, manifest, and sample generated execution-pack ZIP. |
 | initial | project initialized | pending | 等待 Codex 开始 |
 | 2026-06-09 | TASK-001 初始化项目骨架 | done | 已建立 Next.js + TypeScript + Vitest + ESLint 项目骨架；`pnpm test`、`pnpm lint`、`pnpm build` 均通过。 |
 | 2026-06-09 | TASK-002 定义核心 Schema | done | 已实现 ProjectSpec、TaskQueue、RuntimePolicy、ToolchainManifest、PermissionPolicy、AgentAdapter、GeneratedPack schema；完整测试、lint、build 均通过。 |

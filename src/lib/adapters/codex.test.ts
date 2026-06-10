@@ -59,6 +59,8 @@ describe("generateCodexAdapter", () => {
     const prompt = findFile(adapter.files, "agent_adapters/codex/CODEX_TASK_PROMPT.md");
 
     expect(agents).toContain("Tiny Planner");
+    expect(agents).toContain("- Forbidden items:");
+    expect(agents).not.toContain("Forbidden Items");
     expect(agents).toContain("Do not expand the MVP scope");
     expect(agents).toContain("Do not read secrets");
     expect(prompt).toContain("TASK-001");
