@@ -19,6 +19,8 @@ type CreateProjectSpecOptions = {
 };
 
 const DEFAULT_STACK = ["Next.js", "TypeScript", "Zod", "Vitest", "pnpm"];
+const DEFAULT_EXECUTION_MODE = "supervised";
+type ExecutionMode = "supervised" | "autonomous" | "unified_autonomous";
 
 const REQUIREMENT_MARKERS = [
   "must",
@@ -48,6 +50,7 @@ export function createProjectSpec(
   const mvpScope = normalizeList(input.mvpScope);
   const forbiddenItems = normalizeList(input.forbiddenItems);
   const techStackPreferences = normalizeList(input.techStackPreferences);
+  const executionMode = normalizeExecutionMode(input.executionMode);
   const testingRequirements = normalizeList(input.testingRequirements);
   const deliveryRequirements = normalizeList(input.deliveryRequirements);
   const securityBoundaries = normalizeList(input.securityBoundaries);
@@ -75,7 +78,7 @@ export function createProjectSpec(
     techStackPreferences:
       techStackPreferences.length > 0 ? techStackPreferences : DEFAULT_STACK,
     targetAdapterType: "codex",
-    executionMode: "codex_only",
+    executionMode,
     testingRequirements,
     deliveryRequirements,
     securityBoundaries,
@@ -133,19 +136,41 @@ function buildAssumptions({
 
   if (techStackPreferences.length === 0) {
     assumptions.push(
-      "Use the recommended local v0.1 stack: Next.js, TypeScript, Zod, Vitest, pnpm."
+      "Use the recommended local v0.2.1 stack: Next.js, TypeScript, Zod, Vitest, pnpm."
     );
   }
 
   if (!targetAdapterType || targetAdapterType !== "codex") {
-    assumptions.push("Use Codex as the v0.1 target adapter.");
+    assumptions.push("Use Codex as the v0.2.1 target adapter.");
   }
 
-  if (!executionMode || executionMode !== "codex_only") {
-    assumptions.push("Use codex_only execution mode for v0.1.");
+  if (!executionMode) {
+    assumptions.push("Use supervised execution mode by default for v0.2.1.");
+  } else if (
+    ![
+      "supervised",
+      "autonomous",
+      "unified_autonomous",
+      "codex_only",
+      "manual"
+    ].includes(executionMode)
+  ) {
+    assumptions.push("Use supervised execution mode because the requested mode is unsupported.");
   }
 
   return assumptions;
+}
+
+function normalizeExecutionMode(value: string | undefined): ExecutionMode {
+  if (value === "autonomous" || value === "unified_autonomous") {
+    return value;
+  }
+
+  if (value === "supervised" || value === "codex_only" || value === "manual") {
+    return DEFAULT_EXECUTION_MODE;
+  }
+
+  return DEFAULT_EXECUTION_MODE;
 }
 
 function buildOpenQuestions({

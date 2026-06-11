@@ -4,6 +4,22 @@ Codex 每完成一个任务后更新这里。
 
 | Time | Task | Status | Notes |
 |---|---|---|---|
+| 2026-06-11 | TASK-034 Create v0.2.1 Execution Plan | done | Added scoped v0.2.1 Unified Autonomous Visual Runner tasks TASK-034 through TASK-040; historical release folders remain frozen. |
+| 2026-06-11 | TASK-035 Add v0.2.1 Tests | done | Added tests for unified autonomous mode, generated Codex unified runner files, runtime run status files, ZIP/API entries, and UI/version copy. `pnpm test` is currently blocked by Windows sandbox process setup errors before Vitest starts. |
+| 2026-06-11 | TASK-036 Implement Unified Autonomous Execution Mode | done | Added `unified_autonomous` schema/core handling and UI selector copy for one-window status display while preserving supervised/autonomous modes. |
+| 2026-06-11 | TASK-037 Implement Runtime Run Status Files | done | Runtime pack now generates AUTONOMOUS_RUN_STATUS, AUTONOMOUS_RUN_SUMMARY, and AUTONOMOUS_HEALTH_CHECK files. |
+| 2026-06-11 | TASK-038 Implement Codex Unified Autonomous Adapter Files | done | Codex adapter now generates the unified autonomous runbook plus PowerShell/Bash one-window runner scripts using workspace-write and approval never. |
+| 2026-06-11 | TASK-039 Update v0.2.1 Version And Delivery Docs | done | Updated package/UI version to 0.2.1, root delivery docs, v0.2.1 versioned docs, package scripts, and finalize templates. |
+| 2026-06-11 | TASK-040 Verify And Package v0.2.1 | done | `scripts/finalize.ps1` passed lint, 13 test files / 47 tests, and build; local tag `v0.2.1` exists; generated `releases/v0.2.1` source ZIP, sample execution-pack ZIP, SHA256.txt, and RELEASE_MANIFEST.txt. |
+| 2026-06-10 | TASK-025 Create v0.2.0 Execution Plan | done | Added scoped v0.2.0 Sandbox Autonomous Mode tasks TASK-025 through TASK-033; historical release folders remain frozen. |
+| 2026-06-10 | TASK-026 Add v0.2.0 Tests | done | Added tests for execution modes, autonomous Codex files, runtime command policies, UI selector, API ZIP contents, v0.2.0 version metadata, and delivery docs. |
+| 2026-06-10 | TASK-027 Implement Execution Mode Schema And API Flow | done | ProjectSpec now emits supervised/autonomous execution modes, preserves autonomous selection, and maps legacy codex_only/manual inputs to supervised. |
+| 2026-06-10 | TASK-028 Implement Runtime Command Policy Files | done | Generated runtime SAFE_COMMANDS.md, DENIED_COMMANDS.md, AUTONOMOUS_EXECUTION_POLICY.md, and strengthened APPROVAL_QUEUE.md. |
+| 2026-06-10 | TASK-029 Implement Codex Autonomous Adapter Files | done | Generated CODEX_AUTONOMOUS_PROMPT.md, CODEX_AUTONOMOUS_RUNBOOK.md, and supervised/autonomous PowerShell/Bash Codex launcher scripts. |
+| 2026-06-10 | TASK-030 Update Generated Documentation | done | Updated generated README, RUN_APP, SECURITY_AND_PERMISSIONS, release notes, and common execution rules for v0.2.0 autonomous/supervised operation. |
+| 2026-06-10 | TASK-031 Update Web UI Execution Mode Configuration | done | Added Supervised Mode / Autonomous Mode selector with Supervised Mode default and ZIP distinction copy. |
+| 2026-06-10 | TASK-032 Update Version And Delivery Docs | done | Updated package/UI metadata to 0.2.0 and generated v0.2.0 implementation report, release notes, final delivery check, and known issues docs. |
+| 2026-06-10 | TASK-033 Verify And Package v0.2.0 | blocked | `pnpm test` passed 13 files / 41 tests and `pnpm lint` passed. `pnpm build`, release ZIP generation, and local tag creation are blocked because external processes cannot create required workspace/Git files in this sandbox; see V0.2.0_KNOWN_ISSUES.md. |
 | 2026-06-10 | TASK-013 Create v0.1.1 Fix Plan | done | Created `V0.1.1_FIX_PLAN.md` and added TASK-013 through TASK-024 to `TASK_QUEUE.md`. |
 | 2026-06-10 | TASK-014 Fix Web UI Loading State | done | Added loading-state display logic and tests; stale summary/download output is hidden while generation is in progress. |
 | 2026-06-10 | TASK-015 Standardize Forbidden Items Wording | done | Standardized generated docs and adapter wording to `Forbidden items`; focused tests pass. |

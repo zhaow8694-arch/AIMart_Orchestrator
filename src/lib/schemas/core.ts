@@ -12,6 +12,14 @@ export const TaskStatusSchema = z.enum([
   "waiting_approval"
 ]);
 
+export const ExecutionModeSchema = z.preprocess((value) => {
+  if (value === "codex_only" || value === "manual") {
+    return "supervised";
+  }
+
+  return value;
+}, z.enum(["supervised", "autonomous", "unified_autonomous"]).default("supervised"));
+
 export const ProjectSpecSchema = z.object({
   projectName: NonEmptyStringSchema,
   background: z.string().trim().default(""),
@@ -20,7 +28,7 @@ export const ProjectSpecSchema = z.object({
   forbiddenItems: z.array(NonEmptyStringSchema).default([]),
   techStackPreferences: z.array(NonEmptyStringSchema).default([]),
   targetAdapterType: z.literal("codex"),
-  executionMode: z.enum(["codex_only", "manual"]).default("codex_only"),
+  executionMode: ExecutionModeSchema,
   testingRequirements: z.array(NonEmptyStringSchema).default([]),
   deliveryRequirements: z.array(NonEmptyStringSchema).default([]),
   securityBoundaries: z.array(NonEmptyStringSchema).default([]),

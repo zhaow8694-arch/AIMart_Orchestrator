@@ -28,9 +28,19 @@ describe("execution pack packager", () => {
         "common/EXECUTION_RULES.md",
         "runtime/PERMISSION_POLICY.yaml",
         "runtime/TOOLCHAIN_MANIFEST.yaml",
+        "runtime/SAFE_COMMANDS.md",
+        "runtime/DENIED_COMMANDS.md",
+        "runtime/AUTONOMOUS_EXECUTION_POLICY.md",
+        "runtime/AUTONOMOUS_RUN_STATUS.md",
+        "runtime/AUTONOMOUS_RUN_SUMMARY.md",
+        "runtime/AUTONOMOUS_HEALTH_CHECK.md",
         "scripts/finalize.ps1",
         "scripts/finalize.sh",
         "agent_adapters/codex/AGENTS.md",
+        "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md",
+        "agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md",
+        "agent_adapters/codex/run-codex-autonomous.ps1",
+        "agent_adapters/codex/run-codex-unified-autonomous.ps1",
         "docs/RUN_APP.md",
         "docs/README.md"
       ])
@@ -78,7 +88,13 @@ describe("execution pack packager", () => {
       "runtime/INSTALL_PLAN.md",
       "runtime/PERMISSION_POLICY.yaml",
       "runtime/HIGH_RISK_COMMANDS.md",
+      "runtime/SAFE_COMMANDS.md",
+      "runtime/DENIED_COMMANDS.md",
       "runtime/APPROVAL_QUEUE.md",
+      "runtime/AUTONOMOUS_EXECUTION_POLICY.md",
+      "runtime/AUTONOMOUS_RUN_STATUS.md",
+      "runtime/AUTONOMOUS_RUN_SUMMARY.md",
+      "runtime/AUTONOMOUS_HEALTH_CHECK.md",
       "runtime/RUNTIME_STATUS.md",
       "runtime/ROLLBACK_PLAN.md",
       "scripts/preflight.ps1",
@@ -101,6 +117,15 @@ describe("execution pack packager", () => {
       "agent_adapters/codex/CODEX_RUNBOOK.md",
       "agent_adapters/codex/CODEX_TASK_PROMPT.md",
       "agent_adapters/codex/CODEX_AUTONOMOUS_LOOP.md",
+      "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md",
+      "agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md",
+      "agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md",
+      "agent_adapters/codex/run-codex-autonomous.ps1",
+      "agent_adapters/codex/run-codex-supervised.ps1",
+      "agent_adapters/codex/run-codex-unified-autonomous.ps1",
+      "agent_adapters/codex/run-codex-autonomous.sh",
+      "agent_adapters/codex/run-codex-supervised.sh",
+      "agent_adapters/codex/run-codex-unified-autonomous.sh",
       "docs/README.md",
       "docs/RUN_APP.md",
       "docs/ENV_SETUP.md",
@@ -109,6 +134,60 @@ describe("execution pack packager", () => {
       "docs/RELEASE_NOTES.md",
       "docs/NEXT_STEPS.md"
     ]);
+  });
+
+  it("uses the selected execution mode inside generated files", () => {
+    const pack = createExecutionPack(
+      {
+        projectName: "Autonomous Pack",
+        rawDiscussion: "Build the v0.2 autonomous execution pack.",
+        executionMode: "autonomous"
+      },
+      { now: fixedNow }
+    );
+
+    const projectSpec = findFile(pack.files, "common/PROJECT_SPEC.md");
+    const prompt = findFile(
+      pack.files,
+      "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md"
+    );
+    const readme = findFile(pack.files, "docs/README.md");
+
+    expect(pack.projectSpec.executionMode).toBe("autonomous");
+    expect(projectSpec).toContain('"executionMode": "autonomous"');
+    expect(prompt).toContain("Selected execution mode: autonomous");
+    expect(readme).toContain("Selected execution mode: autonomous");
+  });
+
+  it("uses unified autonomous mode inside generated files and ZIP entries", async () => {
+    const { pack, zipBuffer } = await createExecutionPackZip(
+      {
+        projectName: "Unified Pack",
+        rawDiscussion: "Build the v0.2.1 unified autonomous execution pack.",
+        executionMode: "unified_autonomous"
+      },
+      { now: fixedNow }
+    );
+
+    const projectSpec = findFile(pack.files, "common/PROJECT_SPEC.md");
+    const unifiedRunner = findFile(
+      pack.files,
+      "agent_adapters/codex/run-codex-unified-autonomous.ps1"
+    );
+    const names = readCentralDirectoryNames(zipBuffer);
+
+    expect(pack.projectSpec.executionMode).toBe("unified_autonomous");
+    expect(projectSpec).toContain('"executionMode": "unified_autonomous"');
+    expect(unifiedRunner).toContain("Final Summary");
+    expect(names).toContain(
+      "agent_adapters/codex/run-codex-unified-autonomous.ps1"
+    );
+    expect(names).toContain(
+      "agent_adapters/codex/run-codex-unified-autonomous.sh"
+    );
+    expect(names).toContain("runtime/AUTONOMOUS_RUN_STATUS.md");
+    expect(names).toContain("runtime/AUTONOMOUS_RUN_SUMMARY.md");
+    expect(names).toContain("runtime/AUTONOMOUS_HEALTH_CHECK.md");
   });
 });
 
@@ -147,4 +226,12 @@ function readCentralDirectoryNames(buffer: Buffer): string[] {
   }
 
   return names;
+}
+
+function findFile(files: { path: string; content: string }[], path: string): string {
+  const file = files.find((entry) => entry.path === path);
+  if (!file) {
+    throw new Error(`Missing file: ${path}`);
+  }
+  return file.content;
 }

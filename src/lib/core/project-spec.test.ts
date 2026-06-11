@@ -35,7 +35,7 @@ describe("createProjectSpec", () => {
       ])
     );
     expect(spec.inferredAssumptions).toContain(
-      "Use Codex as the v0.1 target adapter."
+      "Use Codex as the v0.2.1 target adapter."
     );
     expect(spec.openQuestions).toEqual([]);
   });
@@ -54,9 +54,9 @@ describe("createProjectSpec", () => {
     expect(spec.rawDiscussion).toContain("local MVP");
     expect(spec.inferredAssumptions).toEqual(
       expect.arrayContaining([
-        "Use the recommended local v0.1 stack: Next.js, TypeScript, Zod, Vitest, pnpm.",
-        "Use Codex as the v0.1 target adapter.",
-        "Use codex_only execution mode for v0.1."
+        "Use the recommended local v0.2.1 stack: Next.js, TypeScript, Zod, Vitest, pnpm.",
+        "Use Codex as the v0.2.1 target adapter.",
+        "Use supervised execution mode by default for v0.2.1."
       ])
     );
     expect(spec.openQuestions).toEqual(
@@ -68,5 +68,44 @@ describe("createProjectSpec", () => {
         "Confirm security boundaries."
       ])
     );
+  });
+
+  it("defaults to supervised mode and preserves autonomous mode selections", () => {
+    const defaultSpec = createProjectSpec(
+      {
+        projectName: "Tiny Planner",
+        rawDiscussion: "Build a local MVP for planning coding tasks."
+      },
+      { now: fixedNow }
+    );
+    const autonomousSpec = createProjectSpec(
+      {
+        projectName: "Tiny Planner",
+        rawDiscussion: "Build a local MVP for planning coding tasks.",
+        executionMode: "autonomous"
+      },
+      { now: fixedNow }
+    );
+    const unifiedAutonomousSpec = createProjectSpec(
+      {
+        projectName: "Tiny Planner",
+        rawDiscussion: "Build a local MVP for planning coding tasks.",
+        executionMode: "unified_autonomous"
+      },
+      { now: fixedNow }
+    );
+    const legacySpec = createProjectSpec(
+      {
+        projectName: "Tiny Planner",
+        rawDiscussion: "Build a local MVP for planning coding tasks.",
+        executionMode: "codex_only"
+      },
+      { now: fixedNow }
+    );
+
+    expect(defaultSpec.executionMode).toBe("supervised");
+    expect(autonomousSpec.executionMode).toBe("autonomous");
+    expect(unifiedAutonomousSpec.executionMode).toBe("unified_autonomous");
+    expect(legacySpec.executionMode).toBe("supervised");
   });
 });

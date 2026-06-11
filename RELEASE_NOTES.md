@@ -2,7 +2,7 @@
 
 ## Scope
 
-AIMart Orchestrator v0.1.1 Codex-only patch release.
+AIMart Orchestrator v0.2.1 Unified Autonomous Visual Runner release.
 
 ## Included
 
@@ -15,14 +15,16 @@ AIMart Orchestrator v0.1.1 Codex-only patch release.
 - ZIP packaging and download.
 - Test coverage for schemas, generators, scripts, adapter output, and ZIP output.
 
-## v0.1.1 Fixes
+## v0.2.1 Features
 
-- Fixed Web UI loading state so stale generated output is hidden while a new pack is being created.
-- Standardized "Forbidden items" wording in generated pack docs and adapter output.
-- Clarified that the source release ZIP is the repository delivery artifact, while a generated execution-pack ZIP is the runtime pack produced by the app.
-- Corrected final delivery wording for generated docs/README.md and docs/RUN_APP.md.
-- Required zip in Unix preflight instead of silently falling back to tar.gz packaging.
+- Added Unified Autonomous Mode alongside existing Supervised Mode and Autonomous Mode.
+- Generated one-window Codex unified autonomous PowerShell and Bash runners.
+- Added CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md.
+- Added runtime AUTONOMOUS_RUN_STATUS, AUTONOMOUS_RUN_SUMMARY, and AUTONOMOUS_HEALTH_CHECK documents.
+- Updated generated docs with unified autonomous startup, codex_runs logs, live status, release checks, known issues checks, and final summary behavior.
 
 ## Notes
 
-Remote tag push and production deployment are not performed by default.
+The source release ZIP remains documented separately from generated execution-pack ZIPs.
+
+Remote tag push, production deployment, real database migration, cloud resource mutation, frozen release modification, and secret reads are not performed by default.

@@ -1,7 +1,5 @@
 # Assumptions
 
-记录 Codex 在开发过程中做出的假设。假设不能伪装成用户明确需求。
-
-| Time | Assumption | Impact | Can Continue? |
+| Date | Assumption | Reason | Status |
 |---|---|---|---|
-| 2026-06-09 | 当前目录不是 Git 仓库；为满足最终 `git status` 与本地 release tag 验收，后续需要在项目目录内初始化本地 Git 仓库。 | 只影响最终收尾，不影响核心生成器开发。 | Yes |
+| 2026-06-11 | v0.2.1 treats Unified Autonomous Mode as a third explicit execution mode (`unified_autonomous`) instead of replacing existing Autonomous Mode. | The scope says existing Supervised and Autonomous modes must keep working while the execution mode choice should make the one-window status display clear. | Implemented in schema, UI, generated docs, and generated pack files. |

@@ -65,6 +65,11 @@ export function generateRuntimePack(projectSpec: ProjectSpec): RuntimePack {
       "pnpm lint",
       "pnpm test",
       "pnpm build",
+      "scripts/finalize.ps1",
+      "scripts/finalize.sh",
+      "read ZIP entries",
+      "local port lookup",
+      "write current-version release artifacts",
       "node -v",
       "pnpm -v"
     ],
@@ -74,7 +79,12 @@ export function generateRuntimePack(projectSpec: ProjectSpec): RuntimePack {
       "gh pr create",
       "vercel deploy",
       "terraform apply",
-      "kubectl apply"
+      "kubectl apply",
+      "production deployment",
+      "real database migration",
+      "cloud resource creation",
+      "cloud resource deletion",
+      "delete historical release folders"
     ],
     forbiddenCommands: [
       "rm -rf /",
@@ -82,9 +92,15 @@ export function generateRuntimePack(projectSpec: ProjectSpec): RuntimePack {
       "cat ~/.ssh/*",
       "cat ~/.aws/*",
       "cat .env",
+      "type .env",
+      "Get-Content .env",
       "printenv",
       "terraform destroy",
-      "kubectl delete"
+      "kubectl delete",
+      "git push",
+      "git push --tags",
+      "Remove-Item releases/v0.1.0",
+      "Remove-Item releases/v0.1.1"
     ]
   });
 
@@ -142,8 +158,32 @@ export function generateRuntimePack(projectSpec: ProjectSpec): RuntimePack {
       content: renderHighRiskCommands(runtimePolicy)
     },
     {
+      path: "runtime/SAFE_COMMANDS.md",
+      content: renderSafeCommands(runtimePolicy)
+    },
+    {
+      path: "runtime/DENIED_COMMANDS.md",
+      content: renderDeniedCommands(runtimePolicy)
+    },
+    {
       path: "runtime/APPROVAL_QUEUE.md",
       content: renderApprovalQueue()
+    },
+    {
+      path: "runtime/AUTONOMOUS_EXECUTION_POLICY.md",
+      content: renderAutonomousExecutionPolicy(projectSpec)
+    },
+    {
+      path: "runtime/AUTONOMOUS_RUN_STATUS.md",
+      content: renderAutonomousRunStatus(projectSpec)
+    },
+    {
+      path: "runtime/AUTONOMOUS_RUN_SUMMARY.md",
+      content: renderAutonomousRunSummary(projectSpec)
+    },
+    {
+      path: "runtime/AUTONOMOUS_HEALTH_CHECK.md",
+      content: renderAutonomousHealthCheck(projectSpec)
     },
     {
       path: "runtime/RUNTIME_STATUS.md",
@@ -209,13 +249,153 @@ ${runtimePolicy.forbiddenCommands.map((command) => `- \`${command}\``).join("\n"
 `;
 }
 
+function renderSafeCommands(runtimePolicy: RuntimePolicy): string {
+  return `# Safe Commands
+
+These commands are allowed for automated execution inside the generated execution pack when they stay within the project workspace.
+
+## Dependency And Verification
+
+- \`pnpm install\`
+- \`pnpm lint\`
+- \`pnpm test\`
+- \`pnpm build\`
+
+## Finalize And Packaging
+
+- \`scripts/finalize.ps1\`
+- \`scripts/finalize.sh\`
+- \`powershell -ExecutionPolicy Bypass -File .\\scripts\\finalize.ps1\`
+- Writing current-version release artifacts under the current release folder only.
+
+## Read-Only Inspection
+
+- \`git status\`
+- \`git diff\`
+- Read generated ZIP entries for structure verification; this includes reading zip entries during automated checks.
+- Read local port and PID information for local development servers.
+
+## Policy Source
+
+${runtimePolicy.defaultAllowedCommands.map((command) => `- \`${command}\``).join("\n")}
+`;
+}
+
+function renderDeniedCommands(runtimePolicy: RuntimePolicy): string {
+  return `# Denied Commands
+
+The following commands and action categories are forbidden for automated execution. Queue L4 items in runtime/APPROVAL_QUEUE.md when they are truly needed; never run L5 secret access or destructive commands.
+
+## Forbidden Automation Categories
+
+- \`git push\` and remote tag publishing.
+- Deleting or modifying historical release folders.
+- Reading secrets such as \`.env\`, SSH keys, cloud credentials, or system credentials.
+- Production deployment.
+- Real database migration.
+- Cloud resource creation or deletion.
+
+## Denied Or Approval-Controlled Commands
+
+${[...runtimePolicy.approvalRequiredCommands, ...runtimePolicy.forbiddenCommands]
+  .map((command) => `- \`${command}\``)
+  .join("\n")}
+`;
+}
+
 function renderApprovalQueue(): string {
   return `# Approval Queue
 
 High-risk or external-resource actions are recorded here before execution.
 
+Autonomous mode must continue with other safe tasks after writing a queued item here. Do not wait indefinitely when unrelated work can proceed.
+
 | Time | Requested Action | Risk Level | Reason | Blocking? | Status |
 |---|---|---|---|---|---|
+`;
+}
+
+function renderAutonomousExecutionPolicy(projectSpec: ProjectSpec): string {
+  return `# Autonomous Execution Policy
+
+Project: ${projectSpec.projectName}
+Selected execution mode: ${projectSpec.executionMode}
+
+## Codex Sandbox
+
+- Autonomous Mode uses Codex with \`workspace-write\` sandboxing and \`approval never\`.
+- Supervised Mode uses Codex with \`workspace-write\` sandboxing and \`approval on-request\`.
+- Dangerous bypass, full-access, or unrestricted sandbox modes are forbidden.
+
+## Automation Rules
+
+1. Run only commands listed in runtime/SAFE_COMMANDS.md without approval.
+2. Record denied or approval-controlled actions in runtime/APPROVAL_QUEUE.md.
+3. Continue safe independent work after queueing a high-risk command.
+4. Write logs under .aimart/logs or another project-local logs directory.
+5. Do not read secrets, run production deployment, perform real database migrations, or create/delete cloud resources.
+
+## Required Finalization
+
+Before delivery, run the platform-specific finalize script and record the outcome in common/PROGRESS_LOG.md.
+`;
+}
+
+function renderAutonomousRunStatus(projectSpec: ProjectSpec): string {
+  return `# Autonomous Run Status
+
+Project: ${projectSpec.projectName}
+Selected execution mode: ${projectSpec.executionMode}
+
+This file is updated by the one-window unified autonomous runner while Codex is running.
+
+| Field | Value |
+|---|---|
+| Runner state | pending |
+| Elapsed time | pending |
+| Git branch | pending |
+| Dirty file count | pending |
+| Latest log tail | pending |
+| Release directory status | pending |
+| Known issues status | pending |
+| Last updated | pending |
+`;
+}
+
+function renderAutonomousRunSummary(projectSpec: ProjectSpec): string {
+  return `# Autonomous Run Summary
+
+Project: ${projectSpec.projectName}
+Selected execution mode: ${projectSpec.executionMode}
+
+This file is updated when the one-window unified autonomous runner exits.
+
+| Field | Value |
+|---|---|
+| Exit code | pending |
+| Release artifacts | pending |
+| Sample execution pack | pending |
+| Git status | pending |
+| Next recommended action | Start agent_adapters/codex/run-codex-unified-autonomous for the unified run. |
+`;
+}
+
+function renderAutonomousHealthCheck(projectSpec: ProjectSpec): string {
+  return `# Autonomous Health Check
+
+Project: ${projectSpec.projectName}
+
+The unified autonomous runner provides a single-window status display and writes logs under codex_runs.
+
+## Checks
+
+- [ ] Codex process started.
+- [ ] codex_runs log file was created.
+- [ ] runtime/AUTONOMOUS_RUN_STATUS.md was updated during execution.
+- [ ] runtime/AUTONOMOUS_RUN_SUMMARY.md was updated at completion.
+- [ ] Release directory status was checked.
+- [ ] Known issues status was checked.
+- [ ] No secret files or cloud credentials were read.
 `;
 }
 
@@ -227,7 +407,7 @@ Project: ${projectSpec.projectName}
 | Area | Status | Notes |
 |---|---|---|
 | Toolchain | pending | Run preflight before implementation. |
-| Permissions | configured | L4 commands require approval; L5 commands are denied. |
+| Permissions | configured | Autonomous mode uses SAFE_COMMANDS, DENIED_COMMANDS, and APPROVAL_QUEUE. |
 | Secrets | protected | Scripts must not read .env, SSH keys, or cloud credentials. |
 `;
 }

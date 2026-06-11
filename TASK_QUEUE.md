@@ -1,5 +1,223 @@
 # AIMart Orchestrator v0.1 Task Queue
 
+## v0.2.1 Unified Autonomous Visual Runner Task Queue
+
+TASK-034 through TASK-040 are the scoped v0.2.1 tasks. They add a single-window Codex unified autonomous runner to generated execution packs while preserving the v0.1.0, v0.1.1, and v0.2.0 release folders.
+
+## TASK-034 Create v0.2.1 Execution Plan
+
+```yaml
+status: done
+phase: plan
+dependencies: [TASK-033]
+done_criteria:
+  - v0.2.1 scope is limited to Unified Autonomous Visual Runner integration
+  - TASK_QUEUE.md records TASK-034 through TASK-040
+  - Historical release folders remain untouched
+```
+
+## TASK-035 Add v0.2.1 Tests
+
+```yaml
+status: done
+phase: qa
+dependencies: [TASK-034]
+done_criteria:
+  - Tests expect generated Codex unified autonomous runner files
+  - Tests expect runtime AUTONOMOUS_RUN_STATUS, AUTONOMOUS_RUN_SUMMARY, and AUTONOMOUS_HEALTH_CHECK files
+  - Tests expect unified autonomous mode schema/API/UI coverage when generation model changes
+  - Tests expect generated ZIP entries for the new files
+```
+
+## TASK-036 Implement Unified Autonomous Execution Mode
+
+```yaml
+status: done
+phase: core
+dependencies: [TASK-035]
+done_criteria:
+  - ProjectSpec accepts supervised, autonomous, and unified_autonomous execution modes
+  - Legacy codex_only/manual inputs remain non-breaking
+  - UI copy makes one-window status display clear
+```
+
+## TASK-037 Implement Runtime Run Status Files
+
+```yaml
+status: done
+phase: runtime
+dependencies: [TASK-036]
+done_criteria:
+  - runtime/AUTONOMOUS_RUN_STATUS.md is generated
+  - runtime/AUTONOMOUS_RUN_SUMMARY.md is generated
+  - runtime/AUTONOMOUS_HEALTH_CHECK.md is generated
+```
+
+## TASK-038 Implement Codex Unified Autonomous Adapter Files
+
+```yaml
+status: done
+phase: adapter
+dependencies: [TASK-037]
+done_criteria:
+  - CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md is generated
+  - run-codex-unified-autonomous.ps1 is generated
+  - run-codex-unified-autonomous.sh is generated
+  - unified runners use workspace-write with approval never and do not perform forbidden actions
+```
+
+## TASK-039 Update v0.2.1 Version And Delivery Docs
+
+```yaml
+status: done
+phase: release
+dependencies: [TASK-038]
+done_criteria:
+  - package.json and UI metadata are updated to 0.2.1
+  - V0.2.1_IMPLEMENTATION_REPORT.md is generated
+  - V0.2.1_RELEASE_NOTES.md is generated
+  - V0.2.1_FINAL_DELIVERY_CHECK.md is generated
+  - V0.2.1_KNOWN_ISSUES.md is generated
+```
+
+## TASK-040 Verify And Package v0.2.1
+
+```yaml
+status: done
+phase: finalize
+dependencies: [TASK-039]
+done_criteria:
+  - pnpm lint passes
+  - pnpm test passes
+  - pnpm build passes
+  - releases/v0.2.1 source ZIP exists
+  - releases/v0.2.1/samples/todo-api-generated-execution-pack.zip exists
+  - SHA256.txt and RELEASE_MANIFEST.txt exist
+  - local tag v0.2.1 exists
+```
+
+## v0.2.0 Sandbox Autonomous Mode Task Queue
+
+TASK-025 through TASK-033 are the scoped v0.2.0 tasks. They extend generated Codex execution packs with a sandboxed autonomous run profile while preserving the v0.1.0 and v0.1.1 release folders.
+
+## TASK-025 Create v0.2.0 Execution Plan
+
+```yaml
+status: done
+phase: plan
+dependencies: [TASK-024]
+done_criteria:
+  - v0.2.0 scope is limited to Sandbox Autonomous Mode
+  - TASK_QUEUE.md records TASK-025 through TASK-033
+  - Historical release folders remain untouched
+```
+
+## TASK-026 Add v0.2.0 Tests
+
+```yaml
+status: done
+phase: qa
+dependencies: [TASK-025]
+done_criteria:
+  - Tests expect explicit supervised/autonomous execution modes
+  - Tests expect new Codex autonomous files in generated execution packs
+  - Tests expect runtime SAFE_COMMANDS, DENIED_COMMANDS, and AUTONOMOUS_EXECUTION_POLICY files
+  - Tests expect UI mode selector and v0.2.0 version metadata
+```
+
+## TASK-027 Implement Execution Mode Schema And API Flow
+
+```yaml
+status: done
+phase: core
+dependencies: [TASK-026]
+done_criteria:
+  - ProjectSpec accepts supervised and autonomous execution modes
+  - Legacy codex_only/manual inputs remain non-breaking
+  - API and generated ProjectSpec summaries expose execution mode
+```
+
+## TASK-028 Implement Runtime Command Policy Files
+
+```yaml
+status: done
+phase: runtime
+dependencies: [TASK-027]
+done_criteria:
+  - runtime/SAFE_COMMANDS.md is generated with allowed automated commands
+  - runtime/DENIED_COMMANDS.md is generated with forbidden automation commands
+  - runtime/AUTONOMOUS_EXECUTION_POLICY.md is generated with sandbox boundaries
+  - runtime/APPROVAL_QUEUE.md explains autonomous queue handling
+```
+
+## TASK-029 Implement Codex Autonomous Adapter Files
+
+```yaml
+status: done
+phase: adapter
+dependencies: [TASK-028]
+done_criteria:
+  - CODEX_AUTONOMOUS_PROMPT.md is generated
+  - CODEX_AUTONOMOUS_RUNBOOK.md is generated
+  - supervised and autonomous PowerShell launch scripts are generated
+  - supervised and autonomous Bash launch scripts are generated
+  - scripts use workspace-write with approval never or on-request and avoid dangerous bypass/full-access mode
+```
+
+## TASK-030 Update Generated Documentation
+
+```yaml
+status: done
+phase: docs
+dependencies: [TASK-029]
+done_criteria:
+  - docs/README.md explains generated execution-pack ZIPs versus source release ZIPs
+  - docs/RUN_APP.md explains supervised and autonomous Codex starts
+  - docs/SECURITY_AND_PERMISSIONS.md explains logs and APPROVAL_QUEUE handling
+```
+
+## TASK-031 Update Web UI Execution Mode Configuration
+
+```yaml
+status: done
+phase: ui
+dependencies: [TASK-030]
+done_criteria:
+  - UI includes Supervised Mode and Autonomous Mode selector
+  - Supervised Mode remains the default
+  - UI copy distinguishes source release ZIP from generated execution-pack ZIP
+```
+
+## TASK-032 Update Version And Delivery Docs
+
+```yaml
+status: done
+phase: release
+dependencies: [TASK-031]
+done_criteria:
+  - package.json and UI metadata are updated to 0.2.0
+  - V0.2.0_IMPLEMENTATION_REPORT.md is generated
+  - V0.2.0_RELEASE_NOTES.md is generated
+  - V0.2.0_FINAL_DELIVERY_CHECK.md is generated
+  - V0.2.0_KNOWN_ISSUES.md is generated
+```
+
+## TASK-033 Verify And Package v0.2.0
+
+```yaml
+status: blocked
+phase: finalize
+dependencies: [TASK-032]
+done_criteria:
+  - pnpm lint passes
+  - pnpm test passes
+  - pnpm build passes (blocked in current sandbox)
+  - releases/v0.2.0 source ZIP exists (blocked in current sandbox)
+  - releases/v0.2.0/samples/todo-api-generated-execution-pack.zip exists (blocked in current sandbox)
+  - SHA256.txt and RELEASE_MANIFEST.txt exist (blocked in current sandbox)
+  - local tag v0.2.0 exists (blocked in current sandbox)
+```
+
 ## v0.1.1 Patch Task Queue
 
 TASK-013 through TASK-024 are the scoped v0.1.1 patch tasks. They must be executed in numeric order after TASK-012.

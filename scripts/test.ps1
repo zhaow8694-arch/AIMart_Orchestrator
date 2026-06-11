@@ -8,8 +8,17 @@ if (Test-Path "package.json") {
     throw "pnpm not found"
   }
   pnpm lint
+  if ($LASTEXITCODE -ne 0) {
+    throw "pnpm lint failed with exit code $LASTEXITCODE"
+  }
   pnpm test
+  if ($LASTEXITCODE -ne 0) {
+    throw "pnpm test failed with exit code $LASTEXITCODE"
+  }
   pnpm build
+  if ($LASTEXITCODE -ne 0) {
+    throw "pnpm build failed with exit code $LASTEXITCODE"
+  }
 } else {
   Write-Host "[test] package.json not found; skipping Node checks"
 }

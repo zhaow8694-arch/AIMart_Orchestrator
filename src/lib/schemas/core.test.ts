@@ -19,7 +19,7 @@ const validProjectSpec = {
   forbiddenItems: ["No production deployment"],
   techStackPreferences: ["Next.js", "TypeScript"],
   targetAdapterType: "codex",
-  executionMode: "codex_only",
+  executionMode: "supervised",
   testingRequirements: ["Unit tests required"],
   deliveryRequirements: ["ZIP delivery"],
   securityBoundaries: ["Do not read secrets"],
@@ -137,6 +137,34 @@ describe("core schemas", () => {
       expect(message).toContain("rawDiscussion");
       expect(message).toContain("targetAdapterType");
     }
+  });
+
+  it("accepts only supported v0.2.1 execution modes", () => {
+    expect(
+      ProjectSpecSchema.parse({
+        ...validProjectSpec,
+        executionMode: "supervised"
+      }).executionMode
+    ).toBe("supervised");
+    expect(
+      ProjectSpecSchema.parse({
+        ...validProjectSpec,
+        executionMode: "autonomous"
+      }).executionMode
+    ).toBe("autonomous");
+    expect(
+      ProjectSpecSchema.parse({
+        ...validProjectSpec,
+        executionMode: "unified_autonomous"
+      }).executionMode
+    ).toBe("unified_autonomous");
+
+    const dangerousMode = ProjectSpecSchema.safeParse({
+      ...validProjectSpec,
+      executionMode: "full_access"
+    });
+
+    expect(dangerousMode.success).toBe(false);
   });
 
   it("requires task risk levels and done criteria", () => {

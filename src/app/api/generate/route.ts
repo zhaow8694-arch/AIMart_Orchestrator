@@ -13,6 +13,7 @@ export async function POST(request: Request): Promise<Response> {
       zipBase64: zipBuffer.toString("base64"),
       projectSpec: {
         projectName: pack.projectSpec.projectName,
+        executionMode: pack.projectSpec.executionMode,
         mvpScope: pack.projectSpec.mvpScope,
         explicitRequirements: pack.projectSpec.explicitRequirements,
         inferredAssumptions: pack.projectSpec.inferredAssumptions,

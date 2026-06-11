@@ -83,6 +83,54 @@ label:has(textarea) {
   grid-column: 1 / -1;
 }
 
+fieldset {
+  margin: 0;
+  border: 1px solid #c5ced8;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+legend {
+  padding: 0 4px;
+  color: var(--foreground);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.mode-select {
+  display: grid;
+  gap: 8px;
+}
+
+.mode-select label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+}
+
+.mode-select small {
+  flex-basis: 100%;
+  margin-left: 24px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.mode-select input {
+  width: auto;
+}
+
+.zip-note,
+.summary-mode {
+  color: var(--muted);
+}
+
+.zip-note {
+  align-self: end;
+  margin: 0;
+}
+
 input,
 textarea {
   width: 100%;

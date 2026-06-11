@@ -8,6 +8,7 @@ describe("home page shell", () => {
     const html = renderToStaticMarkup(Page());
 
     expect(html).toContain("AIMart Orchestrator");
+    expect(html).toContain("v0.2.1");
     expect(html).toContain("Project name");
     expect(html).toContain("Generate ZIP");
   });

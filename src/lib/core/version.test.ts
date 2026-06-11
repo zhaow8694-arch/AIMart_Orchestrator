@@ -1,10 +1,21 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { APP_NAME, APP_VERSION } from "./version";
 
 describe("application version metadata", () => {
-  it("exposes the v0.1.1 application identity", () => {
+  it("exposes the v0.2.1 application identity", () => {
     expect(APP_NAME).toBe("AIMart Orchestrator");
-    expect(APP_VERSION).toBe("0.1.1");
+    expect(APP_VERSION).toBe("0.2.1");
+  });
+
+  it("matches package.json version", () => {
+    const packageJson = JSON.parse(
+      readFileSync(join(process.cwd(), "package.json"), "utf8")
+    ) as { version: string };
+
+    expect(packageJson.version).toBe("0.2.1");
+    expect(APP_VERSION).toBe(packageJson.version);
   });
 });

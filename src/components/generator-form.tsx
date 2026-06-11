@@ -12,7 +12,10 @@ type FormState = {
   testingRequirements: string;
   deliveryRequirements: string;
   securityBoundaries: string;
+  executionMode: ExecutionMode;
 };
+
+type ExecutionMode = "supervised" | "autonomous" | "unified_autonomous";
 
 type GenerateResponse = {
   fileName: string;
@@ -23,6 +26,7 @@ type GenerateResponse = {
     explicitRequirements: string[];
     inferredAssumptions: string[];
     openQuestions: string[];
+    executionMode: string;
   };
   error?: string;
 };
@@ -74,7 +78,8 @@ const initialFormState: FormState = {
   techStackPreferences: "Next.js, TypeScript, Zod, Vitest, pnpm",
   testingRequirements: "Core modules must have tests",
   deliveryRequirements: "ZIP delivery",
-  securityBoundaries: "Do not read .env, SSH keys, or production credentials"
+  securityBoundaries: "Do not read .env, SSH keys, or production credentials",
+  executionMode: "supervised"
 };
 
 export function GeneratorForm() {
@@ -127,7 +132,10 @@ export function GeneratorForm() {
     }
   }
 
-  function updateField(field: keyof FormState, value: string) {
+  function updateField<Field extends keyof FormState>(
+    field: Field,
+    value: FormState[Field]
+  ) {
     setFormState((current) => ({
       ...current,
       [field]: value
@@ -193,6 +201,13 @@ export function GeneratorForm() {
           value={formState.securityBoundaries}
           onChange={(value) => updateField("securityBoundaries", value)}
         />
+        <ModeSelector
+          value={formState.executionMode}
+          onChange={(value) => updateField("executionMode", value)}
+        />
+        <p className="zip-note">
+          This creates a generated execution-pack ZIP for the target project, not a source release ZIP of AIMart Orchestrator.
+        </p>
         <button
           aria-busy={displayState.buttonAriaBusy}
           className="primary"
@@ -222,6 +237,9 @@ export function GeneratorForm() {
               title="Open Questions"
               items={displayState.summary.openQuestions}
             />
+            <p className="summary-mode">
+              Execution mode: {displayState.summary.executionMode}
+            </p>
             {displayState.download ? (
               <a
                 className="download"
@@ -290,6 +308,51 @@ function TextArea({
         onChange={(event) => onChange(event.target.value)}
       />
     </label>
+  );
+}
+
+function ModeSelector({
+  value,
+  onChange
+}: {
+  value: ExecutionMode;
+  onChange: (value: ExecutionMode) => void;
+}) {
+  return (
+    <fieldset className="mode-select">
+      <legend>Execution mode</legend>
+      <label>
+        <input
+          checked={value === "supervised"}
+          name="executionMode"
+          type="radio"
+          value="supervised"
+          onChange={() => onChange("supervised")}
+        />
+        <span>Supervised Mode</span>
+      </label>
+      <label>
+        <input
+          checked={value === "autonomous"}
+          name="executionMode"
+          type="radio"
+          value="autonomous"
+          onChange={() => onChange("autonomous")}
+        />
+        <span>Autonomous Mode</span>
+      </label>
+      <label>
+        <input
+          checked={value === "unified_autonomous"}
+          name="executionMode"
+          type="radio"
+          value="unified_autonomous"
+          onChange={() => onChange("unified_autonomous")}
+        />
+        <span>Unified Autonomous Mode</span>
+        <small>Includes one-window status display.</small>
+      </label>
+    </fieldset>
   );
 }
 

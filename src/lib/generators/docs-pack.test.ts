@@ -70,6 +70,37 @@ describe("generateDocsPack", () => {
     expect(nextSteps).toContain("Known Limitations");
   });
 
+  it("documents Codex supervised and autonomous operation for generated execution packs", () => {
+    const projectSpec = createProjectSpec(
+      {
+        projectName: "Tiny Planner",
+        rawDiscussion: "Build a local MVP for planning coding tasks.",
+        executionMode: "autonomous"
+      },
+      { now: fixedNow }
+    );
+    const taskQueue = generateTaskQueue(projectSpec, { now: fixedNow });
+    const runtimePack = generateRuntimePack(projectSpec);
+
+    const docsPack = generateDocsPack(projectSpec, taskQueue, runtimePack);
+    const readme = findFile(docsPack.files, "docs/README.md");
+    const runApp = findFile(docsPack.files, "docs/RUN_APP.md");
+    const security = findFile(docsPack.files, "docs/SECURITY_AND_PERMISSIONS.md");
+
+    expect(readme).toContain("generated execution-pack ZIP");
+    expect(readme).toContain("source release ZIP");
+    expect(readme).toContain("Selected execution mode: autonomous");
+    expect(runApp).toContain("run-codex-supervised");
+    expect(runApp).toContain("run-codex-autonomous");
+    expect(runApp).toContain("run-codex-unified-autonomous");
+    expect(runApp).toContain("one-window status display");
+    expect(runApp).toContain("logs");
+    expect(security).toContain("runtime/SAFE_COMMANDS.md");
+    expect(security).toContain("runtime/DENIED_COMMANDS.md");
+    expect(security).toContain("runtime/APPROVAL_QUEUE.md");
+    expect(security).toContain("Autonomous Mode");
+  });
+
   it("uses the standardized forbidden items wording", () => {
     const projectSpec = createProjectSpec(
       {

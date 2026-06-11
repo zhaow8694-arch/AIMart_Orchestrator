@@ -11,13 +11,13 @@ if (Test-Path "package.json") {
     }
   } catch {}
 }
-$OutDir = ".aimart_artifacts"
+$OutDir = Join-Path "releases" "v$Version"
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
-$Out = Join-Path $OutDir "aimart-orchestrator-v$Version-$Stamp.zip"
-$TempDir = Join-Path $OutDir "package-temp-$Stamp"
+$Out = Join-Path $OutDir "aimart-orchestrator-v$Version-source.zip"
+$TempDir = Join-Path $OutDir "source-temp-$Stamp"
 New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
 
-$Exclude = @("node_modules", ".next", "dist", "coverage", ".git", ".aimart", ".aimart_backups", ".aimart_artifacts", "releases")
+$Exclude = @("node_modules", ".next", "dist", "coverage", ".vite-cache", ".git", ".aimart", ".aimart_backups", ".aimart_artifacts", "codex_runs", "releases")
 Get-ChildItem -Force | Where-Object {
   $Exclude -notcontains $_.Name -and $_.Name -notlike ".env*"
 } | ForEach-Object {

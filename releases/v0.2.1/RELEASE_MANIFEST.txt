@@ -1,0 +1,69 @@
+# AIMart Orchestrator v0.2.1 Release Manifest
+
+## Artifacts
+
+- aimart-orchestrator-v0.2.1-source.zip
+- samples/todo-api-generated-execution-pack.zip
+- SHA256.txt
+- RELEASE_MANIFEST.txt
+
+## Sample Execution Pack Verification
+
+- common/PROJECT_SPEC.md
+- common/TASK_QUEUE.md
+- common/EXECUTION_RULES.md
+- common/SELF_REVIEW.md
+- common/FINAL_DELIVERY_CHECK.md
+- common/ASSUMPTIONS.md
+- common/BLOCKERS.md
+- common/PROGRESS_LOG.md
+- common/HANDOFF.md
+- runtime/TOOLCHAIN_MANIFEST.yaml
+- runtime/INSTALL_PLAN.md
+- runtime/PERMISSION_POLICY.yaml
+- runtime/HIGH_RISK_COMMANDS.md
+- runtime/SAFE_COMMANDS.md
+- runtime/DENIED_COMMANDS.md
+- runtime/APPROVAL_QUEUE.md
+- runtime/AUTONOMOUS_EXECUTION_POLICY.md
+- runtime/AUTONOMOUS_RUN_STATUS.md
+- runtime/AUTONOMOUS_RUN_SUMMARY.md
+- runtime/AUTONOMOUS_HEALTH_CHECK.md
+- runtime/RUNTIME_STATUS.md
+- runtime/ROLLBACK_PLAN.md
+- scripts/preflight.ps1
+- scripts/preflight.sh
+- scripts/bootstrap.ps1
+- scripts/bootstrap.sh
+- scripts/backup.ps1
+- scripts/backup.sh
+- scripts/test.ps1
+- scripts/test.sh
+- scripts/git-cleanup.ps1
+- scripts/git-cleanup.sh
+- scripts/tag-release.ps1
+- scripts/tag-release.sh
+- scripts/package.ps1
+- scripts/package.sh
+- scripts/finalize.ps1
+- scripts/finalize.sh
+- agent_adapters/codex/AGENTS.md
+- agent_adapters/codex/CODEX_RUNBOOK.md
+- agent_adapters/codex/CODEX_TASK_PROMPT.md
+- agent_adapters/codex/CODEX_AUTONOMOUS_LOOP.md
+- agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md
+- agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md
+- agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md
+- agent_adapters/codex/run-codex-autonomous.ps1
+- agent_adapters/codex/run-codex-supervised.ps1
+- agent_adapters/codex/run-codex-unified-autonomous.ps1
+- agent_adapters/codex/run-codex-autonomous.sh
+- agent_adapters/codex/run-codex-supervised.sh
+- agent_adapters/codex/run-codex-unified-autonomous.sh
+- docs/README.md
+- docs/RUN_APP.md
+- docs/ENV_SETUP.md
+- docs/SECURITY_AND_PERMISSIONS.md
+- docs/IMPLEMENTATION_REPORT.md
+- docs/RELEASE_NOTES.md
+- docs/NEXT_STEPS.md

@@ -16,11 +16,21 @@ describe("GeneratorForm", () => {
       "Tech stack preferences",
       "Testing requirements",
       "Delivery requirements",
-      "Security boundaries"
+      "Security boundaries",
+      "Execution mode",
+      "Supervised Mode",
+      "Autonomous Mode",
+      "Unified Autonomous Mode",
+      "one-window status display"
     ]) {
       expect(html).toContain(label);
     }
     expect(html).toContain('aria-busy="false"');
+    expect(html).toContain("generated execution-pack ZIP");
+    expect(html).toContain("source release ZIP");
+    expect(html).toContain('value="supervised"');
+    expect(html).toContain('value="autonomous"');
+    expect(html).toContain('value="unified_autonomous"');
   });
 
   it("hides stale output while a new execution pack is generating", () => {
@@ -31,7 +41,8 @@ describe("GeneratorForm", () => {
         mvpScope: ["Old MVP"],
         explicitRequirements: ["Old requirement"],
         inferredAssumptions: [],
-        openQuestions: []
+        openQuestions: [],
+        executionMode: "supervised"
       },
       download: {
         url: "blob:old-pack",
