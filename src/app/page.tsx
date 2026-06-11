@@ -5,7 +5,7 @@ export default function Page() {
   return (
     <main className="shell">
       <header className="intro">
-        <p className="eyebrow">Codex-only build pack generator</p>
+        <p className="eyebrow">End-to-end execution pack generator</p>
         <h1>{APP_NAME}</h1>
         <p>v{APP_VERSION}</p>
       </header>

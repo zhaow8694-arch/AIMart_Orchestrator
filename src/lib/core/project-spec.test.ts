@@ -35,8 +35,10 @@ describe("createProjectSpec", () => {
       ])
     );
     expect(spec.inferredAssumptions).toContain(
-      "Use Codex as the v0.2.1 target adapter."
+      "Use Codex as the default v0.3.0 target adapter."
     );
+    expect(spec.selectedAdapterIds).toEqual(["codex"]);
+    expect(spec.executionScope).toBe("single_phase");
     expect(spec.openQuestions).toEqual([]);
   });
 
@@ -54,9 +56,10 @@ describe("createProjectSpec", () => {
     expect(spec.rawDiscussion).toContain("local MVP");
     expect(spec.inferredAssumptions).toEqual(
       expect.arrayContaining([
-        "Use the recommended local v0.2.1 stack: Next.js, TypeScript, Zod, Vitest, pnpm.",
-        "Use Codex as the v0.2.1 target adapter.",
-        "Use supervised execution mode by default for v0.2.1."
+        "Use the recommended local v0.3.0 stack: Next.js, TypeScript, Zod, Vitest, pnpm.",
+        "Use Codex as the default v0.3.0 target adapter.",
+        "Use single phase execution scope by default for v0.3.0.",
+        "Use supervised execution mode by default for v0.3.0."
       ])
     );
     expect(spec.openQuestions).toEqual(
@@ -70,7 +73,7 @@ describe("createProjectSpec", () => {
     );
   });
 
-  it("defaults to supervised mode and preserves autonomous mode selections", () => {
+  it("defaults to supervised mode and preserves v0.3.0 mode and scope selections", () => {
     const defaultSpec = createProjectSpec(
       {
         projectName: "Tiny Planner",
@@ -94,6 +97,16 @@ describe("createProjectSpec", () => {
       },
       { now: fixedNow }
     );
+    const endToEndSpec = createProjectSpec(
+      {
+        projectName: "Tiny Planner",
+        rawDiscussion: "Build a local MVP for planning coding tasks.",
+        selectedAdapterIds: ["codex", "claude-code", "trae", "cursor"],
+        executionScope: "end_to_end_delivery",
+        executionMode: "end_to_end_autonomous"
+      },
+      { now: fixedNow }
+    );
     const legacySpec = createProjectSpec(
       {
         projectName: "Tiny Planner",
@@ -105,7 +118,15 @@ describe("createProjectSpec", () => {
 
     expect(defaultSpec.executionMode).toBe("supervised");
     expect(autonomousSpec.executionMode).toBe("autonomous");
-    expect(unifiedAutonomousSpec.executionMode).toBe("unified_autonomous");
+    expect(unifiedAutonomousSpec.executionMode).toBe("end_to_end_autonomous");
     expect(legacySpec.executionMode).toBe("supervised");
+    expect(endToEndSpec.selectedAdapterIds).toEqual([
+      "codex",
+      "claude-code",
+      "trae",
+      "cursor"
+    ]);
+    expect(endToEndSpec.executionScope).toBe("end_to_end_delivery");
+    expect(endToEndSpec.executionMode).toBe("end_to_end_autonomous");
   });
 });

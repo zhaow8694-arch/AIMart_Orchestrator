@@ -1,0 +1,2 @@
+﻿05c577756c8f52d1f2f26031dc3212fa8fdd1553e92b0f731f5c43c0d7cf8c12  aimart-orchestrator-v0.3.0-source.zip
+0e23019a447c540e7fc72ed345175d4cf59f0b33ae7a1f5f8d1c02e676280c3d  samples/todo-api-generated-execution-pack.zip

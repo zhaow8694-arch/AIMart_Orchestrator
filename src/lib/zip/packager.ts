@@ -1,6 +1,7 @@
 import { ZipArchive } from "archiver";
 
-import { generateCodexAdapter } from "@/lib/adapters/codex";
+import { getSelectedAgentAdapterRegistryEntries } from "@/lib/adapters/registry";
+import { generateAgentAdapters } from "@/lib/adapters/multi-target";
 import {
   createProjectSpec,
   type ProjectSpecInput
@@ -29,9 +30,10 @@ export function createExecutionPack(
   const taskQueue = generateTaskQueue(projectSpec, options);
   const runtimePack = generateRuntimePack(projectSpec);
   const scriptPack = generateScriptPack(projectSpec);
-  const agentAdapter = generateCodexAdapter(projectSpec, taskQueue, runtimePack);
+  const agentAdapter = generateAgentAdapters(projectSpec, taskQueue, runtimePack);
   const docsPack = generateDocsPack(projectSpec, taskQueue, runtimePack);
   const files = [
+    ...generateRootFiles(projectSpec, agentAdapter.files),
     ...generateCommonFiles(projectSpec, taskQueue),
     ...runtimePack.files,
     ...scriptPack.files,
@@ -88,6 +90,18 @@ export async function createZipBuffer(files: FileEntry[]): Promise<Buffer> {
   });
 }
 
+function generateRootFiles(
+  projectSpec: ProjectSpec,
+  adapterFiles: FileEntry[]
+): FileEntry[] {
+  return [
+    {
+      path: "EXECUTION_PACK_MANIFEST.md",
+      content: renderExecutionPackManifest(projectSpec, adapterFiles)
+    }
+  ];
+}
+
 function generateCommonFiles(
   projectSpec: ProjectSpec,
   taskQueue: TaskQueue
@@ -111,7 +125,7 @@ ${JSON.stringify(projectSpec, null, 2)}
       content: `# Execution Rules
 
 1. Follow TASK_QUEUE.md in order.
-2. Do not expand the v0.2.2 MVP scope.
+2. Do not expand the v0.3.0 MVP scope.
 3. Write assumptions to ASSUMPTIONS.md when details are unknown.
 4. Write blockers to BLOCKERS.md only when work cannot continue.
 5. Queue high-risk commands in runtime/APPROVAL_QUEUE.md.
@@ -119,7 +133,24 @@ ${JSON.stringify(projectSpec, null, 2)}
 7. Do not run commands listed in runtime/DENIED_COMMANDS.md.
 8. Run scripts/finalize.* before final delivery.
 9. Run the Autonomous Completion Gate and review runtime/AUTONOMOUS_VERIFICATION_REPORT.md before reporting success.
+10. Selecting multiple adapters means generating multiple independent execution options; choose one adapter for a workspace.
 `
+    },
+    {
+      path: "common/AUTONOMOUS_DELIVERY_ROADMAP.md",
+      content: renderAutonomousDeliveryRoadmap(projectSpec)
+    },
+    {
+      path: "common/VERSION_LADDER.md",
+      content: renderVersionLadder(projectSpec)
+    },
+    {
+      path: "common/PHASE_GATE_PLAN.md",
+      content: renderPhaseGatePlan(projectSpec)
+    },
+    {
+      path: "common/CURRENT_PHASE.md",
+      content: renderCurrentPhase(projectSpec)
     },
     {
       path: "common/SELF_REVIEW.md",
@@ -174,14 +205,167 @@ ${asBullets(projectSpec.inferredAssumptions)}
       path: "common/HANDOFF.md",
       content: `# Handoff
 
-This pack is generated for Codex target execution of ${projectSpec.projectName}.
+This pack is generated for ${formatSelectedAdapters(projectSpec)} target execution of ${projectSpec.projectName}.
 
+Execution scope: ${projectSpec.executionScope}
 Selected execution mode: ${projectSpec.executionMode}
 
-Use common/TASK_QUEUE.md, runtime/PERMISSION_POLICY.yaml, runtime/SAFE_COMMANDS.md, runtime/DENIED_COMMANDS.md, runtime/AUTONOMOUS_COMPLETION_GATE.md, agent_adapters/codex/AGENTS.md, agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md, and agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md as the source of truth.
+Use EXECUTION_PACK_MANIFEST.md, common/TASK_QUEUE.md, common/PHASE_GATE_PLAN.md, runtime/PERMISSION_POLICY.yaml, runtime/SAFE_COMMANDS.md, runtime/DENIED_COMMANDS.md, runtime/AUTONOMOUS_COMPLETION_GATE.md, runtime/RUN_STATE.json, and the selected adapter directory as the source of truth.
 `
     }
   ];
+}
+
+function renderExecutionPackManifest(
+  projectSpec: ProjectSpec,
+  adapterFiles: FileEntry[]
+): string {
+  const entries = getSelectedAgentAdapterRegistryEntries(projectSpec.selectedAdapterIds);
+  const generatedFileSummary = [
+    "common/ project specifications, task queue, autonomous roadmap, and phase gates",
+    "runtime/ permission policy, run state, current task, phase reports, and completion reports",
+    "scripts/ platform scripts and completion-gate verification",
+    "agent_adapters/ independent adapter directories for selected targets",
+    "docs/ customer-facing run and delivery documentation"
+  ];
+
+  return `# Execution Pack Manifest
+
+Project: ${projectSpec.projectName}
+
+## Selected adapters
+
+${entries.map((entry) => `- ${entry.displayName} (${entry.id}) -> ${entry.generatedAdapterDirectory}`).join("\n")}
+
+Selecting multiple adapters means generating multiple independent execution options. It does not mean running multiple agents together.
+
+Choose one adapter when executing against a workspace. Do not run multiple agents against the same workspace at the same time unless a human manually coordinates ownership.
+
+## Execution Configuration
+
+- Execution scope: ${projectSpec.executionScope}
+- Execution mode: ${projectSpec.executionMode}
+
+## Generated Files Summary
+
+${generatedFileSummary.map((item) => `- ${item}`).join("\n")}
+
+Adapter file count: ${adapterFiles.length}
+
+## How To Start One Selected Agent
+
+1. Pick exactly one adapter directory under agent_adapters/.
+2. Read that adapter's runbook and task prompt.
+3. Read common/AUTONOMOUS_DELIVERY_ROADMAP.md, common/PHASE_GATE_PLAN.md, runtime/END_TO_END_AUTONOMOUS_POLICY.md, and runtime/RUN_STATE.json.
+4. Start the selected adapter using its documented supervised, autonomous, or end-to-end autonomous instructions.
+5. Continue until runtime/COMPLETION_GATE_REPORT.md reports PASS for the active phase.
+
+## Completion Gate Requirements
+
+${entries
+  .flatMap((entry) => entry.completionGateRequirements.map((item) => `- ${entry.displayName}: ${item}`))
+  .join("\n")}
+- runtime/RUN_STATE.json must be valid JSON.
+- runtime/CURRENT_TASK.md must exist.
+- runtime/PHASE_GATE_REPORT.md and runtime/COMPLETION_GATE_REPORT.md must be initialized or updated.
+
+## High-Risk Command Policy
+
+High-risk commands are not executed automatically. Record them in runtime/APPROVAL_QUEUE.md with risk, reason, blocking status, and recommendation, then continue safe independent work when possible.
+`;
+}
+
+function renderAutonomousDeliveryRoadmap(projectSpec: ProjectSpec): string {
+  return `# Autonomous Delivery Roadmap
+
+Project: ${projectSpec.projectName}
+
+This roadmap adapts the generic AIMart delivery ladder to the supplied ProjectSpec. Assumptions stay explicit so the selected AI can continue without repeated human prompting for ordinary work.
+
+## Project Context
+
+- Background: ${projectSpec.background || "Not specified"}
+- MVP scope: ${asBullets(projectSpec.mvpScope)}
+- Forbidden items: ${asBullets(projectSpec.forbiddenItems)}
+- Testing requirements: ${asBullets(projectSpec.testingRequirements)}
+- Delivery requirements: ${asBullets(projectSpec.deliveryRequirements)}
+- Security boundaries: ${asBullets(projectSpec.securityBoundaries)}
+
+## Assumptions
+
+${asBullets(projectSpec.inferredAssumptions)}
+
+## Version Path
+
+- v0.0.1 discovery/spec: confirm scope, constraints, assumptions, and task queue.
+- v0.1.0 MVP implementation: build the smallest usable local product matching the ProjectSpec.
+- v0.2.x autonomous runtime and completion gates: add safe autonomous execution, reports, and verification gates.
+- v0.3.x multi-agent independent adapters: generate independent adapter options for Codex, Claude Code, Trae, and Cursor.
+- v0.4.x runner hardening: improve resilience, resumability, logs, and blocked-command handling.
+- v0.5.x delivery automation: freeze releases, generate checksums, sample packs, and handoff reports.
+- v1.0 final usable delivery: complete acceptance criteria, final verification, docs, and release handoff.
+
+The selected AI advances only after the phase Completion Gate reports PASS.
+`;
+}
+
+function renderVersionLadder(projectSpec: ProjectSpec): string {
+  return `# Version Ladder
+
+Project: ${projectSpec.projectName}
+
+| Version | Purpose | Gate |
+|---|---|---|
+| v0.0.1 | Discovery/spec | ProjectSpec, assumptions, and task queue reviewed. |
+| v0.1.0 | MVP implementation | Core workflow works locally with tests. |
+| v0.2.x | Autonomous runtime and completion gates | Runtime policy, safe commands, reports, and gates pass. |
+| v0.3.x | Multi-agent independent adapters | Selected adapter directories, runbooks, prompts, and manifest pass. |
+| v0.4.x | Runner hardening | Resume, logs, blocked-command handling, and recovery pass. |
+| v0.5.x | Delivery automation | Release freeze, source/sample ZIPs, checksums, and handoff pass. |
+| v1.0 | Final usable delivery | Full acceptance criteria and final delivery gate PASS. |
+`;
+}
+
+function renderPhaseGatePlan(projectSpec: ProjectSpec): string {
+  return `# Phase Gate Plan
+
+Project: ${projectSpec.projectName}
+
+Each phase must define current tasks, run relevant tests, update runtime/RUN_STATE.json, and write PASS or FAIL to runtime/COMPLETION_GATE_REPORT.md.
+
+## Required Phase Files
+
+- common/CURRENT_PHASE.md
+- runtime/CURRENT_TASK.md
+- runtime/PHASE_GATE_REPORT.md
+- runtime/COMPLETION_GATE_REPORT.md
+- runtime/MORNING_REPORT.md
+- runtime/HANDOFF_TO_NEXT_VERSION.md
+
+## Gate Checklist
+
+- Scope remains inside the ProjectSpec.
+- Forbidden items remain excluded.
+- Required tests pass.
+- Completion Gate report is current.
+- High-risk commands are queued, not executed automatically.
+- Next-version handoff is updated before advancing.
+`;
+}
+
+function renderCurrentPhase(projectSpec: ProjectSpec): string {
+  return `# Current Phase
+
+Project: ${projectSpec.projectName}
+
+Current phase: v0.0.1 discovery/spec
+
+Selected adapters: ${formatSelectedAdapters(projectSpec)}
+Execution scope: ${projectSpec.executionScope}
+Execution mode: ${projectSpec.executionMode}
+
+Advance only after runtime/COMPLETION_GATE_REPORT.md records PASS.
+`;
 }
 
 function renderTaskQueue(taskQueue: TaskQueue): string {
@@ -227,4 +411,10 @@ function normalizeZipPath(path: string): string {
 
 function asBullets(items: string[]): string {
   return items.length > 0 ? items.map((item) => `- ${item}`).join("\n") : "- None";
+}
+
+function formatSelectedAdapters(projectSpec: ProjectSpec): string {
+  return getSelectedAgentAdapterRegistryEntries(projectSpec.selectedAdapterIds)
+    .map((entry) => entry.displayName)
+    .join(", ");
 }

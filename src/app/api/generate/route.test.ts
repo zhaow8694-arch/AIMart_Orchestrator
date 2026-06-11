@@ -21,6 +21,8 @@ describe("POST /api/generate", () => {
       projectSpec: {
         projectName: string;
         executionMode: string;
+        executionScope: string;
+        selectedAdapterIds: string[];
         openQuestions: string[];
       };
     };
@@ -29,6 +31,8 @@ describe("POST /api/generate", () => {
     expect(body.zipBase64.startsWith("UEs")).toBe(true);
     expect(body.projectSpec.projectName).toBe("Tiny Planner");
     expect(body.projectSpec.executionMode).toBe("supervised");
+    expect(body.projectSpec.executionScope).toBe("single_phase");
+    expect(body.projectSpec.selectedAdapterIds).toEqual(["codex"]);
     expect(body.projectSpec.openQuestions.length).toBeGreaterThan(0);
   });
 
@@ -78,7 +82,7 @@ describe("POST /api/generate", () => {
     };
     const names = readCentralDirectoryNames(Buffer.from(body.zipBase64, "base64"));
 
-    expect(body.projectSpec.executionMode).toBe("unified_autonomous");
+    expect(body.projectSpec.executionMode).toBe("end_to_end_autonomous");
     expect(names).toContain(
       "agent_adapters/codex/run-codex-unified-autonomous.ps1"
     );
@@ -88,6 +92,52 @@ describe("POST /api/generate", () => {
     expect(names).toContain("runtime/AUTONOMOUS_RUN_STATUS.md");
     expect(names).toContain("runtime/AUTONOMOUS_RUN_SUMMARY.md");
     expect(names).toContain("runtime/AUTONOMOUS_HEALTH_CHECK.md");
+  });
+
+  it("threads selected target adapters into the generated execution-pack ZIP", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/generate", {
+        method: "POST",
+        body: JSON.stringify({
+          projectName: "Tiny Planner",
+          rawDiscussion: "Build a local MVP for planning coding tasks.",
+          selectedAdapterIds: ["codex", "claude-code", "trae", "cursor"],
+          executionScope: "end_to_end_delivery",
+          executionMode: "end_to_end_autonomous"
+        })
+      })
+    );
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      zipBase64: string;
+      projectSpec: {
+        executionMode: string;
+        executionScope: string;
+        selectedAdapterIds: string[];
+      };
+    };
+    const names = readCentralDirectoryNames(Buffer.from(body.zipBase64, "base64"));
+
+    expect(body.projectSpec.selectedAdapterIds).toEqual([
+      "codex",
+      "claude-code",
+      "trae",
+      "cursor"
+    ]);
+    expect(body.projectSpec.executionScope).toBe("end_to_end_delivery");
+    expect(body.projectSpec.executionMode).toBe("end_to_end_autonomous");
+    expect(names).toEqual(
+      expect.arrayContaining([
+        "EXECUTION_PACK_MANIFEST.md",
+        "common/AUTONOMOUS_DELIVERY_ROADMAP.md",
+        "runtime/RUN_STATE.json",
+        "agent_adapters/codex/CODEX_END_TO_END_AUTONOMOUS_PROMPT.md",
+        "agent_adapters/claude-code/CLAUDE.md",
+        "agent_adapters/trae/TRAE_RUNBOOK.md",
+        "agent_adapters/cursor/CURSOR_RUNBOOK.md"
+      ])
+    );
   });
 });
 

@@ -31,10 +31,12 @@ const sampleInput = {
   testingRequirements:
     "Core modules must have tests; completion gate must run before success",
   deliveryRequirements:
-    "Generated execution-pack ZIP with completion gate docs and Codex runbooks",
+    "Generated execution-pack ZIP with completion gate docs, manifest, roadmap, and independent adapter options",
   securityBoundaries:
     "Do not read .env, SSH keys, cloud credentials, or system secrets",
-  executionMode: "unified_autonomous"
+  selectedAdapterIds: ["codex", "claude-code", "trae", "cursor"],
+  executionScope: "end_to_end_delivery",
+  executionMode: "end_to_end_autonomous"
 };
 
 const request = new Request("http://127.0.0.1/api/generate", {

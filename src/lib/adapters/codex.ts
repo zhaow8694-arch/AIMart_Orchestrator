@@ -47,6 +47,14 @@ export function generateCodexAdapter(
         content: renderCompletionGateRunbook(projectSpec)
       },
       {
+        path: "agent_adapters/codex/CODEX_END_TO_END_AUTONOMOUS_PROMPT.md",
+        content: renderEndToEndAutonomousPrompt(projectSpec, taskQueue)
+      },
+      {
+        path: "agent_adapters/codex/CODEX_END_TO_END_DELIVERY_RUNBOOK.md",
+        content: renderEndToEndDeliveryRunbook(projectSpec)
+      },
+      {
         path: "agent_adapters/codex/run-codex-autonomous.ps1",
         content: renderCodexPs1("autonomous")
       },
@@ -59,6 +67,10 @@ export function generateCodexAdapter(
         content: renderUnifiedCodexPs1()
       },
       {
+        path: "agent_adapters/codex/run-codex-end-to-end-autonomous.ps1",
+        content: renderEndToEndCodexPs1()
+      },
+      {
         path: "agent_adapters/codex/run-codex-autonomous.sh",
         content: renderCodexSh("autonomous")
       },
@@ -69,6 +81,10 @@ export function generateCodexAdapter(
       {
         path: "agent_adapters/codex/run-codex-unified-autonomous.sh",
         content: renderUnifiedCodexSh()
+      },
+      {
+        path: "agent_adapters/codex/run-codex-end-to-end-autonomous.sh",
+        content: renderEndToEndCodexSh()
       }
     ]
   });
@@ -368,6 +384,158 @@ This runbook is used by the one-window unified autonomous runner before it repor
 ## Safety
 
 The gate must not read secrets, modify frozen release folders, publish remotes, deploy to production, run real database migrations, or create/delete cloud resources.
+`;
+}
+
+function renderEndToEndAutonomousPrompt(
+  projectSpec: ProjectSpec,
+  taskQueue: TaskQueue
+): string {
+  return `# Codex End-to-End Autonomous Prompt
+
+You are the one selected AI agent for this generated execution pack. Work as an independent execution option; do not coordinate with Claude Code, Trae, Cursor, or any other agent in the same workspace.
+
+Project: ${projectSpec.projectName}
+Execution scope: ${projectSpec.executionScope}
+Execution mode: ${projectSpec.executionMode}
+
+## First Read
+
+1. EXECUTION_PACK_MANIFEST.md
+2. common/AUTONOMOUS_DELIVERY_ROADMAP.md
+3. common/VERSION_LADDER.md
+4. common/PHASE_GATE_PLAN.md
+5. common/CURRENT_PHASE.md
+6. runtime/END_TO_END_AUTONOMOUS_POLICY.md
+7. runtime/RUN_STATE.json
+8. runtime/CURRENT_TASK.md
+9. runtime/PHASE_GATE_REPORT.md
+10. runtime/COMPLETION_GATE_REPORT.md
+11. runtime/APPROVAL_QUEUE.md
+
+## End-to-End Operating Loop
+
+1. Start at v0.0.1 discovery/spec unless runtime/RUN_STATE.json identifies a later current phase.
+2. Plan the current phase from common/PHASE_GATE_PLAN.md and common/TASK_QUEUE.md.
+3. Implement one task at a time with tests before behavioral changes.
+4. Run the task test command and broader checks for shared behavior.
+5. Update runtime/CURRENT_TASK.md, runtime/RUN_STATE.json, common/PROGRESS_LOG.md, and runtime/MORNING_REPORT.md.
+6. Run the Completion Gate for the phase before marking that phase complete.
+7. Write PASS or FAIL to runtime/COMPLETION_GATE_REPORT.md.
+8. If PASS, update runtime/PHASE_GATE_REPORT.md and runtime/HANDOFF_TO_NEXT_VERSION.md, then advance to the next version ladder phase.
+9. If FAIL, fix safe failures and rerun the gate. Queue high-risk items in runtime/APPROVAL_QUEUE.md and continue independent safe work.
+
+## Version Ladder
+
+- v0.0.1 discovery/spec
+- v0.1.0 MVP implementation
+- v0.2.x autonomous runtime and completion gates
+- v0.3.x multi-agent independent adapters
+- v0.4.x runner hardening
+- v0.5.x delivery automation
+- v1.0 final usable delivery
+
+## Initial Generated Tasks
+
+${taskQueue.tasks.map((task) => `- ${task.id}: ${task.title}`).join("\n")}
+
+Final result must be PASS or FAIL. Do not report final usable delivery until the relevant Completion Gate passes.
+`;
+}
+
+function renderEndToEndDeliveryRunbook(projectSpec: ProjectSpec): string {
+  return `# Codex End-to-End Delivery Runbook
+
+Project: ${projectSpec.projectName}
+
+This runbook lets a customer start Codex once and let the selected AI continue through phase planning, implementation, tests, fixes, verification, release freeze, version advancement, and final delivery.
+
+## Start
+
+\`\`\`powershell
+./agent_adapters/codex/run-codex-end-to-end-autonomous.ps1
+\`\`\`
+
+\`\`\`bash
+bash agent_adapters/codex/run-codex-end-to-end-autonomous.sh
+\`\`\`
+
+## Required State Files
+
+- common/AUTONOMOUS_DELIVERY_ROADMAP.md
+- common/VERSION_LADDER.md
+- common/PHASE_GATE_PLAN.md
+- common/CURRENT_PHASE.md
+- runtime/END_TO_END_AUTONOMOUS_POLICY.md
+- runtime/RUN_STATE.json
+- runtime/CURRENT_TASK.md
+- runtime/PHASE_GATE_REPORT.md
+- runtime/COMPLETION_GATE_REPORT.md
+- runtime/MORNING_REPORT.md
+- runtime/HANDOFF_TO_NEXT_VERSION.md
+
+## Phase Gates
+
+Every phase must end with a Completion Gate. The gate result must be written as PASS or FAIL in runtime/COMPLETION_GATE_REPORT.md and mirrored in runtime/PHASE_GATE_REPORT.md.
+
+## Safety
+
+High-risk operations are recorded in runtime/APPROVAL_QUEUE.md. Codex must continue safe independent work when a queued item is not blocking. Do not read secrets, deploy production, run real database migrations, change cloud resources, or modify frozen release folders.
+`;
+}
+
+function renderEndToEndCodexPs1(): string {
+  return `$ErrorActionPreference = "Stop"
+$RootDir = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path))
+Set-Location $RootDir
+
+$LogDir = Join-Path $RootDir "codex_runs"
+New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+$Stamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$LogPath = Join-Path $LogDir "codex-end-to-end-autonomous-$Stamp.log"
+$PromptPath = Join-Path $RootDir "agent_adapters/codex/CODEX_END_TO_END_AUTONOMOUS_PROMPT.md"
+
+Write-Host "[codex-end-to-end] End-to-End Autonomous Delivery"
+Write-Host "[codex-end-to-end] sandbox=workspace-write approval=never"
+Write-Host "[codex-end-to-end] log=$LogPath"
+Write-Host "[codex-end-to-end] phase plan=common/PHASE_GATE_PLAN.md"
+Write-Host "[codex-end-to-end] final result must be PASS or FAIL in runtime/COMPLETION_GATE_REPORT.md"
+
+& codex exec --sandbox workspace-write --approval never --cd $RootDir --prompt-file $PromptPath 2>&1 | Tee-Object -FilePath $LogPath
+$Code = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
+Write-Host "[codex-end-to-end] Codex exit code: $Code"
+Write-Host "[codex-end-to-end] Check runtime/RUN_STATE.json, runtime/PHASE_GATE_REPORT.md, and runtime/COMPLETION_GATE_REPORT.md"
+exit $Code
+`;
+}
+
+function renderEndToEndCodexSh(): string {
+  return `#!/usr/bin/env bash
+set -euo pipefail
+ROOT_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$ROOT_DIR"
+
+LOG_DIR="$ROOT_DIR/codex_runs"
+mkdir -p "$LOG_DIR"
+STAMP="$(date +%Y%m%d_%H%M%S)"
+LOG_PATH="$LOG_DIR/codex-end-to-end-autonomous-$STAMP.log"
+PROMPT_PATH="$ROOT_DIR/agent_adapters/codex/CODEX_END_TO_END_AUTONOMOUS_PROMPT.md"
+
+echo "[codex-end-to-end] End-to-End Autonomous Delivery"
+echo "[codex-end-to-end] sandbox=workspace-write approval=never"
+echo "[codex-end-to-end] log=$LOG_PATH"
+echo "[codex-end-to-end] phase plan=common/PHASE_GATE_PLAN.md"
+echo "[codex-end-to-end] final result must be PASS or FAIL in runtime/COMPLETION_GATE_REPORT.md"
+
+codex exec \\
+  --sandbox workspace-write \\
+  --approval never \\
+  --cd "$ROOT_DIR" \\
+  --prompt-file "$PROMPT_PATH" 2>&1 | tee "$LOG_PATH"
+code="\${PIPESTATUS[0]}"
+echo "[codex-end-to-end] Codex exit code: $code"
+echo "[codex-end-to-end] Check runtime/RUN_STATE.json, runtime/PHASE_GATE_REPORT.md, and runtime/COMPLETION_GATE_REPORT.md"
+exit "$code"
 `;
 }
 

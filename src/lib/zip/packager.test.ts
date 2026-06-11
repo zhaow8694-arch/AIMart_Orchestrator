@@ -26,6 +26,10 @@ describe("execution pack packager", () => {
         "common/PROJECT_SPEC.md",
         "common/TASK_QUEUE.md",
         "common/EXECUTION_RULES.md",
+        "common/AUTONOMOUS_DELIVERY_ROADMAP.md",
+        "common/VERSION_LADDER.md",
+        "common/PHASE_GATE_PLAN.md",
+        "common/CURRENT_PHASE.md",
         "runtime/PERMISSION_POLICY.yaml",
         "runtime/TOOLCHAIN_MANIFEST.yaml",
         "runtime/SAFE_COMMANDS.md",
@@ -36,6 +40,13 @@ describe("execution pack packager", () => {
         "runtime/AUTONOMOUS_HEALTH_CHECK.md",
         "runtime/AUTONOMOUS_COMPLETION_GATE.md",
         "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
+        "runtime/END_TO_END_AUTONOMOUS_POLICY.md",
+        "runtime/RUN_STATE.json",
+        "runtime/CURRENT_TASK.md",
+        "runtime/PHASE_GATE_REPORT.md",
+        "runtime/COMPLETION_GATE_REPORT.md",
+        "runtime/MORNING_REPORT.md",
+        "runtime/HANDOFF_TO_NEXT_VERSION.md",
         "scripts/finalize.ps1",
         "scripts/finalize.sh",
         "scripts/verify-autonomous-completion.ps1",
@@ -44,8 +55,12 @@ describe("execution pack packager", () => {
         "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md",
         "agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md",
         "agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md",
+        "agent_adapters/codex/CODEX_END_TO_END_AUTONOMOUS_PROMPT.md",
+        "agent_adapters/codex/CODEX_END_TO_END_DELIVERY_RUNBOOK.md",
+        "agent_adapters/codex/run-codex-end-to-end-autonomous.ps1",
         "agent_adapters/codex/run-codex-autonomous.ps1",
         "agent_adapters/codex/run-codex-unified-autonomous.ps1",
+        "EXECUTION_PACK_MANIFEST.md",
         "docs/RUN_APP.md",
         "docs/README.md"
       ])
@@ -80,9 +95,14 @@ describe("execution pack packager", () => {
     );
 
     expect(readCentralDirectoryNames(zipBuffer)).toEqual([
+      "EXECUTION_PACK_MANIFEST.md",
       "common/PROJECT_SPEC.md",
       "common/TASK_QUEUE.md",
       "common/EXECUTION_RULES.md",
+      "common/AUTONOMOUS_DELIVERY_ROADMAP.md",
+      "common/VERSION_LADDER.md",
+      "common/PHASE_GATE_PLAN.md",
+      "common/CURRENT_PHASE.md",
       "common/SELF_REVIEW.md",
       "common/FINAL_DELIVERY_CHECK.md",
       "common/ASSUMPTIONS.md",
@@ -102,6 +122,13 @@ describe("execution pack packager", () => {
       "runtime/AUTONOMOUS_HEALTH_CHECK.md",
       "runtime/AUTONOMOUS_COMPLETION_GATE.md",
       "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
+      "runtime/END_TO_END_AUTONOMOUS_POLICY.md",
+      "runtime/RUN_STATE.json",
+      "runtime/CURRENT_TASK.md",
+      "runtime/PHASE_GATE_REPORT.md",
+      "runtime/COMPLETION_GATE_REPORT.md",
+      "runtime/MORNING_REPORT.md",
+      "runtime/HANDOFF_TO_NEXT_VERSION.md",
       "runtime/RUNTIME_STATUS.md",
       "runtime/ROLLBACK_PLAN.md",
       "scripts/preflight.ps1",
@@ -138,12 +165,16 @@ describe("execution pack packager", () => {
       "agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md",
       "agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md",
       "agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md",
+      "agent_adapters/codex/CODEX_END_TO_END_AUTONOMOUS_PROMPT.md",
+      "agent_adapters/codex/CODEX_END_TO_END_DELIVERY_RUNBOOK.md",
       "agent_adapters/codex/run-codex-autonomous.ps1",
       "agent_adapters/codex/run-codex-supervised.ps1",
       "agent_adapters/codex/run-codex-unified-autonomous.ps1",
+      "agent_adapters/codex/run-codex-end-to-end-autonomous.ps1",
       "agent_adapters/codex/run-codex-autonomous.sh",
       "agent_adapters/codex/run-codex-supervised.sh",
       "agent_adapters/codex/run-codex-unified-autonomous.sh",
+      "agent_adapters/codex/run-codex-end-to-end-autonomous.sh",
       "docs/README.md",
       "docs/RUN_APP.md",
       "docs/ENV_SETUP.md",
@@ -194,8 +225,8 @@ describe("execution pack packager", () => {
     );
     const names = readCentralDirectoryNames(zipBuffer);
 
-    expect(pack.projectSpec.executionMode).toBe("unified_autonomous");
-    expect(projectSpec).toContain('"executionMode": "unified_autonomous"');
+    expect(pack.projectSpec.executionMode).toBe("end_to_end_autonomous");
+    expect(projectSpec).toContain('"executionMode": "end_to_end_autonomous"');
     expect(unifiedRunner).toContain("Final Summary");
     expect(names).toContain(
       "agent_adapters/codex/run-codex-unified-autonomous.ps1"
@@ -211,6 +242,42 @@ describe("execution pack packager", () => {
     expect(names).toContain(
       "agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md"
     );
+  });
+
+  it("uses selected adapters to generate independent adapter options and manifest entries", async () => {
+    const { pack, zipBuffer } = await createExecutionPackZip(
+      {
+        projectName: "Multi Adapter Pack",
+        rawDiscussion: "Build a local MVP for planning coding tasks.",
+        selectedAdapterIds: ["codex", "cursor"],
+        executionScope: "multi_phase",
+        executionMode: "autonomous"
+      },
+      { now: fixedNow }
+    );
+
+    const names = readCentralDirectoryNames(zipBuffer);
+    const manifest = findFile(pack.files, "EXECUTION_PACK_MANIFEST.md");
+    const roadmap = findFile(
+      pack.files,
+      "common/AUTONOMOUS_DELIVERY_ROADMAP.md"
+    );
+
+    expect(pack.projectSpec.selectedAdapterIds).toEqual(["codex", "cursor"]);
+    expect(pack.projectSpec.executionScope).toBe("multi_phase");
+    expect(names).toContain("agent_adapters/codex/AGENTS.md");
+    expect(names).toContain("agent_adapters/cursor/CURSOR_RUNBOOK.md");
+    expect(names).not.toContain("agent_adapters/claude-code/CLAUDE.md");
+    expect(names).not.toContain("agent_adapters/trae/TRAE_RUNBOOK.md");
+    expect(manifest).toContain("Selected adapters");
+    expect(manifest).toContain("Codex");
+    expect(manifest).toContain("Cursor");
+    expect(manifest).toContain("does not mean running multiple agents together");
+    expect(manifest).toContain("Do not run multiple agents against the same workspace");
+    expect(roadmap).toContain("Multi Adapter Pack");
+    expect(roadmap).toContain("v0.0.1");
+    expect(roadmap).toContain("v1.0");
+    expect(roadmap).toContain("Assumptions");
   });
 });
 

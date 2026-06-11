@@ -151,6 +151,12 @@ describe("generateScriptPack", () => {
     }
 
     expect(samplePs1).toContain("CODEX_COMPLETION_GATE_RUNBOOK.md");
+    expect(samplePs1).toContain("EXECUTION_PACK_MANIFEST.md");
+    expect(samplePs1).toContain("CLAUDE_TASK_PROMPT.md");
+    expect(samplePs1).toContain("TRAE_TASK_PROMPT.md");
+    expect(samplePs1).toContain("CURSOR_TASK_PROMPT.md");
+    expect(samplePs1).toContain("RUN_STATE.json");
+    expect(samplePs1).toContain("COMPLETION_GATE_REPORT.md");
     expect(sourcePs1).toContain("node_modules");
     expect(sourcePs1).toContain("SHA256");
     expect(historyPs1).toContain("v0.1.0");

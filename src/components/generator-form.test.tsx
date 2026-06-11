@@ -20,8 +20,8 @@ describe("GeneratorForm", () => {
       "Execution mode",
       "Supervised Mode",
       "Autonomous Mode",
-      "Unified Autonomous Mode",
-      "one-window status display"
+      "End-to-End Autonomous",
+      "PASS/FAIL reporting"
     ]) {
       expect(html).toContain(label);
     }
@@ -30,7 +30,7 @@ describe("GeneratorForm", () => {
     expect(html).toContain("source release ZIP");
     expect(html).toContain('value="supervised"');
     expect(html).toContain('value="autonomous"');
-    expect(html).toContain('value="unified_autonomous"');
+    expect(html).toContain('value="end_to_end_autonomous"');
   });
 
   it("hides stale output while a new execution pack is generating", () => {

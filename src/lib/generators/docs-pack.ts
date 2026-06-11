@@ -1,5 +1,6 @@
 import type { RuntimePack } from "@/lib/generators/runtime-pack";
 import type { FileEntry, ProjectSpec, TaskQueue } from "@/lib/schemas/core";
+import { getSelectedAgentAdapterRegistryEntries } from "@/lib/adapters/registry";
 
 export type DocsPack = {
   files: FileEntry[];
@@ -47,9 +48,13 @@ export function generateDocsPack(
 function renderReadme(projectSpec: ProjectSpec, taskQueue: TaskQueue): string {
   return `# ${projectSpec.projectName}
 
-This generated execution-pack ZIP describes the local v0.2.2 delivery plan for ${projectSpec.projectName}. It is different from an AIMart source release ZIP: source release ZIPs contain the generator source, while generated execution-pack ZIPs contain common/runtime/scripts/agent_adapters/docs for a target project.
+This generated execution-pack ZIP describes the local v0.3.0 End-to-End delivery plan for ${projectSpec.projectName}. It is different from an AIMart source release ZIP: source release ZIPs contain the generator source, while generated execution-pack ZIPs contain common/runtime/scripts/agent_adapters/docs for a target project.
 
+Selected adapters: ${formatSelectedAdapters(projectSpec)}
+Execution scope: ${projectSpec.executionScope}
 Selected execution mode: ${projectSpec.executionMode}
+
+Selecting multiple adapters creates multiple independent execution options. It does not run multiple agents together; choose one adapter for one workspace.
 
 ## MVP Scope
 
@@ -75,6 +80,8 @@ function renderRunApp(projectSpec: ProjectSpec): string {
   return `# Run App
 
 Project: ${projectSpec.projectName}
+Selected adapters: ${formatSelectedAdapters(projectSpec)}
+Execution scope: ${projectSpec.executionScope}
 Selected execution mode: ${projectSpec.executionMode}
 
 ## Local Setup
@@ -127,6 +134,22 @@ Unified Autonomous Mode provides the one-window status display. It starts Codex 
 \`\`\`bash
 bash agent_adapters/codex/run-codex-unified-autonomous.sh
 \`\`\`
+
+## Start Codex End-to-End Autonomous Mode
+
+Use End-to-End Autonomous Mode when Codex is the selected agent and should continue through phase gates until final usable delivery.
+
+\`\`\`powershell
+./agent_adapters/codex/run-codex-end-to-end-autonomous.ps1
+\`\`\`
+
+\`\`\`bash
+bash agent_adapters/codex/run-codex-end-to-end-autonomous.sh
+\`\`\`
+
+## Other Adapter Options
+
+Claude Code, Trae, and Cursor adapters are independent execution options when selected. Read their adapter directory and choose only one active adapter for a workspace.
 
 ## Logs And Approval Queue
 
@@ -220,9 +243,11 @@ Project: ${projectSpec.projectName}
 - TaskQueue
 - Runtime pack
 - PowerShell and Bash scripts
-- Codex target adapter
+- Agent Adapter Registry output
+- Independent adapters: ${formatSelectedAdapters(projectSpec)}
 - Delivery docs
 - Autonomous Completion Gate docs and verification report template
+- End-to-End runtime state files and phase gate reports
 
 ## Current Task Count
 
@@ -236,18 +261,18 @@ ${asBullets(projectSpec.inferredAssumptions)}
 
 ${asBullets(projectSpec.openQuestions)}
 
-## v0.2.2 Completion Gate
+## v0.3.0 End-to-End Autonomous Delivery
 
-Generated packs include runtime/AUTONOMOUS_COMPLETION_GATE.md, runtime/AUTONOMOUS_VERIFICATION_REPORT.md, and the Codex completion-gate runbook. The unified autonomous runner must show PASS or FAIL before final delivery.
+Generated packs include runtime/AUTONOMOUS_COMPLETION_GATE.md, runtime/AUTONOMOUS_VERIFICATION_REPORT.md, runtime/RUN_STATE.json, runtime/CURRENT_TASK.md, runtime/PHASE_GATE_REPORT.md, runtime/COMPLETION_GATE_REPORT.md, and independent adapter options for ${formatSelectedAdapters(projectSpec)}. The selected adapter must show PASS or FAIL before final delivery.
 `;
 }
 
 function renderReleaseNotes(projectSpec: ProjectSpec): string {
   return `# Release Notes
 
-## v0.2.2
+## v0.3.0
 
-Initial local v0.2.2 execution pack for ${projectSpec.projectName}.
+Initial local v0.3.0 End-to-End execution pack for ${projectSpec.projectName}.
 
 ### Included
 
@@ -256,8 +281,11 @@ Initial local v0.2.2 execution pack for ${projectSpec.projectName}.
 - Runtime and permission policy
 - SAFE_COMMANDS, DENIED_COMMANDS, and autonomous execution policy
 - Autonomous Completion Gate runtime docs
+- End-to-End runtime state, phase gate, current task, morning report, and next-version handoff files
+- Agent Adapter Registry output
+- Independent adapter options for ${formatSelectedAdapters(projectSpec)}
 - Local finalize scripts
-- Codex target adapter with supervised, autonomous, unified autonomous launch profiles, and completion-gate runbook
+- Codex target adapter with supervised, autonomous, unified autonomous, end-to-end autonomous launch profiles, and completion-gate runbook
 - ZIP-ready documentation
 `;
 }
@@ -267,17 +295,21 @@ function renderNextSteps(projectSpec: ProjectSpec): string {
 
 ## Immediate
 
+End-to-End autonomous delivery continues through phase gates until final usable delivery.
+
 1. Review PROJECT_SPEC.md for accuracy.
 2. Execute TASK_QUEUE.md from the first pending task.
-3. Run scripts/finalize.* before delivery.
-4. Review runtime/AUTONOMOUS_VERIFICATION_REPORT.md and accept delivery only when the Autonomous Completion Gate reports PASS.
+3. Choose one adapter from ${formatSelectedAdapters(projectSpec)} before working in a workspace.
+4. Use runtime/RUN_STATE.json, runtime/CURRENT_TASK.md, and common/PHASE_GATE_PLAN.md to continue across phases.
+5. Run scripts/finalize.* before delivery.
+6. Review runtime/AUTONOMOUS_VERIFICATION_REPORT.md and runtime/COMPLETION_GATE_REPORT.md; accept delivery only when the Autonomous Completion Gate reports PASS.
 
 ## Known Limitations
 
-- v0.2.2 is local-only.
-- v0.2.2 does not include a cloud runner.
-- v0.2.2 does not perform production deployment.
-- v0.2.2 does not read secrets or production credentials.
+- v0.3.0 is local-only.
+- v0.3.0 does not include a cloud runner.
+- v0.3.0 does not perform production deployment.
+- v0.3.0 does not read secrets or production credentials.
 
 ## Deferred Ideas
 
@@ -287,4 +319,10 @@ Future versions can expand adapter coverage after ${projectSpec.projectName} v0.
 
 function asBullets(items: string[]): string {
   return items.length > 0 ? items.map((item) => `- ${item}`).join("\n") : "- Not specified";
+}
+
+function formatSelectedAdapters(projectSpec: ProjectSpec): string {
+  return getSelectedAgentAdapterRegistryEntries(projectSpec.selectedAdapterIds)
+    .map((entry) => entry.displayName)
+    .join(", ");
 }

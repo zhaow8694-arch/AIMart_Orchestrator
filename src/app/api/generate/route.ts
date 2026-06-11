@@ -14,6 +14,8 @@ export async function POST(request: Request): Promise<Response> {
       projectSpec: {
         projectName: pack.projectSpec.projectName,
         executionMode: pack.projectSpec.executionMode,
+        executionScope: pack.projectSpec.executionScope,
+        selectedAdapterIds: pack.projectSpec.selectedAdapterIds,
         mvpScope: pack.projectSpec.mvpScope,
         explicitRequirements: pack.projectSpec.explicitRequirements,
         inferredAssumptions: pack.projectSpec.inferredAssumptions,

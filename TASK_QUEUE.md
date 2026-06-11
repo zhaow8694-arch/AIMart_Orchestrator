@@ -1,5 +1,123 @@
 # AIMart Orchestrator v0.1 Task Queue
 
+## v0.3.0 End-to-End Autonomous Delivery And Agent Adapter Registry Task Queue
+
+TASK-048 through TASK-056 are the scoped v0.3.0 tasks. They add End-to-End Autonomous Delivery, the Agent Adapter Registry, independent multi-target adapter exports, phase gates, and execution-pack manifest support while preserving the frozen v0.1.0, v0.1.1, v0.2.1, and v0.2.2 release folders.
+
+## TASK-048 Create v0.3.0 Execution Plan
+
+```yaml
+status: done
+phase: plan
+dependencies: [TASK-047]
+done_criteria:
+  - v0.3.0 scope is limited to end-to-end autonomous delivery and independent adapter generation
+  - TASK_QUEUE.md records TASK-048 through TASK-056
+  - Historical release folders remain untouched
+```
+
+## TASK-049 Add v0.3.0 Tests
+
+```yaml
+status: done
+phase: qa
+dependencies: [TASK-048]
+done_criteria:
+  - Tests expect adapter registry entries
+  - Tests expect Codex, Claude Code, Trae, and Cursor adapter generation
+  - Tests expect end-to-end runtime files and execution-pack manifest
+  - Tests expect UI/API selected adapters, execution scope, and execution mode behavior
+  - Tests expect completion-gate adapter checks
+```
+
+## TASK-050 Implement Agent Adapter Registry
+
+```yaml
+status: done
+phase: adapter
+dependencies: [TASK-049]
+done_criteria:
+  - Registry supports codex, claude-code, trae, and cursor
+  - Each entry includes required files, run modes, permission model summary, best-use notes, and completion gate requirements
+```
+
+## TASK-051 Implement Multi-target Adapter Generation
+
+```yaml
+status: done
+phase: adapter
+dependencies: [TASK-050]
+done_criteria:
+  - Codex keeps existing v0.2.2 adapter files
+  - Codex adds end-to-end autonomous prompt, delivery runbook, and launch scripts
+  - Claude Code, Trae, and Cursor independent adapter directories are generated when selected
+  - Generated wording says multiple adapters are independent options, not collaborators
+```
+
+## TASK-052 Implement End-to-End Delivery Runtime Files
+
+```yaml
+status: done
+phase: runtime
+dependencies: [TASK-051]
+done_criteria:
+  - common roadmap, version ladder, phase gate plan, and current phase are generated
+  - runtime end-to-end policy, RUN_STATE.json, current task, phase gate report, completion gate report, morning report, and next-version handoff are generated
+  - roadmap adapts to ProjectSpec fields and records assumptions
+```
+
+## TASK-053 Update Web UI And API Configuration
+
+```yaml
+status: done
+phase: ui
+dependencies: [TASK-052]
+done_criteria:
+  - UI exposes target AI adapters, execution scope, and execution mode
+  - UI copy explains multiple adapters are independent execution options
+  - API threads selected adapters and execution scope into generated packs
+```
+
+## TASK-054 Extend Completion Gate Validation
+
+```yaml
+status: done
+phase: scripts
+dependencies: [TASK-053]
+done_criteria:
+  - Sample-pack verification checks manifest, adapter directories, runbooks, prompts, runtime state, and phase/completion reports
+  - RUN_STATE.json is validated as JSON
+  - Autonomous completion gate checks v0.3.0 delivery docs
+```
+
+## TASK-055 Update Version And v0.3.0 Delivery Docs
+
+```yaml
+status: done
+phase: release
+dependencies: [TASK-054]
+done_criteria:
+  - package.json and UI metadata are updated to 0.3.0
+  - V0.3.0 implementation report, release notes, final delivery check, and known issues docs are generated
+```
+
+## TASK-056 Verify And Package v0.3.0
+
+```yaml
+status: done
+phase: finalize
+dependencies: [TASK-055]
+done_criteria:
+  - pnpm test passes
+  - pnpm lint passes
+  - pnpm build passes
+  - releases/v0.3.0 source ZIP exists
+  - releases/v0.3.0/samples/todo-api-generated-execution-pack.zip exists
+  - SHA256.txt and RELEASE_MANIFEST.txt exist
+  - Autonomous Completion Gate passes
+  - local tag v0.3.0 exists and points to the final commit
+```
+
 ## v0.2.2 Autonomous Completion Gate Task Queue
 
 TASK-041 through TASK-047 are the scoped v0.2.2 tasks. They add the Autonomous Completion Gate and self-verification system while preserving the v0.1.0, v0.1.1, and v0.2.1 release folders.

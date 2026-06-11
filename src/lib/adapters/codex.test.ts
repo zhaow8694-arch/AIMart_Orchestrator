@@ -38,12 +38,16 @@ describe("generateCodexAdapter", () => {
         "agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md",
         "agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md",
         "agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md",
+        "agent_adapters/codex/CODEX_END_TO_END_AUTONOMOUS_PROMPT.md",
+        "agent_adapters/codex/CODEX_END_TO_END_DELIVERY_RUNBOOK.md",
         "agent_adapters/codex/run-codex-autonomous.ps1",
         "agent_adapters/codex/run-codex-supervised.ps1",
         "agent_adapters/codex/run-codex-unified-autonomous.ps1",
+        "agent_adapters/codex/run-codex-end-to-end-autonomous.ps1",
         "agent_adapters/codex/run-codex-autonomous.sh",
         "agent_adapters/codex/run-codex-supervised.sh",
-        "agent_adapters/codex/run-codex-unified-autonomous.sh"
+        "agent_adapters/codex/run-codex-unified-autonomous.sh",
+        "agent_adapters/codex/run-codex-end-to-end-autonomous.sh"
       ])
     );
   });
@@ -198,6 +202,54 @@ describe("generateCodexAdapter", () => {
       expect(content).not.toContain("git push");
       expect(content).not.toContain("full-access");
     }
+  });
+
+  it("generates Codex end-to-end autonomous delivery instructions and launchers", () => {
+    const projectSpec = createProjectSpec(
+      {
+        projectName: "Tiny Planner",
+        rawDiscussion: "Build a local MVP for planning coding tasks.",
+        executionMode: "end_to_end_autonomous",
+        executionScope: "end_to_end_delivery"
+      },
+      { now: fixedNow }
+    );
+    const taskQueue = generateTaskQueue(projectSpec, { now: fixedNow });
+    const runtimePack = generateRuntimePack(projectSpec);
+
+    const adapter = generateCodexAdapter(projectSpec, taskQueue, runtimePack);
+    const prompt = findFile(
+      adapter.files,
+      "agent_adapters/codex/CODEX_END_TO_END_AUTONOMOUS_PROMPT.md"
+    );
+    const runbook = findFile(
+      adapter.files,
+      "agent_adapters/codex/CODEX_END_TO_END_DELIVERY_RUNBOOK.md"
+    );
+    const ps1 = findFile(
+      adapter.files,
+      "agent_adapters/codex/run-codex-end-to-end-autonomous.ps1"
+    );
+    const sh = findFile(
+      adapter.files,
+      "agent_adapters/codex/run-codex-end-to-end-autonomous.sh"
+    );
+
+    for (const content of [prompt, runbook, ps1, sh]) {
+      expect(content).toContain("End-to-End");
+      expect(content).toContain("PHASE_GATE_PLAN.md");
+      expect(content).toContain("COMPLETION_GATE_REPORT.md");
+      expect(content).toContain("RUN_STATE.json");
+      expect(content).toContain("PASS");
+      expect(content).toContain("FAIL");
+    }
+    expect(prompt).toContain("one selected AI agent");
+    expect(prompt).toContain("v0.0.1");
+    expect(prompt).toContain("v1.0");
+    expect(ps1).toContain("workspace-write");
+    expect(ps1).toContain("approval never");
+    expect(sh).toContain("workspace-write");
+    expect(sh).toContain("approval never");
   });
 });
 

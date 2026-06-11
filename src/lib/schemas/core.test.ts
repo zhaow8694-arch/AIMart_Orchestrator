@@ -19,7 +19,9 @@ const validProjectSpec = {
   forbiddenItems: ["No production deployment"],
   techStackPreferences: ["Next.js", "TypeScript"],
   targetAdapterType: "codex",
-  executionMode: "supervised",
+  selectedAdapterIds: ["codex", "claude-code"],
+  executionScope: "end_to_end_delivery",
+  executionMode: "end_to_end_autonomous",
   testingRequirements: ["Unit tests required"],
   deliveryRequirements: ["ZIP delivery"],
   securityBoundaries: ["Do not read secrets"],
@@ -91,7 +93,8 @@ const validPermissionPolicy = {
 };
 
 const validAgentAdapter = {
-  adapterType: "codex",
+  adapterType: "multi_target",
+  selectedAdapterIds: ["codex", "claude-code"],
   files: [
     {
       path: "agent_adapters/codex/AGENTS.md",
@@ -155,9 +158,15 @@ describe("core schemas", () => {
     expect(
       ProjectSpecSchema.parse({
         ...validProjectSpec,
+        executionMode: "end_to_end_autonomous"
+      }).executionMode
+    ).toBe("end_to_end_autonomous");
+    expect(
+      ProjectSpecSchema.parse({
+        ...validProjectSpec,
         executionMode: "unified_autonomous"
       }).executionMode
-    ).toBe("unified_autonomous");
+    ).toBe("end_to_end_autonomous");
 
     const dangerousMode = ProjectSpecSchema.safeParse({
       ...validProjectSpec,
@@ -165,6 +174,30 @@ describe("core schemas", () => {
     });
 
     expect(dangerousMode.success).toBe(false);
+  });
+
+  it("accepts v0.3.0 adapter selections and execution scopes", () => {
+    const result = ProjectSpecSchema.parse({
+      ...validProjectSpec,
+      selectedAdapterIds: ["codex", "claude-code", "trae", "cursor"],
+      executionScope: "multi_phase",
+      executionMode: "autonomous"
+    });
+
+    expect(result.selectedAdapterIds).toEqual([
+      "codex",
+      "claude-code",
+      "trae",
+      "cursor"
+    ]);
+    expect(result.executionScope).toBe("multi_phase");
+
+    const unsupportedAdapter = ProjectSpecSchema.safeParse({
+      ...validProjectSpec,
+      selectedAdapterIds: ["codex", "copilot"]
+    });
+
+    expect(unsupportedAdapter.success).toBe(false);
   });
 
   it("requires task risk levels and done criteria", () => {

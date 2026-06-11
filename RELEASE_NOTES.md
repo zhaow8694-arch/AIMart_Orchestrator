@@ -1,8 +1,8 @@
-﻿# Release Notes
+# Release Notes
 
 ## Scope
 
-AIMart Orchestrator v0.2.2 Autonomous Completion Gate release.
+AIMart Orchestrator v0.3.0 End-to-End Autonomous Delivery release.
 
 ## Included
 
@@ -10,24 +10,22 @@ AIMart Orchestrator v0.2.2 Autonomous Completion Gate release.
 - ProjectSpec and TaskQueue generation.
 - Runtime permission policy generation.
 - PowerShell/Bash script generation.
-- Codex target adapter generation.
+- Agent Adapter Registry and independent adapter generation.
 - Documentation generation.
 - ZIP packaging and download.
-- Test coverage for schemas, generators, scripts, adapter output, and ZIP output.
 
-## v0.2.2 Features
+## v0.3.0 Features
 
-- Added Autonomous Completion Gate verification scripts for source releases.
-- Added source ZIP verification for forbidden folders, old releases, .env files, and secret-like files.
-- Added sample execution-pack ZIP extraction and required-file verification.
-- Added SHA256 verification for source and sample ZIP artifacts.
-- Added historical release protection for v0.1.0, v0.1.1, and v0.2.1.
-- Added generated runtime AUTONOMOUS_COMPLETION_GATE and AUTONOMOUS_VERIFICATION_REPORT docs.
-- Added CODEX_COMPLETION_GATE_RUNBOOK.md.
-- Updated unified autonomous runners to display target version, branch, startup cleanliness, existing Codex process detection, release artifact status, log activity, stalled-log status, and Autonomous Completion Gate PASS/FAIL.
+- Added typed Agent Adapter Registry entries for Codex, Claude Code, Trae, and Cursor.
+- Added independent multi-target adapter generation with Codex as the strongest adapter.
+- Added Codex End-to-End Autonomous prompt, delivery runbook, and launch scripts.
+- Added End-to-End delivery roadmap, version ladder, phase gate plan, run state, current task, phase gate report, completion gate report, morning report, and next-version handoff files.
+- Added EXECUTION_PACK_MANIFEST.md.
+- Added Web UI controls for target AI adapters, execution scope, and execution mode.
+- Extended completion gates to verify adapter directories, runbooks, prompts, manifest, RUN_STATE.json, current task, phase reports, and completion reports.
 
 ## Notes
 
-The source release ZIP remains documented separately from generated execution-pack ZIPs.
+The source release ZIP remains documented separately from the generated execution-pack ZIP.
 
-Remote tag push, production deployment, real database migration, cloud resource mutation, frozen release modification, and secret reads are not performed by default.
+Selecting multiple adapters generates multiple independent execution options. It does not run multiple agents together. Remote tag push, production deployment, real database migration, cloud resource mutation, frozen release modification, and secret reads are not performed by default.

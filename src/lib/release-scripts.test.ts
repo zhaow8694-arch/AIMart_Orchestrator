@@ -130,10 +130,30 @@ describe("source release scripts and delivery docs", () => {
       expect(content).toContain("verify-source-zip");
       expect(content).toContain("verify-sample-pack");
       expect(content).toContain("verify-history-releases");
-      expect(content).toContain("V0.2.2_KNOWN_ISSUES.md");
+      expect(content).toContain("V0.3.0_KNOWN_ISSUES.md");
       expect(content).toContain("git status");
       expect(content).toContain("TargetVersion");
     }
+  });
+
+  it("extends completion gates for v0.3.0 adapter registry and end-to-end packs", () => {
+    const samplePs1 = readProjectFile("scripts/verify-sample-pack.ps1");
+    const gatePs1 = readProjectFile("scripts/verify-autonomous-completion.ps1");
+
+    for (const content of [samplePs1, gatePs1]) {
+      expect(content).toContain("EXECUTION_PACK_MANIFEST.md");
+      expect(content).toContain("agent_adapters/claude-code");
+      expect(content).toContain("agent_adapters/trae");
+      expect(content).toContain("agent_adapters/cursor");
+      expect(content).toContain("runtime/RUN_STATE.json");
+      expect(content).toContain("runtime/CURRENT_TASK.md");
+      expect(content).toContain("runtime/PHASE_GATE_REPORT.md");
+      expect(content).toContain("runtime/COMPLETION_GATE_REPORT.md");
+    }
+    expect(gatePs1).toContain("V0.3.0_IMPLEMENTATION_REPORT.md");
+    expect(gatePs1).toContain("V0.3.0_RELEASE_NOTES.md");
+    expect(gatePs1).toContain("V0.3.0_FINAL_DELIVERY_CHECK.md");
+    expect(gatePs1).toContain("V0.3.0_KNOWN_ISSUES.md");
   });
 
   it("includes v0.2.2 delivery documents for Autonomous Completion Gate", () => {
@@ -158,5 +178,29 @@ describe("source release scripts and delivery docs", () => {
     expect(finalCheck).toContain("verify-autonomous-completion.ps1");
     expect(finalCheck).toContain("runtime/AUTONOMOUS_COMPLETION_GATE.md");
     expect(finalCheck).toContain("CODEX_COMPLETION_GATE_RUNBOOK.md");
+  });
+
+  it("includes v0.3.0 delivery documents for End-to-End Autonomous Delivery", () => {
+    const implementationReport = readProjectFile("V0.3.0_IMPLEMENTATION_REPORT.md");
+    const releaseNotes = readProjectFile("V0.3.0_RELEASE_NOTES.md");
+    const finalCheck = readProjectFile("V0.3.0_FINAL_DELIVERY_CHECK.md");
+    const knownIssues = readProjectFile("V0.3.0_KNOWN_ISSUES.md");
+    const finalizePs1 = readProjectFile("scripts/finalize.ps1");
+    const finalizeSh = readProjectFile("scripts/finalize.sh");
+
+    for (const content of [
+      implementationReport,
+      releaseNotes,
+      finalCheck,
+      knownIssues,
+      finalizePs1,
+      finalizeSh
+    ]) {
+      expect(content).toContain("v0.3.0");
+      expect(content).toContain("End-to-End Autonomous Delivery");
+    }
+    expect(finalCheck).toContain("Agent Adapter Registry");
+    expect(finalCheck).toContain("EXECUTION_PACK_MANIFEST.md");
+    expect(finalCheck).toContain("todo-api-generated-execution-pack.zip");
   });
 });

@@ -12,13 +12,30 @@ export const TaskStatusSchema = z.enum([
   "waiting_approval"
 ]);
 
+export const AgentAdapterIdSchema = z.enum([
+  "codex",
+  "claude-code",
+  "trae",
+  "cursor"
+]);
+
+export const ExecutionScopeSchema = z.enum([
+  "single_phase",
+  "multi_phase",
+  "end_to_end_delivery"
+]).default("single_phase");
+
 export const ExecutionModeSchema = z.preprocess((value) => {
   if (value === "codex_only" || value === "manual") {
     return "supervised";
   }
 
+  if (value === "unified_autonomous") {
+    return "end_to_end_autonomous";
+  }
+
   return value;
-}, z.enum(["supervised", "autonomous", "unified_autonomous"]).default("supervised"));
+}, z.enum(["supervised", "autonomous", "end_to_end_autonomous"]).default("supervised"));
 
 export const ProjectSpecSchema = z.object({
   projectName: NonEmptyStringSchema,
@@ -27,7 +44,9 @@ export const ProjectSpecSchema = z.object({
   mvpScope: z.array(NonEmptyStringSchema).default([]),
   forbiddenItems: z.array(NonEmptyStringSchema).default([]),
   techStackPreferences: z.array(NonEmptyStringSchema).default([]),
-  targetAdapterType: z.literal("codex"),
+  targetAdapterType: AgentAdapterIdSchema.default("codex"),
+  selectedAdapterIds: z.array(AgentAdapterIdSchema).min(1).default(["codex"]),
+  executionScope: ExecutionScopeSchema,
   executionMode: ExecutionModeSchema,
   testingRequirements: z.array(NonEmptyStringSchema).default([]),
   deliveryRequirements: z.array(NonEmptyStringSchema).default([]),
@@ -105,7 +124,8 @@ export const FileEntrySchema = z.object({
 });
 
 export const AgentAdapterSchema = z.object({
-  adapterType: z.literal("codex"),
+  adapterType: z.enum(["codex", "multi_target"]),
+  selectedAdapterIds: z.array(AgentAdapterIdSchema).min(1).default(["codex"]),
   files: z.array(FileEntrySchema).min(1)
 });
 
@@ -120,6 +140,8 @@ export const GeneratedPackSchema = z.object({
 });
 
 export type ProjectSpec = z.infer<typeof ProjectSpecSchema>;
+export type AgentAdapterId = z.infer<typeof AgentAdapterIdSchema>;
+export type ExecutionScope = z.infer<typeof ExecutionScopeSchema>;
 export type TaskItem = z.infer<typeof TaskItemSchema>;
 export type TaskQueue = z.infer<typeof TaskQueueSchema>;
 export type RuntimePolicy = z.infer<typeof RuntimePolicySchema>;

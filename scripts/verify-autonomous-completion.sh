@@ -13,7 +13,7 @@ esac
 REPORT_DIR="codex_runs"
 mkdir -p "$REPORT_DIR"
 REPORT_PATH="$REPORT_DIR/verify-autonomous-completion-$TARGET_VERSION.md"
-KNOWN_ISSUES_PATH="V0.2.2_KNOWN_ISSUES.md"
+KNOWN_ISSUES_PATH="V0.3.0_KNOWN_ISSUES.md"
 RESULT_LINES=()
 FAILURES=()
 
@@ -63,10 +63,10 @@ for path in \
   IMPLEMENTATION_REPORT.md \
   RELEASE_NOTES.md \
   FINAL_DELIVERY_CHECK.md \
-  V0.2.2_IMPLEMENTATION_REPORT.md \
-  V0.2.2_RELEASE_NOTES.md \
-  V0.2.2_FINAL_DELIVERY_CHECK.md \
-  V0.2.2_KNOWN_ISSUES.md; do
+  V0.3.0_IMPLEMENTATION_REPORT.md \
+  V0.3.0_RELEASE_NOTES.md \
+  V0.3.0_FINAL_DELIVERY_CHECK.md \
+  V0.3.0_KNOWN_ISSUES.md; do
   if [ -f "$path" ]; then
     add_result "final delivery document $path" "PASS" "exists"
   else
@@ -114,7 +114,9 @@ fi
 
 if [ "$FINAL_STATUS" = "FAIL" ]; then
   {
-    echo "# V0.2.2 Known Issues"
+    echo "# V0.3.0 Known Issues"
+    echo
+    echo "Release: End-to-End Autonomous Delivery"
     echo
     echo "Autonomous Completion Gate result: FAIL"
     echo

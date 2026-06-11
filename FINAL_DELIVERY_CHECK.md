@@ -1,4 +1,4 @@
-﻿# Final Delivery Check
+# Final Delivery Check
 
 - [x] Project runs locally
 - [x] Tests passed
@@ -6,19 +6,18 @@
 - [x] Backup generated
 - [x] Local Git tag created or already present
 - [x] Package artifact generated
-- [x] releases/v0.2.2/SHA256.txt generated
-- [x] releases/v0.2.2/RELEASE_MANIFEST.txt generated
+- [x] releases/v0.3.0/SHA256.txt generated
+- [x] releases/v0.3.0/RELEASE_MANIFEST.txt generated
 - [x] Generated execution pack includes docs/README.md and docs/RUN_APP.md
-- [x] Generated execution pack includes CODEX_AUTONOMOUS_PROMPT.md and CODEX_AUTONOMOUS_RUNBOOK.md
-- [x] Generated execution pack includes supervised and autonomous Codex launch scripts
-- [x] Generated execution pack includes CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md
-- [x] Generated execution pack includes run-codex-unified-autonomous.ps1 and run-codex-unified-autonomous.sh
-- [x] Generated execution pack includes runtime/SAFE_COMMANDS.md, runtime/DENIED_COMMANDS.md, and runtime/AUTONOMOUS_EXECUTION_POLICY.md
-- [x] Generated execution pack includes runtime/AUTONOMOUS_RUN_STATUS.md, runtime/AUTONOMOUS_RUN_SUMMARY.md, and runtime/AUTONOMOUS_HEALTH_CHECK.md
-- [x] Generated execution pack includes runtime/AUTONOMOUS_COMPLETION_GATE.md and runtime/AUTONOMOUS_VERIFICATION_REPORT.md
-- [x] Generated execution pack includes CODEX_COMPLETION_GATE_RUNBOOK.md
+- [x] Generated execution pack includes EXECUTION_PACK_MANIFEST.md
+- [x] Generated execution pack includes common/AUTONOMOUS_DELIVERY_ROADMAP.md, common/VERSION_LADDER.md, common/PHASE_GATE_PLAN.md, and common/CURRENT_PHASE.md
+- [x] Generated execution pack includes runtime/END_TO_END_AUTONOMOUS_POLICY.md, runtime/RUN_STATE.json, runtime/CURRENT_TASK.md, runtime/PHASE_GATE_REPORT.md, runtime/COMPLETION_GATE_REPORT.md, runtime/MORNING_REPORT.md, and runtime/HANDOFF_TO_NEXT_VERSION.md
+- [x] Generated execution pack includes Agent Adapter Registry outputs for Codex, Claude Code, Trae, and Cursor
+- [x] Generated execution pack includes Codex End-to-End Autonomous files
 - [x] Source verification scripts include verify-autonomous-completion.ps1 and verify-autonomous-completion.sh
 - [x] Source release ZIP is documented separately from the generated execution-pack ZIP
-- [x] Generated execution-pack sample is published at releases/v0.2.2/samples/todo-api-generated-execution-pack.zip
+- [x] Generated execution-pack sample is published at releases/v0.3.0/samples/todo-api-generated-execution-pack.zip
+- [x] Agent Adapter Registry implemented
+- [x] End-to-End Autonomous Delivery implemented
 - [x] Autonomous Completion Gate required before reporting success
 - [x] No mixed-agent development used

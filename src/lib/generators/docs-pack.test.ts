@@ -104,12 +104,14 @@ describe("generateDocsPack", () => {
     expect(security).toContain("Autonomous Mode");
   });
 
-  it("documents v0.2.2 completion gate delivery behavior", () => {
+  it("documents v0.3.0 end-to-end multi-adapter delivery behavior", () => {
     const projectSpec = createProjectSpec(
       {
         projectName: "Tiny Planner",
         rawDiscussion: "Build a local MVP for planning coding tasks.",
-        executionMode: "unified_autonomous"
+        selectedAdapterIds: ["codex", "claude-code", "trae", "cursor"],
+        executionScope: "end_to_end_delivery",
+        executionMode: "end_to_end_autonomous"
       },
       { now: fixedNow }
     );
@@ -126,11 +128,16 @@ describe("generateDocsPack", () => {
     const nextSteps = findFile(docsPack.files, "docs/NEXT_STEPS.md");
 
     for (const content of [readme, implementationReport, releaseNotes, nextSteps]) {
-      expect(content).toContain("v0.2.2");
+      expect(content).toContain("v0.3.0");
       expect(content).toContain("Autonomous Completion Gate");
+      expect(content).toContain("End-to-End");
+      expect(content).toContain("Codex");
+      expect(content).toContain("Claude Code");
+      expect(content).toContain("Trae");
+      expect(content).toContain("Cursor");
     }
-    expect(releaseNotes).toContain("completion-gate runbook");
-    expect(nextSteps).toContain("AUTONOMOUS_VERIFICATION_REPORT.md");
+    expect(releaseNotes).toContain("Agent Adapter Registry");
+    expect(nextSteps).toContain("RUN_STATE.json");
   });
 
   it("uses the standardized forbidden items wording", () => {

@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-echo "[finalize] AIMart Orchestrator v0.2.2 finalization started"
+echo "[finalize] AIMart Orchestrator v0.3.0 finalization started"
 
 ./scripts/preflight.sh
 ./scripts/backup.sh
@@ -16,7 +16,7 @@ cat > IMPLEMENTATION_REPORT.md <<'EOF'
 
 ## Scope
 
-AIMart Orchestrator v0.2.2 implements the Autonomous Completion Gate and self-verification system for source releases and generated Codex execution packs.
+AIMart Orchestrator v0.3.0 implements End-to-End Autonomous Delivery and the Agent Adapter Registry for generated execution packs.
 
 ## Completed
 
@@ -27,11 +27,17 @@ AIMart Orchestrator v0.2.2 implements the Autonomous Completion Gate and self-ve
 - Local Web UI with ZIP download and ProjectSpec summary.
 - v0.2.0 supervised/autonomous execution mode selection remains available.
 - v0.2.1 unified autonomous execution mode selection.
+- v0.2.1 Unified Autonomous Visual Runner remains preserved.
 - Generated runtime AUTONOMOUS_RUN_STATUS, AUTONOMOUS_RUN_SUMMARY, and AUTONOMOUS_HEALTH_CHECK files.
 - Generated Codex unified autonomous runbook and PowerShell/Bash one-window runner scripts.
 - v0.2.2 completion-gate verification scripts for release, source ZIP, sample pack, history protection, and autonomous completion.
 - Generated runtime AUTONOMOUS_COMPLETION_GATE and AUTONOMOUS_VERIFICATION_REPORT files.
 - Generated Codex completion-gate runbook and unified runner PASS/FAIL behavior.
+- Agent Adapter Registry entries for Codex, Claude Code, Trae, and Cursor.
+- Multi-target independent adapter generation for selected adapters.
+- End-to-End Autonomous Delivery roadmap, version ladder, phase gate plan, runtime RUN_STATE.json, current task, phase gate, completion gate, morning report, and next-version handoff files.
+- Execution Pack Manifest with selected adapters, execution scope, execution mode, start instructions, completion gates, and high-risk command policy.
+- Web UI configuration for target AI adapters, execution scope, and execution mode.
 
 ## Verification
 
@@ -41,10 +47,11 @@ AIMart Orchestrator v0.2.2 implements the Autonomous Completion Gate and self-ve
 - pnpm build through scripts/test.ps1
 - Generated execution-pack ZIP structure verification
 - Autonomous Completion Gate verification through scripts/verify-autonomous-completion.ps1
+- Agent adapter directory and end-to-end runtime file verification
 
 ## Security
 
-Unified Autonomous Mode is bounded to workspace-write with approval never. Remote pushes, production deployment, cloud resource mutation, real database migration, frozen release modification, historical release deletion, and secret reads are not performed by default.
+End-to-End Autonomous Delivery is bounded to project-local execution and explicit high-risk command queues. Remote pushes, production deployment, cloud resource mutation, real database migration, frozen release modification, historical release deletion, and secret reads are not performed by default.
 EOF
 
 cat > FINAL_DELIVERY_CHECK.md <<'EOF'
@@ -56,8 +63,8 @@ cat > FINAL_DELIVERY_CHECK.md <<'EOF'
 - [x] Backup generated
 - [x] Local Git tag created or already present
 - [x] Package artifact generated
-- [x] releases/v0.2.2/SHA256.txt generated
-- [x] releases/v0.2.2/RELEASE_MANIFEST.txt generated
+- [x] releases/v0.3.0/SHA256.txt generated
+- [x] releases/v0.3.0/RELEASE_MANIFEST.txt generated
 - [x] Generated execution pack includes docs/README.md and docs/RUN_APP.md
 - [x] Generated execution pack includes CODEX_AUTONOMOUS_PROMPT.md and CODEX_AUTONOMOUS_RUNBOOK.md
 - [x] Generated execution pack includes supervised and autonomous Codex launch scripts
@@ -67,10 +74,17 @@ cat > FINAL_DELIVERY_CHECK.md <<'EOF'
 - [x] Generated execution pack includes runtime/AUTONOMOUS_RUN_STATUS.md, runtime/AUTONOMOUS_RUN_SUMMARY.md, and runtime/AUTONOMOUS_HEALTH_CHECK.md
 - [x] Generated execution pack includes runtime/AUTONOMOUS_COMPLETION_GATE.md and runtime/AUTONOMOUS_VERIFICATION_REPORT.md
 - [x] Generated execution pack includes CODEX_COMPLETION_GATE_RUNBOOK.md
+- [x] Generated execution pack includes EXECUTION_PACK_MANIFEST.md
+- [x] Generated execution pack includes common/AUTONOMOUS_DELIVERY_ROADMAP.md, common/VERSION_LADDER.md, common/PHASE_GATE_PLAN.md, and common/CURRENT_PHASE.md
+- [x] Generated execution pack includes runtime/END_TO_END_AUTONOMOUS_POLICY.md, runtime/RUN_STATE.json, runtime/CURRENT_TASK.md, runtime/PHASE_GATE_REPORT.md, runtime/COMPLETION_GATE_REPORT.md, runtime/MORNING_REPORT.md, and runtime/HANDOFF_TO_NEXT_VERSION.md
+- [x] Generated execution pack includes Agent Adapter Registry outputs for Codex, Claude Code, Trae, and Cursor
+- [x] Generated execution pack includes Codex End-to-End Autonomous files
 - [x] Source verification scripts include verify-autonomous-completion.ps1 and verify-autonomous-completion.sh
 - [x] Source release ZIP is documented separately from the generated execution-pack ZIP
-- [x] Generated execution-pack sample is published at releases/v0.2.2/samples/todo-api-generated-execution-pack.zip
+- [x] Generated execution-pack sample is published at releases/v0.3.0/samples/todo-api-generated-execution-pack.zip
 - [x] Autonomous Completion Gate required before reporting success
+- [x] Agent Adapter Registry implemented
+- [x] End-to-End Autonomous Delivery implemented
 - [x] No mixed-agent development used
 EOF
 
@@ -79,7 +93,7 @@ cat > RELEASE_NOTES.md <<'EOF'
 
 ## Scope
 
-AIMart Orchestrator v0.2.2 Autonomous Completion Gate release.
+AIMart Orchestrator v0.3.0 End-to-End Autonomous Delivery release.
 
 ## Included
 
@@ -87,21 +101,20 @@ AIMart Orchestrator v0.2.2 Autonomous Completion Gate release.
 - ProjectSpec and TaskQueue generation.
 - Runtime permission policy generation.
 - PowerShell/Bash script generation.
-- Codex target adapter generation.
+- Agent Adapter Registry and independent adapter generation.
 - Documentation generation.
 - ZIP packaging and download.
 - Test coverage for schemas, generators, scripts, adapter output, and ZIP output.
 
-## v0.2.2 Features
+## v0.3.0 Features
 
-- Added Autonomous Completion Gate verification scripts for source releases.
-- Added source ZIP verification for forbidden folders, old releases, .env files, and secret-like files.
-- Added sample execution-pack ZIP extraction and required-file verification.
-- Added SHA256 verification for source and sample ZIP artifacts.
-- Added historical release protection for v0.1.0, v0.1.1, and v0.2.1.
-- Added generated runtime AUTONOMOUS_COMPLETION_GATE and AUTONOMOUS_VERIFICATION_REPORT docs.
-- Added CODEX_COMPLETION_GATE_RUNBOOK.md.
-- Updated unified autonomous runners to display target version, branch, startup cleanliness, existing Codex process detection, release artifact status, log activity, stalled-log status, and Autonomous Completion Gate PASS/FAIL.
+- Added typed Agent Adapter Registry entries for Codex, Claude Code, Trae, and Cursor.
+- Added independent multi-target adapter generation with Codex as the strongest adapter.
+- Added Codex End-to-End Autonomous prompt, delivery runbook, and launch scripts.
+- Added End-to-End delivery roadmap, version ladder, phase gate plan, run state, current task, phase gate report, completion gate report, morning report, and next-version handoff files.
+- Added EXECUTION_PACK_MANIFEST.md.
+- Added Web UI controls for target AI adapters, execution scope, and execution mode.
+- Extended completion gates to verify selected adapter directories, runbooks, prompts, manifest, RUN_STATE.json, current task, phase reports, and completion reports.
 
 ## Notes
 
@@ -110,12 +123,14 @@ The source release ZIP remains documented separately from generated execution-pa
 Remote tag push, production deployment, real database migration, cloud resource mutation, frozen release modification, and secret reads are not performed by default.
 EOF
 
-cp IMPLEMENTATION_REPORT.md V0.2.2_IMPLEMENTATION_REPORT.md
-cp RELEASE_NOTES.md V0.2.2_RELEASE_NOTES.md
-cp FINAL_DELIVERY_CHECK.md V0.2.2_FINAL_DELIVERY_CHECK.md
-if [ ! -f V0.2.2_KNOWN_ISSUES.md ]; then
-  cat > V0.2.2_KNOWN_ISSUES.md <<'EOF'
-# V0.2.2 Known Issues
+cp IMPLEMENTATION_REPORT.md V0.3.0_IMPLEMENTATION_REPORT.md
+cp RELEASE_NOTES.md V0.3.0_RELEASE_NOTES.md
+cp FINAL_DELIVERY_CHECK.md V0.3.0_FINAL_DELIVERY_CHECK.md
+if [ ! -f V0.3.0_KNOWN_ISSUES.md ]; then
+  cat > V0.3.0_KNOWN_ISSUES.md <<'EOF'
+# V0.3.0 Known Issues
+
+Version: v0.3.0
 
 No known product-code P0 or P1 issues are recorded at implementation time.
 

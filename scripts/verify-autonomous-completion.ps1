@@ -18,7 +18,11 @@ if (-not $TargetVersion.StartsWith("v")) {
 $ReportDir = Join-Path $RootDir "codex_runs"
 New-Item -ItemType Directory -Force -Path $ReportDir | Out-Null
 $ReportPath = Join-Path $ReportDir "verify-autonomous-completion-$TargetVersion.md"
-$KnownIssuesPath = Join-Path $RootDir "V0.2.2_KNOWN_ISSUES.md"
+$KnownIssuesPath = Join-Path $RootDir "V0.3.0_KNOWN_ISSUES.md"
+# v0.3.0 adapter registry and end-to-end pack checks are enforced by verify-sample-pack.ps1:
+# EXECUTION_PACK_MANIFEST.md, agent_adapters/claude-code, agent_adapters/trae,
+# agent_adapters/cursor, runtime/RUN_STATE.json, runtime/CURRENT_TASK.md,
+# runtime/PHASE_GATE_REPORT.md, and runtime/COMPLETION_GATE_REPORT.md.
 
 $Results = New-Object System.Collections.Generic.List[object]
 
@@ -84,10 +88,10 @@ $FinalDocs = @(
   "IMPLEMENTATION_REPORT.md",
   "RELEASE_NOTES.md",
   "FINAL_DELIVERY_CHECK.md",
-  "V0.2.2_IMPLEMENTATION_REPORT.md",
-  "V0.2.2_RELEASE_NOTES.md",
-  "V0.2.2_FINAL_DELIVERY_CHECK.md",
-  "V0.2.2_KNOWN_ISSUES.md"
+  "V0.3.0_IMPLEMENTATION_REPORT.md",
+  "V0.3.0_RELEASE_NOTES.md",
+  "V0.3.0_FINAL_DELIVERY_CHECK.md",
+  "V0.3.0_KNOWN_ISSUES.md"
 )
 
 foreach ($Path in $FinalDocs) {
@@ -159,7 +163,9 @@ $ReportLines | Set-Content -Encoding UTF8 $ReportPath
 if ($FinalStatus -eq "FAIL") {
   $FailureText = ($Failures | ForEach-Object { "- $($_.Gate): $($_.Details)" }) -join [Environment]::NewLine
   @"
-# V0.2.2 Known Issues
+# V0.3.0 Known Issues
+
+Release: End-to-End Autonomous Delivery
 
 Autonomous Completion Gate result: FAIL
 

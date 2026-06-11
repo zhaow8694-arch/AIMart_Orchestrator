@@ -43,6 +43,13 @@ describe("generateRuntimePack", () => {
         "runtime/AUTONOMOUS_HEALTH_CHECK.md",
         "runtime/AUTONOMOUS_COMPLETION_GATE.md",
         "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
+        "runtime/END_TO_END_AUTONOMOUS_POLICY.md",
+        "runtime/RUN_STATE.json",
+        "runtime/CURRENT_TASK.md",
+        "runtime/PHASE_GATE_REPORT.md",
+        "runtime/COMPLETION_GATE_REPORT.md",
+        "runtime/MORNING_REPORT.md",
+        "runtime/HANDOFF_TO_NEXT_VERSION.md",
         "runtime/RUNTIME_STATUS.md",
         "runtime/ROLLBACK_PLAN.md"
       ])
@@ -219,6 +226,47 @@ describe("generateRuntimePack", () => {
     expect(verificationReport).toContain("PASS");
     expect(verificationReport).toContain("FAIL");
     expect(verificationReport).toContain("Gate");
+  });
+
+  it("generates end-to-end autonomous runtime state files with valid JSON state", () => {
+    const projectSpec = createProjectSpec(
+      {
+        projectName: "Tiny Planner",
+        rawDiscussion: "Build a local MVP for planning coding tasks.",
+        selectedAdapterIds: ["codex", "claude-code"],
+        executionScope: "end_to_end_delivery",
+        executionMode: "end_to_end_autonomous"
+      },
+      { now: fixedNow }
+    );
+
+    const runtimePack = generateRuntimePack(projectSpec);
+    const policy = findFile(
+      runtimePack.files,
+      "runtime/END_TO_END_AUTONOMOUS_POLICY.md"
+    );
+    const runState = findFile(runtimePack.files, "runtime/RUN_STATE.json");
+    const currentTask = findFile(runtimePack.files, "runtime/CURRENT_TASK.md");
+    const phaseGate = findFile(runtimePack.files, "runtime/PHASE_GATE_REPORT.md");
+    const completionGate = findFile(
+      runtimePack.files,
+      "runtime/COMPLETION_GATE_REPORT.md"
+    );
+    const handoff = findFile(runtimePack.files, "runtime/HANDOFF_TO_NEXT_VERSION.md");
+
+    expect(JSON.parse(runState)).toMatchObject({
+      projectName: "Tiny Planner",
+      executionScope: "end_to_end_delivery",
+      executionMode: "end_to_end_autonomous",
+      selectedAdapterIds: ["codex", "claude-code"],
+      currentPhase: "v0.0.1"
+    });
+    for (const content of [policy, currentTask, phaseGate, completionGate, handoff]) {
+      expect(content).toContain("End-to-End");
+      expect(content).toContain("Completion Gate");
+      expect(content).toContain("v0.0.1");
+      expect(content).toContain("v1.0");
+    }
   });
 });
 

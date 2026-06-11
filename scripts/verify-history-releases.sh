@@ -4,7 +4,7 @@ set -euo pipefail
 TARGET_VERSION="${1:-}"
 echo "[Autonomous Completion Gate] verify-history-releases TargetVersion=$TARGET_VERSION"
 
-frozen=("releases/v0.1.0" "releases/v0.1.1" "releases/v0.2.1")
+frozen=("releases/v0.1.0" "releases/v0.1.1" "releases/v0.2.1" "releases/v0.2.2")
 for path in "${frozen[@]}"; do
   if [ ! -d "$path" ]; then
     echo "Missing frozen historical release folder: $path" >&2
@@ -22,13 +22,13 @@ if [ -n "$(git diff --cached --name-only -- "${frozen[@]}")" ]; then
   exit 1
 fi
 
-if ! git tag --list v0.2.1 | grep -q '^v0.2.1$'; then
-  echo "Required historical tag v0.2.1 is missing" >&2
+if ! git tag --list v0.2.2 | grep -q '^v0.2.2$'; then
+  echo "Required historical tag v0.2.2 is missing" >&2
   exit 1
 fi
 
-if [ -n "$(git diff --name-only v0.2.1 HEAD -- "${frozen[@]}")" ]; then
-  echo "Historical releases changed since v0.2.1" >&2
+if [ -n "$(git diff --name-only v0.2.2 HEAD -- "${frozen[@]}")" ]; then
+  echo "Historical releases changed since v0.2.2" >&2
   exit 1
 fi
 

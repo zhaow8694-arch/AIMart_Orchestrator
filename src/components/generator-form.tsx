@@ -12,10 +12,14 @@ type FormState = {
   testingRequirements: string;
   deliveryRequirements: string;
   securityBoundaries: string;
+  selectedAdapterIds: AdapterId[];
+  executionScope: ExecutionScope;
   executionMode: ExecutionMode;
 };
 
-type ExecutionMode = "supervised" | "autonomous" | "unified_autonomous";
+type AdapterId = "codex" | "claude-code" | "trae" | "cursor";
+type ExecutionScope = "single_phase" | "multi_phase" | "end_to_end_delivery";
+type ExecutionMode = "supervised" | "autonomous" | "end_to_end_autonomous";
 
 type GenerateResponse = {
   fileName: string;
@@ -26,6 +30,8 @@ type GenerateResponse = {
     explicitRequirements: string[];
     inferredAssumptions: string[];
     openQuestions: string[];
+    selectedAdapterIds: AdapterId[];
+    executionScope: string;
     executionMode: string;
   };
   error?: string;
@@ -79,6 +85,8 @@ const initialFormState: FormState = {
   testingRequirements: "Core modules must have tests",
   deliveryRequirements: "ZIP delivery",
   securityBoundaries: "Do not read .env, SSH keys, or production credentials",
+  selectedAdapterIds: ["codex"],
+  executionScope: "single_phase",
   executionMode: "supervised"
 };
 
@@ -201,12 +209,22 @@ export function GeneratorForm() {
           value={formState.securityBoundaries}
           onChange={(value) => updateField("securityBoundaries", value)}
         />
+        <AdapterSelector
+          value={formState.selectedAdapterIds}
+          onChange={(value) => updateField("selectedAdapterIds", value)}
+        />
+        <ScopeSelector
+          value={formState.executionScope}
+          onChange={(value) => updateField("executionScope", value)}
+        />
         <ModeSelector
           value={formState.executionMode}
           onChange={(value) => updateField("executionMode", value)}
         />
         <p className="zip-note">
           This creates a generated execution-pack ZIP for the target project, not a source release ZIP of AIMart Orchestrator.
+          Selecting multiple adapters means generating multiple independent execution options; it does not run multiple agents together.
+          Choose one adapter when executing against a workspace.
         </p>
         <button
           aria-busy={displayState.buttonAriaBusy}
@@ -237,6 +255,12 @@ export function GeneratorForm() {
               title="Open Questions"
               items={displayState.summary.openQuestions}
             />
+            <p className="summary-mode">
+              Target adapters: {displayState.summary.selectedAdapterIds.join(", ")}
+            </p>
+            <p className="summary-mode">
+              Execution scope: {displayState.summary.executionScope}
+            </p>
             <p className="summary-mode">
               Execution mode: {displayState.summary.executionMode}
             </p>
@@ -311,6 +335,96 @@ function TextArea({
   );
 }
 
+function AdapterSelector({
+  value,
+  onChange
+}: {
+  value: AdapterId[];
+  onChange: (value: AdapterId[]) => void;
+}) {
+  const adapters: Array<{ id: AdapterId; label: string }> = [
+    { id: "codex", label: "Codex" },
+    { id: "claude-code", label: "Claude Code" },
+    { id: "trae", label: "Trae" },
+    { id: "cursor", label: "Cursor" }
+  ];
+
+  function toggle(id: AdapterId) {
+    if (value.includes(id)) {
+      const next = value.filter((item) => item !== id);
+      onChange(next.length > 0 ? next : ["codex"]);
+      return;
+    }
+
+    onChange([...value, id]);
+  }
+
+  return (
+    <fieldset className="mode-select">
+      <legend>Target AI adapters</legend>
+      {adapters.map((adapter) => (
+        <label key={adapter.id}>
+          <input
+            checked={value.includes(adapter.id)}
+            name="selectedAdapterIds"
+            type="checkbox"
+            value={adapter.id}
+            onChange={() => toggle(adapter.id)}
+          />
+          <span>{adapter.label}</span>
+        </label>
+      ))}
+      <small>
+        Multiple selections generate multiple independent execution options and do not run multiple agents together.
+      </small>
+    </fieldset>
+  );
+}
+
+function ScopeSelector({
+  value,
+  onChange
+}: {
+  value: ExecutionScope;
+  onChange: (value: ExecutionScope) => void;
+}) {
+  return (
+    <fieldset className="mode-select">
+      <legend>Execution scope</legend>
+      <label>
+        <input
+          checked={value === "single_phase"}
+          name="executionScope"
+          type="radio"
+          value="single_phase"
+          onChange={() => onChange("single_phase")}
+        />
+        <span>Single Phase</span>
+      </label>
+      <label>
+        <input
+          checked={value === "multi_phase"}
+          name="executionScope"
+          type="radio"
+          value="multi_phase"
+          onChange={() => onChange("multi_phase")}
+        />
+        <span>Multi Phase</span>
+      </label>
+      <label>
+        <input
+          checked={value === "end_to_end_delivery"}
+          name="executionScope"
+          type="radio"
+          value="end_to_end_delivery"
+          onChange={() => onChange("end_to_end_delivery")}
+        />
+        <span>End-to-End Delivery</span>
+      </label>
+    </fieldset>
+  );
+}
+
 function ModeSelector({
   value,
   onChange
@@ -343,14 +457,14 @@ function ModeSelector({
       </label>
       <label>
         <input
-          checked={value === "unified_autonomous"}
+          checked={value === "end_to_end_autonomous"}
           name="executionMode"
           type="radio"
-          value="unified_autonomous"
-          onChange={() => onChange("unified_autonomous")}
+          value="end_to_end_autonomous"
+          onChange={() => onChange("end_to_end_autonomous")}
         />
-        <span>Unified Autonomous Mode</span>
-        <small>Includes one-window status display.</small>
+        <span>End-to-End Autonomous</span>
+        <small>Includes phase gates, one-window status files, and final PASS/FAIL reporting.</small>
       </label>
     </fieldset>
   );

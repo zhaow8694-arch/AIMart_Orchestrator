@@ -101,7 +101,8 @@ export function generateRuntimePack(projectSpec: ProjectSpec): RuntimePack {
       "git push --tags",
       "Remove-Item releases/v0.1.0",
       "Remove-Item releases/v0.1.1",
-      "Remove-Item releases/v0.2.1"
+      "Remove-Item releases/v0.2.1",
+      "Remove-Item releases/v0.2.2"
     ]
   });
 
@@ -193,6 +194,34 @@ export function generateRuntimePack(projectSpec: ProjectSpec): RuntimePack {
     {
       path: "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
       content: renderAutonomousVerificationReport(projectSpec)
+    },
+    {
+      path: "runtime/END_TO_END_AUTONOMOUS_POLICY.md",
+      content: renderEndToEndAutonomousPolicy(projectSpec)
+    },
+    {
+      path: "runtime/RUN_STATE.json",
+      content: renderRunState(projectSpec)
+    },
+    {
+      path: "runtime/CURRENT_TASK.md",
+      content: renderCurrentTask(projectSpec)
+    },
+    {
+      path: "runtime/PHASE_GATE_REPORT.md",
+      content: renderPhaseGateReport(projectSpec)
+    },
+    {
+      path: "runtime/COMPLETION_GATE_REPORT.md",
+      content: renderCompletionGateReport(projectSpec)
+    },
+    {
+      path: "runtime/MORNING_REPORT.md",
+      content: renderMorningReport(projectSpec)
+    },
+    {
+      path: "runtime/HANDOFF_TO_NEXT_VERSION.md",
+      content: renderHandoffToNextVersion(projectSpec)
     },
     {
       path: "runtime/RUNTIME_STATUS.md",
@@ -428,6 +457,12 @@ The autonomous runner must not report success until this gate passes.
 - Confirm SHA256 values match the actual source ZIP and sample execution-pack ZIP hashes.
 - Confirm the source ZIP excludes node_modules, .next, .git, codex_runs, temporary verification directories, old releases, .env files, and secret files.
 - Confirm the sample execution-pack ZIP contains required common, runtime, scripts, Codex adapter, and docs files.
+- Confirm selected adapter directories exist.
+- Confirm each selected adapter has a runbook and task prompt or rules prompt.
+- Confirm EXECUTION_PACK_MANIFEST.md exists.
+- Confirm runtime/RUN_STATE.json exists and is valid JSON.
+- Confirm runtime/CURRENT_TASK.md exists.
+- Confirm runtime/PHASE_GATE_REPORT.md and runtime/COMPLETION_GATE_REPORT.md exist or are initialized.
 - Confirm historical release folders are not modified.
 - Confirm final delivery documents exist.
 - Report git status.
@@ -457,6 +492,151 @@ Project: ${projectSpec.projectName}
 | local tag | pending | Target version tag must point to final commit. |
 
 Final result: pending
+`;
+}
+
+function renderEndToEndAutonomousPolicy(projectSpec: ProjectSpec): string {
+  return `# End-to-End Autonomous Policy
+
+Project: ${projectSpec.projectName}
+Execution scope: ${projectSpec.executionScope}
+Execution mode: ${projectSpec.executionMode}
+
+## Purpose
+
+End-to-End Autonomous Delivery lets one selected AI agent continue from v0.0.1 discovery/spec to v1.0 final usable delivery without repeated human prompting for ordinary safe work.
+
+## Rules
+
+1. Choose one adapter for one workspace.
+2. Do not run multiple agents against the same workspace unless a human manually coordinates ownership.
+3. Follow common/AUTONOMOUS_DELIVERY_ROADMAP.md and common/PHASE_GATE_PLAN.md.
+4. Update runtime/RUN_STATE.json and runtime/CURRENT_TASK.md before and after each task.
+5. Run a Completion Gate at every phase boundary.
+6. Record PASS or FAIL in runtime/COMPLETION_GATE_REPORT.md.
+7. Queue high-risk commands in runtime/APPROVAL_QUEUE.md and continue safe independent work.
+8. Do not read secrets, deploy production, run real database migrations, or create/delete cloud resources.
+
+## Version Ladder
+
+- v0.0.1 discovery/spec
+- v0.1.0 MVP implementation
+- v0.2.x autonomous runtime and completion gates
+- v0.3.x multi-agent independent adapters
+- v0.4.x runner hardening
+- v0.5.x delivery automation
+- v1.0 final usable delivery
+`;
+}
+
+function renderRunState(projectSpec: ProjectSpec): string {
+  return `${JSON.stringify(
+    {
+      projectName: projectSpec.projectName,
+      executionScope: projectSpec.executionScope,
+      executionMode: projectSpec.executionMode,
+      selectedAdapterIds: projectSpec.selectedAdapterIds,
+      currentPhase: "v0.0.1",
+      currentTaskId: "TASK-001",
+      phaseGateStatus: "pending",
+      completionGateStatus: "pending",
+      finalResult: "pending",
+      updatedAt: projectSpec.createdAt
+    },
+    null,
+    2
+  )}
+`;
+}
+
+function renderCurrentTask(projectSpec: ProjectSpec): string {
+  return `# Current Task
+
+Project: ${projectSpec.projectName}
+
+End-to-End current phase: v0.0.1 discovery/spec
+
+Current task: TASK-001
+
+Version ladder target: v1.0 final usable delivery.
+
+## Completion Gate
+
+Before advancing, update runtime/COMPLETION_GATE_REPORT.md with PASS or FAIL.
+`;
+}
+
+function renderPhaseGateReport(projectSpec: ProjectSpec): string {
+  return `# Phase Gate Report
+
+Project: ${projectSpec.projectName}
+
+End-to-End phase: v0.0.1 discovery/spec
+
+| Phase | Status | Completion Gate | Notes |
+|---|---|---|---|
+| v0.0.1 | pending | pending | Initialize ProjectSpec and task queue. |
+| v0.1.0 | pending | pending | MVP implementation. |
+| v0.2.x | pending | pending | Autonomous runtime and completion gates. |
+| v0.3.x | pending | pending | Multi-agent independent adapters. |
+| v0.4.x | pending | pending | Runner hardening. |
+| v0.5.x | pending | pending | Delivery automation. |
+| v1.0 | pending | pending | Final usable delivery. |
+`;
+}
+
+function renderCompletionGateReport(projectSpec: ProjectSpec): string {
+  return `# Completion Gate Report
+
+Project: ${projectSpec.projectName}
+
+End-to-End current phase: v0.0.1 discovery/spec
+
+Version ladder target: v1.0 final usable delivery.
+
+| Gate | Status | Notes |
+|---|---|---|
+| Project scope | pending | Confirm ProjectSpec scope. |
+| Tests | pending | Run required checks for the phase. |
+| Adapter files | pending | Verify selected adapters. |
+| Runtime state | pending | Validate RUN_STATE.json. |
+| Final result | pending | PASS or FAIL only. |
+
+Final result: pending
+`;
+}
+
+function renderMorningReport(projectSpec: ProjectSpec): string {
+  return `# Morning Report
+
+Project: ${projectSpec.projectName}
+
+End-to-End autonomous status is pending.
+
+## Today
+
+- Current phase: v0.0.1 discovery/spec
+- Current task: TASK-001
+- Completion Gate: pending
+- Final result: pending
+`;
+}
+
+function renderHandoffToNextVersion(projectSpec: ProjectSpec): string {
+  return `# Handoff To Next Version
+
+Project: ${projectSpec.projectName}
+
+End-to-End handoff starts at v0.0.1 and advances only after a Completion Gate PASS.
+
+Version ladder target: v1.0 final usable delivery.
+
+## Next Version
+
+- Current phase: v0.0.1 discovery/spec
+- Next phase after PASS: v0.1.0 MVP implementation
+- Required report: runtime/COMPLETION_GATE_REPORT.md
+- Required status: PASS or FAIL
 `;
 }
 
