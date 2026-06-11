@@ -43,6 +43,10 @@ describe("generateScriptPack", () => {
         "scripts/verify-history-releases.sh",
         "scripts/verify-autonomous-completion.ps1",
         "scripts/verify-autonomous-completion.sh",
+        "scripts/run-customer-autonomous.ps1",
+        "scripts/run-customer-autonomous.sh",
+        "scripts/verify-customer-delivery.ps1",
+        "scripts/verify-customer-delivery.sh",
         "scripts/finalize.ps1",
         "scripts/finalize.sh"
       ])
@@ -152,6 +156,13 @@ describe("generateScriptPack", () => {
 
     expect(samplePs1).toContain("CODEX_COMPLETION_GATE_RUNBOOK.md");
     expect(samplePs1).toContain("EXECUTION_PACK_MANIFEST.md");
+    expect(samplePs1).toContain("START_HERE.md");
+    expect(samplePs1).toContain("START_CODEX_AUTONOMOUS.ps1");
+    expect(samplePs1).toContain("START_CODEX_AUTONOMOUS.cmd");
+    expect(samplePs1).toContain("runtime/FULL_LIFECYCLE_RUN_STATE.json");
+    expect(samplePs1).toContain("runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md");
+    expect(samplePs1).toContain("scripts/run-customer-autonomous.ps1");
+    expect(samplePs1).toContain("scripts/verify-customer-delivery.ps1");
     expect(samplePs1).toContain("CLAUDE_TASK_PROMPT.md");
     expect(samplePs1).toContain("TRAE_TASK_PROMPT.md");
     expect(samplePs1).toContain("CURSOR_TASK_PROMPT.md");
@@ -161,6 +172,59 @@ describe("generateScriptPack", () => {
     expect(sourcePs1).toContain("SHA256");
     expect(historyPs1).toContain("v0.1.0");
     expect(historyPs1).toContain("v0.2.1");
+  });
+
+  it("generates customer one-window runtime runner and delivery verifier scripts", () => {
+    const projectSpec = createProjectSpec(
+      {
+        projectName: "Tiny Planner",
+        rawDiscussion: "Build a local MVP for planning coding tasks.",
+        selectedAdapterIds: ["codex"],
+        executionScope: "end_to_end_delivery",
+        executionMode: "end_to_end_autonomous"
+      },
+      { now: fixedNow }
+    );
+
+    const scriptPack = generateScriptPack(projectSpec);
+    const runnerPs1 = findFile(scriptPack.files, "scripts/run-customer-autonomous.ps1");
+    const runnerSh = findFile(scriptPack.files, "scripts/run-customer-autonomous.sh");
+    const verifyPs1 = findFile(
+      scriptPack.files,
+      "scripts/verify-customer-delivery.ps1"
+    );
+    const verifySh = findFile(
+      scriptPack.files,
+      "scripts/verify-customer-delivery.sh"
+    );
+
+    for (const content of [runnerPs1, runnerSh]) {
+      expect(content).toContain("project name");
+      expect(content).toContain("selected AI adapter");
+      expect(content).toContain("current lifecycle phase");
+      expect(content).toContain("current target version");
+      expect(content).toContain("current task");
+      expect(content).toContain("log updated time");
+      expect(content).toContain("release output status");
+      expect(content).toContain("completion gate status");
+      expect(content).toContain("blocked/known issue status");
+      expect(content).toContain("final PASS or FAIL summary");
+      expect(content).toContain("FULL_LIFECYCLE_RUN_STATE.json");
+      expect(content).toContain("verify-customer-delivery");
+    }
+
+    for (const content of [verifyPs1, verifySh]) {
+      expect(content).toContain("generated project files");
+      expect(content).toContain("generated docs");
+      expect(content).toContain("tests/build instructions");
+      expect(content).toContain("final artifact instructions");
+      expect(content).toContain("BLOCKERS.md has no open P0/P1 blockers");
+      expect(content).toContain("KNOWN_ISSUES has no P0/P1 blockers");
+      expect(content).toContain("lifecycle state files are present and coherent");
+      expect(content).toContain("selected adapter runbook exists");
+      expect(content).toContain("completion gate report exists");
+      expect(content).toContain("CUSTOMER_RUNTIME_VALIDATION_REPORT.md");
+    }
   });
 });
 

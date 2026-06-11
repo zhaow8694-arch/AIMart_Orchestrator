@@ -130,8 +130,11 @@ describe("source release scripts and delivery docs", () => {
       expect(content).toContain("verify-source-zip");
       expect(content).toContain("verify-sample-pack");
       expect(content).toContain("verify-history-releases");
-      expect(content).toContain("V0.3.0_KNOWN_ISSUES.md");
+      expect(content).toContain("V0.3.1_KNOWN_ISSUES.md");
       expect(content).toContain("git status");
+      expect(content).toContain("git show --no-patch --oneline");
+      expect(content).toContain("git log --oneline -5");
+      expect(content).toContain("final git status is clean");
       expect(content).toContain("TargetVersion");
     }
   });
@@ -202,5 +205,60 @@ describe("source release scripts and delivery docs", () => {
     expect(finalCheck).toContain("Agent Adapter Registry");
     expect(finalCheck).toContain("EXECUTION_PACK_MANIFEST.md");
     expect(finalCheck).toContain("todo-api-generated-execution-pack.zip");
+  });
+
+  it("includes v0.3.1 delivery documents and customer runtime validation release automation", () => {
+    const implementationReport = readProjectFile("V0.3.1_IMPLEMENTATION_REPORT.md");
+    const releaseNotes = readProjectFile("V0.3.1_RELEASE_NOTES.md");
+    const finalCheck = readProjectFile("V0.3.1_FINAL_DELIVERY_CHECK.md");
+    const knownIssues = readProjectFile("V0.3.1_KNOWN_ISSUES.md");
+    const packagePs1 = readProjectFile("scripts/package.ps1");
+    const packageSh = readProjectFile("scripts/package.sh");
+    const verifySamplePs1 = readProjectFile("scripts/verify-sample-pack.ps1");
+    const gatePs1 = readProjectFile("scripts/verify-autonomous-completion.ps1");
+
+    for (const content of [
+      implementationReport,
+      releaseNotes,
+      finalCheck,
+      knownIssues
+    ]) {
+      expect(content).toContain("v0.3.1");
+      expect(content).toContain("Auto-Verified Customer Pack Runtime Validation");
+    }
+
+    expect(packagePs1).toContain("releases/v$Version/dogfood");
+    expect(packageSh).toContain("releases/v$VERSION/dogfood");
+    for (const content of [packagePs1, packageSh]) {
+      expect(content).toContain("DOGFOOD_CUSTOMER_RUNTIME_VALIDATION.md");
+      expect(content).toContain("START_CODEX_AUTONOMOUS.ps1");
+      expect(content).toContain("runtime/FULL_LIFECYCLE_RUN_STATE.json");
+      expect(content).toContain("scripts/verify-customer-delivery.ps1");
+      expect(content).toContain("customer runtime validation evidence");
+      expect(content).toContain("agent_adapters/claude-code/CLAUDE_RUNBOOK.md");
+      expect(content).toContain("agent_adapters/claude-code/CLAUDE_AUTONOMOUS_PROMPT.md");
+      expect(content).toContain(
+        "agent_adapters/claude-code/CLAUDE_END_TO_END_DELIVERY_RUNBOOK.md"
+      );
+      expect(content).toContain("agent_adapters/trae/TRAE_AUTONOMOUS_PROMPT.md");
+      expect(content).toContain(
+        "agent_adapters/trae/TRAE_END_TO_END_DELIVERY_RUNBOOK.md"
+      );
+      expect(content).toContain("agent_adapters/cursor/CURSOR_AUTONOMOUS_RULES.md");
+      expect(content).toContain(
+        "agent_adapters/cursor/CURSOR_END_TO_END_DELIVERY_RUNBOOK.md"
+      );
+    }
+
+    expect(verifySamplePs1).toContain("START_HERE.md");
+    expect(verifySamplePs1).toContain("START_CODEX_AUTONOMOUS.cmd");
+    expect(verifySamplePs1).toContain("scripts/run-customer-autonomous.ps1");
+    expect(verifySamplePs1).toContain("runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md");
+    expect(gatePs1).toContain("V0.3.1_IMPLEMENTATION_REPORT.md");
+    expect(gatePs1).toContain("V0.3.1_RELEASE_NOTES.md");
+    expect(gatePs1).toContain("V0.3.1_FINAL_DELIVERY_CHECK.md");
+    expect(gatePs1).toContain("V0.3.1_KNOWN_ISSUES.md");
+    expect(gatePs1).toContain("FINAL_DELIVERY_CHECK contains PASS/no FAIL state");
+    expect(gatePs1).toContain("KNOWN_ISSUES has no P0/P1 blocker");
   });
 });

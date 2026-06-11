@@ -23,6 +23,11 @@ describe("execution pack packager", () => {
     expect(GeneratedPackSchema.parse(pack)).toEqual(pack);
     expect(pack.files.map((file) => file.path)).toEqual(
       expect.arrayContaining([
+        "START_HERE.md",
+        "START_CODEX_AUTONOMOUS.cmd",
+        "START_CODEX_AUTONOMOUS.ps1",
+        "START_CODEX_SUPERVISED.cmd",
+        "START_CODEX_SUPERVISED.ps1",
         "common/PROJECT_SPEC.md",
         "common/TASK_QUEUE.md",
         "common/EXECUTION_RULES.md",
@@ -42,11 +47,22 @@ describe("execution pack packager", () => {
         "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
         "runtime/END_TO_END_AUTONOMOUS_POLICY.md",
         "runtime/RUN_STATE.json",
+        "runtime/FULL_LIFECYCLE_RUN_STATE.json",
+        "runtime/VERSION_LADDER.json",
+        "runtime/PHASE_STATUS.json",
         "runtime/CURRENT_TASK.md",
+        "runtime/CURRENT_PHASE.md",
+        "runtime/NEXT_ACTION.md",
         "runtime/PHASE_GATE_REPORT.md",
         "runtime/COMPLETION_GATE_REPORT.md",
+        "runtime/FINAL_DELIVERY_STATUS.md",
+        "runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md",
         "runtime/MORNING_REPORT.md",
         "runtime/HANDOFF_TO_NEXT_VERSION.md",
+        "scripts/run-customer-autonomous.ps1",
+        "scripts/run-customer-autonomous.sh",
+        "scripts/verify-customer-delivery.ps1",
+        "scripts/verify-customer-delivery.sh",
         "scripts/finalize.ps1",
         "scripts/finalize.sh",
         "scripts/verify-autonomous-completion.ps1",
@@ -95,6 +111,11 @@ describe("execution pack packager", () => {
     );
 
     expect(readCentralDirectoryNames(zipBuffer)).toEqual([
+      "START_HERE.md",
+      "START_CODEX_AUTONOMOUS.cmd",
+      "START_CODEX_AUTONOMOUS.ps1",
+      "START_CODEX_SUPERVISED.cmd",
+      "START_CODEX_SUPERVISED.ps1",
       "EXECUTION_PACK_MANIFEST.md",
       "common/PROJECT_SPEC.md",
       "common/TASK_QUEUE.md",
@@ -107,6 +128,7 @@ describe("execution pack packager", () => {
       "common/FINAL_DELIVERY_CHECK.md",
       "common/ASSUMPTIONS.md",
       "common/BLOCKERS.md",
+      "common/KNOWN_ISSUES.md",
       "common/PROGRESS_LOG.md",
       "common/HANDOFF.md",
       "runtime/TOOLCHAIN_MANIFEST.yaml",
@@ -124,9 +146,16 @@ describe("execution pack packager", () => {
       "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
       "runtime/END_TO_END_AUTONOMOUS_POLICY.md",
       "runtime/RUN_STATE.json",
+      "runtime/FULL_LIFECYCLE_RUN_STATE.json",
+      "runtime/VERSION_LADDER.json",
+      "runtime/PHASE_STATUS.json",
       "runtime/CURRENT_TASK.md",
+      "runtime/CURRENT_PHASE.md",
+      "runtime/NEXT_ACTION.md",
       "runtime/PHASE_GATE_REPORT.md",
       "runtime/COMPLETION_GATE_REPORT.md",
+      "runtime/FINAL_DELIVERY_STATUS.md",
+      "runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md",
       "runtime/MORNING_REPORT.md",
       "runtime/HANDOFF_TO_NEXT_VERSION.md",
       "runtime/RUNTIME_STATUS.md",
@@ -155,6 +184,10 @@ describe("execution pack packager", () => {
       "scripts/verify-history-releases.sh",
       "scripts/verify-autonomous-completion.ps1",
       "scripts/verify-autonomous-completion.sh",
+      "scripts/run-customer-autonomous.ps1",
+      "scripts/run-customer-autonomous.sh",
+      "scripts/verify-customer-delivery.ps1",
+      "scripts/verify-customer-delivery.sh",
       "scripts/finalize.ps1",
       "scripts/finalize.sh",
       "agent_adapters/codex/AGENTS.md",
@@ -278,6 +311,32 @@ describe("execution pack packager", () => {
     expect(roadmap).toContain("v0.0.1");
     expect(roadmap).toContain("v1.0");
     expect(roadmap).toContain("Assumptions");
+  });
+
+  it("generates customer root entry files wired to customer-side runners", () => {
+    const pack = createExecutionPack(
+      {
+        projectName: "Customer Runtime Pack",
+        rawDiscussion: "Build a local MVP and validate it from the customer pack root.",
+        selectedAdapterIds: ["codex"],
+        executionScope: "end_to_end_delivery",
+        executionMode: "end_to_end_autonomous"
+      },
+      { now: fixedNow }
+    );
+
+    const startHere = findFile(pack.files, "START_HERE.md");
+    const autonomousPs1 = findFile(pack.files, "START_CODEX_AUTONOMOUS.ps1");
+    const autonomousCmd = findFile(pack.files, "START_CODEX_AUTONOMOUS.cmd");
+    const supervisedPs1 = findFile(pack.files, "START_CODEX_SUPERVISED.ps1");
+
+    expect(startHere).toContain("Customer Runtime Pack");
+    expect(startHere).toContain("START_CODEX_AUTONOMOUS.ps1");
+    expect(startHere).toContain("scripts/verify-customer-delivery.ps1");
+    expect(autonomousPs1).toContain("scripts/run-customer-autonomous.ps1");
+    expect(autonomousPs1).toContain("-Mode autonomous");
+    expect(autonomousCmd).toContain("START_CODEX_AUTONOMOUS.ps1");
+    expect(supervisedPs1).toContain("-Mode supervised");
   });
 });
 

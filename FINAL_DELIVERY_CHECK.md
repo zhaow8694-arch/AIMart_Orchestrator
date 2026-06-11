@@ -1,23 +1,30 @@
-# Final Delivery Check
+﻿# Final Delivery Check
 
-- [x] Project runs locally
-- [x] Tests passed
-- [x] Build passed
-- [x] Backup generated
-- [x] Local Git tag created or already present
-- [x] Package artifact generated
-- [x] releases/v0.3.0/SHA256.txt generated
-- [x] releases/v0.3.0/RELEASE_MANIFEST.txt generated
+- [ ] Project runs locally
+- [ ] Tests passed
+- [ ] Build passed
+- [ ] Package artifact generated
+- [ ] releases/v0.3.1/SHA256.txt generated
+- [ ] releases/v0.3.1/RELEASE_MANIFEST.txt generated
+- [ ] Generated execution pack includes START_HERE.md
+- [ ] Generated execution pack includes docs/README.md and docs/RUN_APP.md
+- [ ] Generated execution pack includes START_CODEX_AUTONOMOUS.cmd and START_CODEX_AUTONOMOUS.ps1
+- [ ] Generated execution pack includes runtime/FULL_LIFECYCLE_RUN_STATE.json, runtime/VERSION_LADDER.json, and runtime/PHASE_STATUS.json
+- [ ] Generated execution pack includes scripts/run-customer-autonomous.ps1 and scripts/verify-customer-delivery.ps1
+- [ ] Dogfood evidence is published at releases/v0.3.1/dogfood
+- [ ] Auto-Verified Customer Pack Runtime Validation implemented
+
+Final result: pending
+- [ ] Generated execution pack includes docs/README.md and docs/RUN_APP.md
+# Generated execution pack includes docs/README.md and docs/RUN_APP.md
+Version: v0.3.1
+Release: Auto-Verified Customer Pack Runtime Validation
 - [x] Generated execution pack includes docs/README.md and docs/RUN_APP.md
-- [x] Generated execution pack includes EXECUTION_PACK_MANIFEST.md
-- [x] Generated execution pack includes common/AUTONOMOUS_DELIVERY_ROADMAP.md, common/VERSION_LADDER.md, common/PHASE_GATE_PLAN.md, and common/CURRENT_PHASE.md
-- [x] Generated execution pack includes runtime/END_TO_END_AUTONOMOUS_POLICY.md, runtime/RUN_STATE.json, runtime/CURRENT_TASK.md, runtime/PHASE_GATE_REPORT.md, runtime/COMPLETION_GATE_REPORT.md, runtime/MORNING_REPORT.md, and runtime/HANDOFF_TO_NEXT_VERSION.md
-- [x] Generated execution pack includes Agent Adapter Registry outputs for Codex, Claude Code, Trae, and Cursor
-- [x] Generated execution pack includes Codex End-to-End Autonomous files
-- [x] Source verification scripts include verify-autonomous-completion.ps1 and verify-autonomous-completion.sh
-- [x] Source release ZIP is documented separately from the generated execution-pack ZIP
-- [x] Generated execution-pack sample is published at releases/v0.3.0/samples/todo-api-generated-execution-pack.zip
-- [x] Agent Adapter Registry implemented
-- [x] End-to-End Autonomous Delivery implemented
-- [x] Autonomous Completion Gate required before reporting success
-- [x] No mixed-agent development used
+- [x] Generated execution pack includes docs/README.md and docs/RUN_APP.md
+- [x] Generated execution pack includes docs/README.md and docs/RUN_APP.md
+- [x] Generated execution pack includes docs/README.md and docs/RUN_APP.md
+- [x] Generated execution pack includes docs/README.md and docs/RUN_APP.md
+- [x] Generated execution pack includes docs/README.md and docs/RUN_APP.md
+- [x] Generated execution pack includes docs/README.md and docs/RUN_APP.md
+- [x] Generated execution pack includes docs/README.md and docs/RUN_APP.md
+

@@ -45,9 +45,16 @@ describe("generateRuntimePack", () => {
         "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
         "runtime/END_TO_END_AUTONOMOUS_POLICY.md",
         "runtime/RUN_STATE.json",
+        "runtime/FULL_LIFECYCLE_RUN_STATE.json",
+        "runtime/VERSION_LADDER.json",
+        "runtime/PHASE_STATUS.json",
         "runtime/CURRENT_TASK.md",
+        "runtime/CURRENT_PHASE.md",
+        "runtime/NEXT_ACTION.md",
         "runtime/PHASE_GATE_REPORT.md",
         "runtime/COMPLETION_GATE_REPORT.md",
+        "runtime/FINAL_DELIVERY_STATUS.md",
+        "runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md",
         "runtime/MORNING_REPORT.md",
         "runtime/HANDOFF_TO_NEXT_VERSION.md",
         "runtime/RUNTIME_STATUS.md",
@@ -246,13 +253,43 @@ describe("generateRuntimePack", () => {
       "runtime/END_TO_END_AUTONOMOUS_POLICY.md"
     );
     const runState = findFile(runtimePack.files, "runtime/RUN_STATE.json");
+    const fullLifecycleRunState = findFile(
+      runtimePack.files,
+      "runtime/FULL_LIFECYCLE_RUN_STATE.json"
+    );
+    const versionLadder = findFile(runtimePack.files, "runtime/VERSION_LADDER.json");
+    const phaseStatus = findFile(runtimePack.files, "runtime/PHASE_STATUS.json");
     const currentTask = findFile(runtimePack.files, "runtime/CURRENT_TASK.md");
+    const currentPhase = findFile(runtimePack.files, "runtime/CURRENT_PHASE.md");
+    const nextAction = findFile(runtimePack.files, "runtime/NEXT_ACTION.md");
     const phaseGate = findFile(runtimePack.files, "runtime/PHASE_GATE_REPORT.md");
     const completionGate = findFile(
       runtimePack.files,
       "runtime/COMPLETION_GATE_REPORT.md"
     );
+    const finalDelivery = findFile(
+      runtimePack.files,
+      "runtime/FINAL_DELIVERY_STATUS.md"
+    );
+    const customerReport = findFile(
+      runtimePack.files,
+      "runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md"
+    );
     const handoff = findFile(runtimePack.files, "runtime/HANDOFF_TO_NEXT_VERSION.md");
+
+    const fullLifecycle = JSON.parse(fullLifecycleRunState) as {
+      projectName: string;
+      selectedAdapterId: string;
+      currentLifecyclePhase: string;
+      currentTargetVersion: string;
+      currentTaskId: string;
+      releaseOutputStatus: string;
+      completionGateStatus: string;
+      blockedStatus: string;
+      finalDeliveryStatus: string;
+    };
+    const ladder = JSON.parse(versionLadder) as { versions: { version: string }[] };
+    const phases = JSON.parse(phaseStatus) as { phases: { phase: string }[] };
 
     expect(JSON.parse(runState)).toMatchObject({
       projectName: "Tiny Planner",
@@ -261,7 +298,41 @@ describe("generateRuntimePack", () => {
       selectedAdapterIds: ["codex", "claude-code"],
       currentPhase: "v0.0.1"
     });
-    for (const content of [policy, currentTask, phaseGate, completionGate, handoff]) {
+    expect(fullLifecycle).toMatchObject({
+      projectName: "Tiny Planner",
+      selectedAdapterId: "codex",
+      currentLifecyclePhase: "v0.0.1 discovery/spec",
+      currentTargetVersion: "v0.0.1",
+      currentTaskId: "TASK-001",
+      releaseOutputStatus: "pending",
+      completionGateStatus: "pending",
+      blockedStatus: "none",
+      finalDeliveryStatus: "pending"
+    });
+    expect(ladder.versions.map((entry) => entry.version)).toEqual([
+      "v0.0.1",
+      "v0.1.0",
+      "v0.2.x",
+      "v0.3.x",
+      "v0.4.x",
+      "v0.5.x",
+      "v1.0"
+    ]);
+    expect(phases.phases[0]).toMatchObject({
+      phase: "v0.0.1 discovery/spec",
+      status: "current"
+    });
+    for (const content of [
+      policy,
+      currentTask,
+      currentPhase,
+      nextAction,
+      phaseGate,
+      completionGate,
+      finalDelivery,
+      customerReport,
+      handoff
+    ]) {
       expect(content).toContain("End-to-End");
       expect(content).toContain("Completion Gate");
       expect(content).toContain("v0.0.1");

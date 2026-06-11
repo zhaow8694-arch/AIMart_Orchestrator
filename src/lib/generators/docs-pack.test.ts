@@ -104,7 +104,7 @@ describe("generateDocsPack", () => {
     expect(security).toContain("Autonomous Mode");
   });
 
-  it("documents v0.3.0 end-to-end multi-adapter delivery behavior", () => {
+  it("documents v0.3.1 customer runtime validation and multi-adapter delivery behavior", () => {
     const projectSpec = createProjectSpec(
       {
         projectName: "Tiny Planner",
@@ -128,7 +128,8 @@ describe("generateDocsPack", () => {
     const nextSteps = findFile(docsPack.files, "docs/NEXT_STEPS.md");
 
     for (const content of [readme, implementationReport, releaseNotes, nextSteps]) {
-      expect(content).toContain("v0.3.0");
+      expect(content).toContain("v0.3.1");
+      expect(content).toContain("Auto-Verified");
       expect(content).toContain("Autonomous Completion Gate");
       expect(content).toContain("End-to-End");
       expect(content).toContain("Codex");

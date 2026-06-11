@@ -28,6 +28,12 @@ type CreateProjectSpecOptions = {
 
 const DEFAULT_STACK = ["Next.js", "TypeScript", "Zod", "Vitest", "pnpm"];
 const DEFAULT_ADAPTERS: AgentAdapterId[] = ["codex"];
+const DEFAULT_END_TO_END_ADAPTERS: AgentAdapterId[] = [
+  "codex",
+  "claude-code",
+  "trae",
+  "cursor"
+];
 const DEFAULT_EXECUTION_SCOPE: ExecutionScope = "single_phase";
 const DEFAULT_EXECUTION_MODE = "supervised";
 type ExecutionMode = "supervised" | "autonomous" | "end_to_end_autonomous";
@@ -60,11 +66,12 @@ export function createProjectSpec(
   const mvpScope = normalizeList(input.mvpScope);
   const forbiddenItems = normalizeList(input.forbiddenItems);
   const techStackPreferences = normalizeList(input.techStackPreferences);
+  const executionScope = normalizeExecutionScope(input.executionScope);
   const selectedAdapterIds = normalizeSelectedAdapters(
     input.selectedAdapterIds,
-    input.targetAdapterType
+    input.targetAdapterType,
+    executionScope
   );
-  const executionScope = normalizeExecutionScope(input.executionScope);
   const executionMode = normalizeExecutionMode(input.executionMode);
   const testingRequirements = normalizeList(input.testingRequirements);
   const deliveryRequirements = normalizeList(input.deliveryRequirements);
@@ -166,7 +173,11 @@ function buildAssumptions({
     );
   }
 
-  if (!rawSelectedAdapterIds && !targetAdapterType) {
+  if (!rawSelectedAdapterIds && !targetAdapterType && selectedAdapterIds.length > 1) {
+    assumptions.push(
+      "Generate all supported independent target adapters for end-to-end delivery."
+    );
+  } else if (!rawSelectedAdapterIds && !targetAdapterType) {
     assumptions.push("Use Codex as the default v0.3.0 target adapter.");
   } else if (selectedAdapterIds.length === 1 && selectedAdapterIds[0] === "codex") {
     const requested = [
@@ -204,7 +215,8 @@ function buildAssumptions({
 
 function normalizeSelectedAdapters(
   selectedAdapterIds: string | string[] | undefined,
-  targetAdapterType: string | undefined
+  targetAdapterType: string | undefined,
+  executionScope: ExecutionScope
 ): AgentAdapterId[] {
   const requested = normalizeList(selectedAdapterIds);
 
@@ -215,6 +227,14 @@ function normalizeSelectedAdapters(
   const supported = unique(
     requested.filter((id): id is AgentAdapterId => AgentAdapterIdSchema.safeParse(id).success)
   ) as AgentAdapterId[];
+
+  if (
+    supported.length === 0 &&
+    !targetAdapterType &&
+    executionScope === "end_to_end_delivery"
+  ) {
+    return DEFAULT_END_TO_END_ADAPTERS;
+  }
 
   return supported.length > 0 ? supported : DEFAULT_ADAPTERS;
 }

@@ -67,6 +67,8 @@ export function generateRuntimePack(projectSpec: ProjectSpec): RuntimePack {
       "pnpm build",
       "scripts/finalize.ps1",
       "scripts/finalize.sh",
+      "scripts/verify-customer-delivery.ps1",
+      "scripts/verify-customer-delivery.sh",
       "read ZIP entries",
       "local port lookup",
       "write current-version release artifacts",
@@ -102,7 +104,8 @@ export function generateRuntimePack(projectSpec: ProjectSpec): RuntimePack {
       "Remove-Item releases/v0.1.0",
       "Remove-Item releases/v0.1.1",
       "Remove-Item releases/v0.2.1",
-      "Remove-Item releases/v0.2.2"
+      "Remove-Item releases/v0.2.2",
+      "Remove-Item releases/v0.3.0"
     ]
   });
 
@@ -204,8 +207,28 @@ export function generateRuntimePack(projectSpec: ProjectSpec): RuntimePack {
       content: renderRunState(projectSpec)
     },
     {
+      path: "runtime/FULL_LIFECYCLE_RUN_STATE.json",
+      content: renderFullLifecycleRunState(projectSpec)
+    },
+    {
+      path: "runtime/VERSION_LADDER.json",
+      content: renderVersionLadderJson(projectSpec)
+    },
+    {
+      path: "runtime/PHASE_STATUS.json",
+      content: renderPhaseStatusJson(projectSpec)
+    },
+    {
       path: "runtime/CURRENT_TASK.md",
       content: renderCurrentTask(projectSpec)
+    },
+    {
+      path: "runtime/CURRENT_PHASE.md",
+      content: renderRuntimeCurrentPhase(projectSpec)
+    },
+    {
+      path: "runtime/NEXT_ACTION.md",
+      content: renderNextAction(projectSpec)
     },
     {
       path: "runtime/PHASE_GATE_REPORT.md",
@@ -214,6 +237,14 @@ export function generateRuntimePack(projectSpec: ProjectSpec): RuntimePack {
     {
       path: "runtime/COMPLETION_GATE_REPORT.md",
       content: renderCompletionGateReport(projectSpec)
+    },
+    {
+      path: "runtime/FINAL_DELIVERY_STATUS.md",
+      content: renderFinalDeliveryStatus(projectSpec)
+    },
+    {
+      path: "runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md",
+      content: renderCustomerRuntimeValidationReport(projectSpec)
     },
     {
       path: "runtime/MORNING_REPORT.md",
@@ -549,6 +580,138 @@ function renderRunState(projectSpec: ProjectSpec): string {
 `;
 }
 
+function renderFullLifecycleRunState(projectSpec: ProjectSpec): string {
+  const selectedAdapterId = projectSpec.selectedAdapterIds[0] ?? "codex";
+
+  return `${JSON.stringify(
+    {
+      projectName: projectSpec.projectName,
+      selectedAdapterId,
+      selectedAdapterIds: projectSpec.selectedAdapterIds,
+      executionScope: projectSpec.executionScope,
+      executionMode: projectSpec.executionMode,
+      currentLifecyclePhase: "v0.0.1 discovery/spec",
+      currentTargetVersion: "v0.0.1",
+      currentTaskId: "TASK-001",
+      currentTask: "Read START_HERE.md, confirm ProjectSpec, and initialize the first phase plan.",
+      logUpdatedAt: projectSpec.createdAt,
+      releaseOutputStatus: "pending",
+      completionGateStatus: "pending",
+      blockedStatus: "none",
+      knownIssueStatus: "none",
+      finalDeliveryStatus: "pending",
+      customerRuntimeValidationStatus: "pending",
+      updatedAt: projectSpec.createdAt
+    },
+    null,
+    2
+  )}
+`;
+}
+
+function renderVersionLadderJson(projectSpec: ProjectSpec): string {
+  return `${JSON.stringify(
+    {
+      projectName: projectSpec.projectName,
+      versions: [
+        {
+          version: "v0.0.1",
+          phase: "discovery/spec",
+          gate: "ProjectSpec, assumptions, and task queue are coherent."
+        },
+        {
+          version: "v0.1.0",
+          phase: "MVP implementation",
+          gate: "Core workflow runs locally with tests."
+        },
+        {
+          version: "v0.2.x",
+          phase: "autonomous runtime and completion gates",
+          gate: "Safe commands, reports, and completion gates pass."
+        },
+        {
+          version: "v0.3.x",
+          phase: "independent adapter options",
+          gate: "Selected adapter directories, runbooks, prompts, and manifest pass."
+        },
+        {
+          version: "v0.4.x",
+          phase: "runner hardening",
+          gate: "Resume, logs, blocked command handling, and recovery pass."
+        },
+        {
+          version: "v0.5.x",
+          phase: "delivery automation",
+          gate: "Release freeze, source/sample ZIPs, checksums, and handoff pass."
+        },
+        {
+          version: "v1.0",
+          phase: "final usable delivery",
+          gate: "Full acceptance criteria and final delivery gate PASS."
+        }
+      ]
+    },
+    null,
+    2
+  )}
+`;
+}
+
+function renderPhaseStatusJson(projectSpec: ProjectSpec): string {
+  return `${JSON.stringify(
+    {
+      projectName: projectSpec.projectName,
+      phases: [
+        {
+          phase: "v0.0.1 discovery/spec",
+          targetVersion: "v0.0.1",
+          status: "current",
+          completionGateStatus: "pending"
+        },
+        {
+          phase: "v0.1.0 MVP implementation",
+          targetVersion: "v0.1.0",
+          status: "pending",
+          completionGateStatus: "pending"
+        },
+        {
+          phase: "v0.2.x autonomous runtime and completion gates",
+          targetVersion: "v0.2.x",
+          status: "pending",
+          completionGateStatus: "pending"
+        },
+        {
+          phase: "v0.3.x independent adapter options",
+          targetVersion: "v0.3.x",
+          status: "pending",
+          completionGateStatus: "pending"
+        },
+        {
+          phase: "v0.4.x runner hardening",
+          targetVersion: "v0.4.x",
+          status: "pending",
+          completionGateStatus: "pending"
+        },
+        {
+          phase: "v0.5.x delivery automation",
+          targetVersion: "v0.5.x",
+          status: "pending",
+          completionGateStatus: "pending"
+        },
+        {
+          phase: "v1.0 final usable delivery",
+          targetVersion: "v1.0",
+          status: "pending",
+          completionGateStatus: "pending"
+        }
+      ]
+    },
+    null,
+    2
+  )}
+`;
+}
+
 function renderCurrentTask(projectSpec: ProjectSpec): string {
   return `# Current Task
 
@@ -563,6 +726,36 @@ Version ladder target: v1.0 final usable delivery.
 ## Completion Gate
 
 Before advancing, update runtime/COMPLETION_GATE_REPORT.md with PASS or FAIL.
+`;
+}
+
+function renderRuntimeCurrentPhase(projectSpec: ProjectSpec): string {
+  return `# Current Phase
+
+Project: ${projectSpec.projectName}
+
+End-to-End current phase: v0.0.1 discovery/spec
+Current target version: v0.0.1
+Selected adapter: ${projectSpec.selectedAdapterIds[0] ?? "codex"}
+
+The selected AI advances through the version ladder only after the phase Completion Gate records PASS.
+
+Version ladder target: v1.0 final usable delivery.
+`;
+}
+
+function renderNextAction(projectSpec: ProjectSpec): string {
+  return `# Next Action
+
+Project: ${projectSpec.projectName}
+
+End-to-End next action: read START_HERE.md, run one root-level launcher, then let the selected AI initialize v0.0.1 discovery/spec.
+
+Current task: TASK-001
+Current target version: v0.0.1
+Completion Gate: pending
+
+When the phase gate passes, update runtime/FULL_LIFECYCLE_RUN_STATE.json and advance toward v1.0 final usable delivery.
 `;
 }
 
@@ -603,6 +796,53 @@ Version ladder target: v1.0 final usable delivery.
 | Final result | pending | PASS or FAIL only. |
 
 Final result: pending
+`;
+}
+
+function renderFinalDeliveryStatus(projectSpec: ProjectSpec): string {
+  return `# Final Delivery Status
+
+Project: ${projectSpec.projectName}
+
+End-to-End final delivery status: pending
+
+| Field | Status |
+|---|---|
+| Current target version | v0.0.1 |
+| Completion Gate | pending |
+| Customer runtime validation | pending |
+| Final result | pending |
+
+Final usable delivery is not complete until the Completion Gate records PASS and the customer runtime validation report records PASS.
+
+Version ladder target: v1.0 final usable delivery.
+`;
+}
+
+function renderCustomerRuntimeValidationReport(projectSpec: ProjectSpec): string {
+  return `# Customer Runtime Validation Report
+
+Project: ${projectSpec.projectName}
+
+End-to-End customer runtime validation starts as pending. Run scripts/verify-customer-delivery.ps1 or scripts/verify-customer-delivery.sh from the unpacked execution-pack root to update this report.
+
+| Gate | Status | Notes |
+|---|---|---|
+| generated project files | pending | common/PROJECT_SPEC.md and common/TASK_QUEUE.md exist. |
+| generated docs | pending | docs/README.md, docs/RUN_APP.md, and docs/SECURITY_AND_PERMISSIONS.md exist. |
+| tests/build instructions | pending | docs or scripts explain test and build commands. |
+| final artifact instructions | pending | package/finalize instructions exist. |
+| BLOCKERS.md has no open P0/P1 blockers | pending | Checked by customer verifier. |
+| KNOWN_ISSUES has no P0/P1 blockers | pending | Checked by customer verifier. |
+| lifecycle state files are present and coherent | pending | FULL_LIFECYCLE_RUN_STATE.json, VERSION_LADDER.json, and PHASE_STATUS.json parse and agree. |
+| selected adapter runbook exists | pending | Checked from selectedAdapterId. |
+| completion gate report exists | pending | runtime/COMPLETION_GATE_REPORT.md exists. |
+
+Final result: pending
+
+Completion Gate: pending
+Current target version: v0.0.1
+Version ladder target: v1.0 final usable delivery.
 `;
 }
 

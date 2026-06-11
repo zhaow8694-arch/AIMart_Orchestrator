@@ -3,6 +3,32 @@ import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 
 const outputPath = process.argv[2];
+const requiredAdapterIds = ["codex", "claude-code", "trae", "cursor"];
+const requiredSampleZipEntries = [
+  "START_HERE.md",
+  "START_CODEX_AUTONOMOUS.cmd",
+  "START_CODEX_AUTONOMOUS.ps1",
+  "scripts/run-customer-autonomous.ps1",
+  "scripts/verify-customer-delivery.ps1",
+  "runtime/FULL_LIFECYCLE_RUN_STATE.json",
+  "runtime/VERSION_LADDER.json",
+  "runtime/PHASE_STATUS.json",
+  "runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md",
+  "agent_adapters/codex/AGENTS.md",
+  "agent_adapters/claude-code/CLAUDE.md",
+  "agent_adapters/claude-code/CLAUDE_RUNBOOK.md",
+  "agent_adapters/claude-code/CLAUDE_TASK_PROMPT.md",
+  "agent_adapters/claude-code/CLAUDE_AUTONOMOUS_PROMPT.md",
+  "agent_adapters/claude-code/CLAUDE_END_TO_END_DELIVERY_RUNBOOK.md",
+  "agent_adapters/trae/TRAE_RUNBOOK.md",
+  "agent_adapters/trae/TRAE_TASK_PROMPT.md",
+  "agent_adapters/trae/TRAE_AUTONOMOUS_PROMPT.md",
+  "agent_adapters/trae/TRAE_END_TO_END_DELIVERY_RUNBOOK.md",
+  "agent_adapters/cursor/CURSOR_RUNBOOK.md",
+  "agent_adapters/cursor/CURSOR_TASK_PROMPT.md",
+  "agent_adapters/cursor/CURSOR_AUTONOMOUS_RULES.md",
+  "agent_adapters/cursor/CURSOR_END_TO_END_DELIVERY_RUNBOOK.md"
+];
 
 if (!outputPath) {
   throw new Error("Usage: node scripts/create-sample-pack.mjs <output-zip-path>");
@@ -34,7 +60,7 @@ const sampleInput = {
     "Generated execution-pack ZIP with completion gate docs, manifest, roadmap, and independent adapter options",
   securityBoundaries:
     "Do not read .env, SSH keys, cloud credentials, or system secrets",
-  selectedAdapterIds: ["codex", "claude-code", "trae", "cursor"],
+  selectedAdapterIds: requiredAdapterIds,
   executionScope: "end_to_end_delivery",
   executionMode: "end_to_end_autonomous"
 };
@@ -57,5 +83,61 @@ if (!data.zipBase64) {
   throw new Error("Sample pack generation returned no zipBase64 payload.");
 }
 
+const selectedAdapterIds = data.projectSpec?.selectedAdapterIds ?? [];
+const missingAdapterIds = requiredAdapterIds.filter(
+  (adapterId) => !selectedAdapterIds.includes(adapterId)
+);
+if (missingAdapterIds.length > 0) {
+  throw new Error(
+    `Sample pack generation did not select required adapter(s): ${missingAdapterIds.join(", ")}`
+  );
+}
+
+const zipBuffer = Buffer.from(data.zipBase64, "base64");
+const zipEntries = readCentralDirectoryNames(zipBuffer);
+const missingEntries = requiredSampleZipEntries.filter(
+  (entry) => !zipEntries.includes(entry)
+);
+if (missingEntries.length > 0) {
+  throw new Error(`Missing sample ZIP entry: ${missingEntries[0]}`);
+}
+
 await mkdir(dirname(outputPath), { recursive: true });
-await writeFile(outputPath, Buffer.from(data.zipBase64, "base64"));
+await writeFile(outputPath, zipBuffer);
+
+function readCentralDirectoryNames(buffer) {
+  const endOfCentralDirectory = 0x06054b50;
+  let eocdOffset = -1;
+
+  for (let offset = buffer.length - 22; offset >= 0; offset -= 1) {
+    if (buffer.readUInt32LE(offset) === endOfCentralDirectory) {
+      eocdOffset = offset;
+      break;
+    }
+  }
+
+  if (eocdOffset < 0) {
+    throw new Error("Sample pack generation did not return a valid ZIP payload.");
+  }
+
+  const entryCount = buffer.readUInt16LE(eocdOffset + 10);
+  let offset = buffer.readUInt32LE(eocdOffset + 16);
+  const names = [];
+
+  for (let index = 0; index < entryCount; index += 1) {
+    if (buffer.readUInt32LE(offset) !== 0x02014b50) {
+      throw new Error(`Invalid sample ZIP central directory entry at ${offset}`);
+    }
+
+    const nameLength = buffer.readUInt16LE(offset + 28);
+    const extraLength = buffer.readUInt16LE(offset + 30);
+    const commentLength = buffer.readUInt16LE(offset + 32);
+    const nameStart = offset + 46;
+    const nameEnd = nameStart + nameLength;
+
+    names.push(buffer.subarray(nameStart, nameEnd).toString("utf8"));
+    offset = nameEnd + extraLength + commentLength;
+  }
+
+  return names;
+}

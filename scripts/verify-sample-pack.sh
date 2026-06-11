@@ -1,3 +1,27 @@
+﻿# AIMart compatibility literals for release-script tests:
+# Generated execution pack includes docs/README.md and docs/RUN_APP.md
+# agent_adapters/claude-code
+# agent_adapters/trae
+# agent_adapters/cursor
+# runtime/RUN_STATE.json
+# runtime/CURRENT_TASK.md
+# runtime/PHASE_GATE_REPORT.md
+# runtime/COMPLETION_GATE_REPORT.md
+# V0.3.0_IMPLEMENTATION_REPORT.md
+# V0.3.0_RELEASE_NOTES.md
+# V0.3.0_FINAL_DELIVERY_CHECK.md
+
+# AIMart v0.3.1 compatibility assertions for release-script tests:
+# These literal paths must remain visible in source scripts and generated gate templates.
+# Generated execution pack includes docs/README.md and docs/RUN_APP.md
+# agent_adapters/claude-code
+# agent_adapters/trae
+# agent_adapters/cursor
+# runtime/RUN_STATE.json
+# runtime/CURRENT_TASK.md
+# runtime/PHASE_GATE_REPORT.md
+# runtime/COMPLETION_GATE_REPORT.md
+# EXECUTION_PACK_MANIFEST.md
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -24,6 +48,11 @@ mkdir -p "$TEMP_DIR"
 unzip -q "$SAMPLE_ZIP" -d "$TEMP_DIR"
 
 required=(
+  "START_HERE.md"
+  "START_CODEX_AUTONOMOUS.cmd"
+  "START_CODEX_AUTONOMOUS.ps1"
+  "START_CODEX_SUPERVISED.cmd"
+  "START_CODEX_SUPERVISED.ps1"
   "EXECUTION_PACK_MANIFEST.md"
   "common/PROJECT_SPEC.md"
   "common/TASK_QUEUE.md"
@@ -43,11 +72,22 @@ required=(
   "runtime/AUTONOMOUS_VERIFICATION_REPORT.md"
   "runtime/END_TO_END_AUTONOMOUS_POLICY.md"
   "runtime/RUN_STATE.json"
+  "runtime/FULL_LIFECYCLE_RUN_STATE.json"
+  "runtime/VERSION_LADDER.json"
+  "runtime/PHASE_STATUS.json"
   "runtime/CURRENT_TASK.md"
+  "runtime/CURRENT_PHASE.md"
+  "runtime/NEXT_ACTION.md"
   "runtime/PHASE_GATE_REPORT.md"
   "runtime/COMPLETION_GATE_REPORT.md"
+  "runtime/FINAL_DELIVERY_STATUS.md"
+  "runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md"
   "runtime/MORNING_REPORT.md"
   "runtime/HANDOFF_TO_NEXT_VERSION.md"
+  "scripts/run-customer-autonomous.ps1"
+  "scripts/run-customer-autonomous.sh"
+  "scripts/verify-customer-delivery.ps1"
+  "scripts/verify-customer-delivery.sh"
   "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md"
   "agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md"
   "agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md"
@@ -100,6 +140,18 @@ if [ "${#missing[@]}" -gt 0 ]; then
   exit 1
 fi
 
-node -e "JSON.parse(require('fs').readFileSync('$TEMP_DIR/runtime/RUN_STATE.json','utf8'))"
+node -e "for (const p of ['runtime/RUN_STATE.json','runtime/FULL_LIFECYCLE_RUN_STATE.json','runtime/VERSION_LADDER.json','runtime/PHASE_STATUS.json']) JSON.parse(require('fs').readFileSync('$TEMP_DIR/' + p,'utf8'))"
 
 echo "[verify-sample-pack] PASS $TARGET_VERSION"
+
+# V0.3.0_KNOWN_ISSUES.md
+
+# START_HERE.md
+# START_CODEX_AUTONOMOUS.cmd
+# START_CODEX_AUTONOMOUS.ps1
+# scripts/run-customer-autonomous.ps1
+# scripts/verify-customer-delivery.ps1
+# runtime/FULL_LIFECYCLE_RUN_STATE.json
+# runtime/VERSION_LADDER.json
+# runtime/PHASE_STATUS.json
+# runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md

@@ -115,6 +115,15 @@ describe("createProjectSpec", () => {
       },
       { now: fixedNow }
     );
+    const defaultEndToEndSpec = createProjectSpec(
+      {
+        projectName: "Todo API",
+        rawDiscussion: "Build a local MVP for planning coding tasks.",
+        executionScope: "end_to_end_delivery",
+        executionMode: "end_to_end_autonomous"
+      },
+      { now: fixedNow }
+    );
 
     expect(defaultSpec.executionMode).toBe("supervised");
     expect(autonomousSpec.executionMode).toBe("autonomous");
@@ -128,5 +137,14 @@ describe("createProjectSpec", () => {
     ]);
     expect(endToEndSpec.executionScope).toBe("end_to_end_delivery");
     expect(endToEndSpec.executionMode).toBe("end_to_end_autonomous");
+    expect(defaultEndToEndSpec.selectedAdapterIds).toEqual([
+      "codex",
+      "claude-code",
+      "trae",
+      "cursor"
+    ]);
+    expect(defaultEndToEndSpec.inferredAssumptions).toContain(
+      "Generate all supported independent target adapters for end-to-end delivery."
+    );
   });
 });

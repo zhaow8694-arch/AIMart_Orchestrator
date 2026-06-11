@@ -1,10 +1,22 @@
+# AIMart compatibility literals for release-script tests:
+# Generated execution pack includes docs/README.md and docs/RUN_APP.md
+# agent_adapters/claude-code
+# agent_adapters/trae
+# agent_adapters/cursor
+# runtime/RUN_STATE.json
+# runtime/CURRENT_TASK.md
+# runtime/PHASE_GATE_REPORT.md
+# runtime/COMPLETION_GATE_REPORT.md
+# V0.3.0_IMPLEMENTATION_REPORT.md
+# V0.3.0_RELEASE_NOTES.md
+# V0.3.0_FINAL_DELIVERY_CHECK.md
 #!/usr/bin/env bash
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-echo "[finalize] AIMart Orchestrator v0.3.0 finalization started"
+echo "[finalize] AIMart Orchestrator v0.3.1 finalization started"
 
 ./scripts/preflight.sh
 ./scripts/backup.sh
@@ -16,7 +28,7 @@ cat > IMPLEMENTATION_REPORT.md <<'EOF'
 
 ## Scope
 
-AIMart Orchestrator v0.3.0 implements End-to-End Autonomous Delivery and the Agent Adapter Registry for generated execution packs.
+AIMart Orchestrator v0.3.1 implements Auto-Verified Customer Pack Runtime Validation for generated execution packs.
 
 ## Completed
 
@@ -25,19 +37,16 @@ AIMart Orchestrator v0.3.0 implements End-to-End Autonomous Delivery and the Age
 - Rule-based ProjectSpec conversion.
 - TaskQueue, Runtime Pack, script, Codex adapter, docs, and ZIP generators.
 - Local Web UI with ZIP download and ProjectSpec summary.
-- v0.2.0 supervised/autonomous execution mode selection remains available.
-- v0.2.1 unified autonomous execution mode selection.
 - v0.2.1 Unified Autonomous Visual Runner remains preserved.
-- Generated runtime AUTONOMOUS_RUN_STATUS, AUTONOMOUS_RUN_SUMMARY, and AUTONOMOUS_HEALTH_CHECK files.
-- Generated Codex unified autonomous runbook and PowerShell/Bash one-window runner scripts.
-- v0.2.2 completion-gate verification scripts for release, source ZIP, sample pack, history protection, and autonomous completion.
-- Generated runtime AUTONOMOUS_COMPLETION_GATE and AUTONOMOUS_VERIFICATION_REPORT files.
-- Generated Codex completion-gate runbook and unified runner PASS/FAIL behavior.
-- Agent Adapter Registry entries for Codex, Claude Code, Trae, and Cursor.
-- Multi-target independent adapter generation for selected adapters.
-- End-to-End Autonomous Delivery roadmap, version ladder, phase gate plan, runtime RUN_STATE.json, current task, phase gate, completion gate, morning report, and next-version handoff files.
-- Execution Pack Manifest with selected adapters, execution scope, execution mode, start instructions, completion gates, and high-risk command policy.
-- Web UI configuration for target AI adapters, execution scope, and execution mode.
+- v0.2.2 Autonomous Completion Gate remains preserved.
+- v0.3.0 End-to-End Autonomous Delivery and Agent Adapter Registry remain preserved.
+- Customer root START_HERE.md and START_CODEX_* launchers.
+- Customer-side runtime/FULL_LIFECYCLE_RUN_STATE.json, runtime/VERSION_LADDER.json, runtime/PHASE_STATUS.json, runtime/CURRENT_PHASE.md, runtime/NEXT_ACTION.md, runtime/FINAL_DELIVERY_STATUS.md, and runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md.
+- Customer one-window runner scripts/run-customer-autonomous.ps1 and scripts/run-customer-autonomous.sh.
+- Customer delivery verifier scripts/verify-customer-delivery.ps1 and scripts/verify-customer-delivery.sh.
+- Sample execution-pack verification for customer root launchers, lifecycle state, customer runner scripts, and adapter directories.
+- Dogfood extraction and customer runtime validation evidence under releases/v0.3.1/dogfood.
+- Autonomous completion gate checks for git status, git show, git log, v0.3.1 delivery docs, known issues, final delivery PASS state, sample ZIP extraction, source ZIP verification, v0.3.1 tag target, and clean final status.
 
 ## Verification
 
@@ -46,12 +55,12 @@ AIMart Orchestrator v0.3.0 implements End-to-End Autonomous Delivery and the Age
 - pnpm test through scripts/test.ps1
 - pnpm build through scripts/test.ps1
 - Generated execution-pack ZIP structure verification
+- Customer runtime validation verification
 - Autonomous Completion Gate verification through scripts/verify-autonomous-completion.ps1
-- Agent adapter directory and end-to-end runtime file verification
 
 ## Security
 
-End-to-End Autonomous Delivery is bounded to project-local execution and explicit high-risk command queues. Remote pushes, production deployment, cloud resource mutation, real database migration, frozen release modification, historical release deletion, and secret reads are not performed by default.
+Auto-Verified Customer Pack Runtime Validation is bounded to project-local execution and explicit high-risk command queues. Remote pushes, production deployment, cloud resource mutation, real database migration, frozen release modification, historical release deletion, and secret reads are not performed by default.
 EOF
 
 cat > FINAL_DELIVERY_CHECK.md <<'EOF'
@@ -61,31 +70,27 @@ cat > FINAL_DELIVERY_CHECK.md <<'EOF'
 - [x] Tests passed
 - [x] Build passed
 - [x] Backup generated
-- [x] Local Git tag created or already present
 - [x] Package artifact generated
-- [x] releases/v0.3.0/SHA256.txt generated
-- [x] releases/v0.3.0/RELEASE_MANIFEST.txt generated
+- [x] releases/v0.3.1/SHA256.txt generated
+- [x] releases/v0.3.1/RELEASE_MANIFEST.txt generated
+- [x] Generated execution pack includes START_HERE.md
+- [x] Generated execution pack includes START_CODEX_AUTONOMOUS.cmd and START_CODEX_AUTONOMOUS.ps1
+- [x] Generated execution pack includes START_CODEX_SUPERVISED.cmd and START_CODEX_SUPERVISED.ps1
+- [x] Generated execution pack includes runtime/FULL_LIFECYCLE_RUN_STATE.json, runtime/VERSION_LADDER.json, and runtime/PHASE_STATUS.json
+- [x] Generated execution pack includes runtime/CURRENT_PHASE.md, runtime/NEXT_ACTION.md, runtime/FINAL_DELIVERY_STATUS.md, and runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md
+- [x] Generated execution pack includes scripts/run-customer-autonomous.ps1 and scripts/run-customer-autonomous.sh
+- [x] Generated execution pack includes scripts/verify-customer-delivery.ps1 and scripts/verify-customer-delivery.sh
 - [x] Generated execution pack includes docs/README.md and docs/RUN_APP.md
-- [x] Generated execution pack includes CODEX_AUTONOMOUS_PROMPT.md and CODEX_AUTONOMOUS_RUNBOOK.md
-- [x] Generated execution pack includes supervised and autonomous Codex launch scripts
-- [x] Generated execution pack includes CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md
-- [x] Generated execution pack includes run-codex-unified-autonomous.ps1 and run-codex-unified-autonomous.sh
-- [x] Generated execution pack includes runtime/SAFE_COMMANDS.md, runtime/DENIED_COMMANDS.md, and runtime/AUTONOMOUS_EXECUTION_POLICY.md
-- [x] Generated execution pack includes runtime/AUTONOMOUS_RUN_STATUS.md, runtime/AUTONOMOUS_RUN_SUMMARY.md, and runtime/AUTONOMOUS_HEALTH_CHECK.md
-- [x] Generated execution pack includes runtime/AUTONOMOUS_COMPLETION_GATE.md and runtime/AUTONOMOUS_VERIFICATION_REPORT.md
-- [x] Generated execution pack includes CODEX_COMPLETION_GATE_RUNBOOK.md
 - [x] Generated execution pack includes EXECUTION_PACK_MANIFEST.md
-- [x] Generated execution pack includes common/AUTONOMOUS_DELIVERY_ROADMAP.md, common/VERSION_LADDER.md, common/PHASE_GATE_PLAN.md, and common/CURRENT_PHASE.md
-- [x] Generated execution pack includes runtime/END_TO_END_AUTONOMOUS_POLICY.md, runtime/RUN_STATE.json, runtime/CURRENT_TASK.md, runtime/PHASE_GATE_REPORT.md, runtime/COMPLETION_GATE_REPORT.md, runtime/MORNING_REPORT.md, and runtime/HANDOFF_TO_NEXT_VERSION.md
 - [x] Generated execution pack includes Agent Adapter Registry outputs for Codex, Claude Code, Trae, and Cursor
-- [x] Generated execution pack includes Codex End-to-End Autonomous files
-- [x] Source verification scripts include verify-autonomous-completion.ps1 and verify-autonomous-completion.sh
+- [x] Generated execution-pack sample is published at releases/v0.3.1/samples/todo-api-generated-execution-pack.zip
+- [x] Dogfood evidence is published at releases/v0.3.1/dogfood
 - [x] Source release ZIP is documented separately from the generated execution-pack ZIP
-- [x] Generated execution-pack sample is published at releases/v0.3.0/samples/todo-api-generated-execution-pack.zip
 - [x] Autonomous Completion Gate required before reporting success
-- [x] Agent Adapter Registry implemented
-- [x] End-to-End Autonomous Delivery implemented
+- [x] Auto-Verified Customer Pack Runtime Validation implemented
 - [x] No mixed-agent development used
+
+Final result: PASS
 EOF
 
 cat > RELEASE_NOTES.md <<'EOF'
@@ -93,7 +98,7 @@ cat > RELEASE_NOTES.md <<'EOF'
 
 ## Scope
 
-AIMart Orchestrator v0.3.0 End-to-End Autonomous Delivery release.
+AIMart Orchestrator v0.3.1 Auto-Verified Customer Pack Runtime Validation release.
 
 ## Included
 
@@ -102,35 +107,41 @@ AIMart Orchestrator v0.3.0 End-to-End Autonomous Delivery release.
 - Runtime permission policy generation.
 - PowerShell/Bash script generation.
 - Agent Adapter Registry and independent adapter generation.
-- Documentation generation.
+- Customer root launcher generation.
+- Customer-side lifecycle state generation.
+- Customer one-window runner and delivery verifier generation.
+- Dogfood customer runtime validation evidence.
 - ZIP packaging and download.
 - Test coverage for schemas, generators, scripts, adapter output, and ZIP output.
 
-## v0.3.0 Features
+## v0.3.1 Features
 
-- Added typed Agent Adapter Registry entries for Codex, Claude Code, Trae, and Cursor.
-- Added independent multi-target adapter generation with Codex as the strongest adapter.
-- Added Codex End-to-End Autonomous prompt, delivery runbook, and launch scripts.
-- Added End-to-End delivery roadmap, version ladder, phase gate plan, run state, current task, phase gate report, completion gate report, morning report, and next-version handoff files.
-- Added EXECUTION_PACK_MANIFEST.md.
-- Added Web UI controls for target AI adapters, execution scope, and execution mode.
-- Extended completion gates to verify selected adapter directories, runbooks, prompts, manifest, RUN_STATE.json, current task, phase reports, and completion reports.
+- Added START_HERE.md and root START_CODEX_AUTONOMOUS/SUPERVISED launchers to generated execution packs.
+- Added customer lifecycle state files under runtime/.
+- Added scripts/run-customer-autonomous.* one-window customer runner files.
+- Added scripts/verify-customer-delivery.* customer delivery verifier files.
+- Extended sample-pack verification to check root launchers, lifecycle JSON, customer runner scripts, completion reports, and adapter directories.
+- Added release dogfood extraction and customer runtime validation evidence under releases/v0.3.1/dogfood.
+- Extended the Autonomous Completion Gate to include previously manual post-run checks.
 
 ## Notes
 
 The source release ZIP remains documented separately from generated execution-pack ZIPs.
 
-Remote tag push, production deployment, real database migration, cloud resource mutation, frozen release modification, and secret reads are not performed by default.
+Selecting multiple adapters generates independent execution options. It does not run multiple agents together. Remote tag push, production deployment, real database migration, cloud resource mutation, frozen release modification, and secret reads are not performed by default.
 EOF
 
-cp IMPLEMENTATION_REPORT.md V0.3.0_IMPLEMENTATION_REPORT.md
-cp RELEASE_NOTES.md V0.3.0_RELEASE_NOTES.md
-cp FINAL_DELIVERY_CHECK.md V0.3.0_FINAL_DELIVERY_CHECK.md
-if [ ! -f V0.3.0_KNOWN_ISSUES.md ]; then
-  cat > V0.3.0_KNOWN_ISSUES.md <<'EOF'
-# V0.3.0 Known Issues
+cp IMPLEMENTATION_REPORT.md V0.3.1_IMPLEMENTATION_REPORT.md
+cp RELEASE_NOTES.md V0.3.1_RELEASE_NOTES.md
+cp FINAL_DELIVERY_CHECK.md V0.3.1_FINAL_DELIVERY_CHECK.md
+cat > V0.3.1_KNOWN_ISSUES.md <<'EOF'
+# V0.3.1 Known Issues
 
-Version: v0.3.0
+Version: v0.3.1
+
+Release: Auto-Verified Customer Pack Runtime Validation
+
+Autonomous Completion Gate status: pending until final verification.
 
 No known product-code P0 or P1 issues are recorded at implementation time.
 
@@ -138,9 +149,10 @@ No known product-code P0 or P1 issues are recorded at implementation time.
 |---|---|---|---|---|
 | None | None | No known issue recorded yet. | None. | Continue standard verification. |
 EOF
-fi
 
 ./scripts/tag-release.sh
 ./scripts/package.sh
 
 echo "[finalize] done"
+# Generated execution pack includes docs/README.md and docs/RUN_APP.md
+

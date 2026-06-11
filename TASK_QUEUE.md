@@ -1,5 +1,115 @@
 # AIMart Orchestrator v0.1 Task Queue
 
+## v0.3.1 Auto-Verified Customer Pack Runtime Validation Task Queue
+
+TASK-057 through TASK-064 are the scoped v0.3.1 tasks. They add customer root entry files, customer-side lifecycle state, customer one-window runtime validation, dogfood evidence, and expanded autonomous completion gates while preserving frozen historical release folders through v0.3.0.
+
+## TASK-057 Create v0.3.1 Runtime Validation Plan
+
+```yaml
+status: done
+phase: plan
+dependencies: [TASK-056]
+done_criteria:
+  - v0.3.1 scope is limited to Auto-Verified Customer Pack Runtime Validation
+  - TASK_QUEUE.md records TASK-057 through TASK-064
+  - Historical release folders remain untouched
+```
+
+## TASK-058 Add v0.3.1 Tests
+
+```yaml
+status: done
+phase: qa
+dependencies: [TASK-057]
+done_criteria:
+  - Tests expect customer root entry files
+  - Tests expect lifecycle state files
+  - Tests expect customer runner and verifier scripts
+  - Tests expect dogfood evidence in release automation
+  - Tests expect v0.3.1 version metadata
+```
+
+## TASK-059 Implement Customer Root Entry Files
+
+```yaml
+status: done
+phase: generator
+dependencies: [TASK-058]
+done_criteria:
+  - START_HERE.md is generated
+  - START_CODEX_AUTONOMOUS.cmd and START_CODEX_AUTONOMOUS.ps1 are generated
+  - START_CODEX_SUPERVISED.cmd and START_CODEX_SUPERVISED.ps1 are generated
+```
+
+## TASK-060 Implement Customer Lifecycle Runtime Files
+
+```yaml
+status: done
+phase: runtime
+dependencies: [TASK-059]
+done_criteria:
+  - runtime/FULL_LIFECYCLE_RUN_STATE.json is generated
+  - runtime/VERSION_LADDER.json is generated
+  - runtime/PHASE_STATUS.json is generated
+  - runtime/CURRENT_PHASE.md, runtime/NEXT_ACTION.md, runtime/FINAL_DELIVERY_STATUS.md, and runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md are generated
+```
+
+## TASK-061 Implement Customer Runner And Delivery Verifier Scripts
+
+```yaml
+status: done
+phase: scripts
+dependencies: [TASK-060]
+done_criteria:
+  - scripts/run-customer-autonomous.ps1 and scripts/run-customer-autonomous.sh are generated
+  - scripts/verify-customer-delivery.ps1 and scripts/verify-customer-delivery.sh are generated
+  - Customer runner displays the required one-window status fields and final PASS or FAIL
+  - Customer delivery verifier checks generated files, docs, instructions, blockers, known issues, lifecycle state, selected adapter runbook, and completion gate report
+```
+
+## TASK-062 Extend Release Dogfood And Completion Gates
+
+```yaml
+status: done
+phase: release
+dependencies: [TASK-061]
+done_criteria:
+  - releases/v0.3.1/dogfood evidence is generated
+  - sample execution-pack ZIP extraction is verified
+  - root customer launchers and lifecycle files are verified
+  - autonomous completion gate includes previously manual final checks
+```
+
+## TASK-063 Update Version And v0.3.1 Delivery Docs
+
+```yaml
+status: done
+phase: docs
+dependencies: [TASK-062]
+done_criteria:
+  - package.json and UI metadata are updated to 0.3.1
+  - V0.3.1 implementation report, release notes, final delivery check, and known issues docs are generated
+```
+
+## TASK-064 Verify And Package v0.3.1
+
+```yaml
+status: blocked
+phase: finalize
+dependencies: [TASK-063]
+done_criteria:
+  - pnpm test passes
+  - pnpm lint passes
+  - pnpm build passes
+  - releases/v0.3.1 source ZIP exists
+  - releases/v0.3.1 sample execution-pack ZIP exists
+  - releases/v0.3.1 dogfood evidence exists
+  - SHA256.txt and RELEASE_MANIFEST.txt exist
+  - Autonomous Completion Gate passes
+  - local tag v0.3.1 exists and points to the final commit
+```
+
 ## v0.3.0 End-to-End Autonomous Delivery And Agent Adapter Registry Task Queue
 
 TASK-048 through TASK-056 are the scoped v0.3.0 tasks. They add End-to-End Autonomous Delivery, the Agent Adapter Registry, independent multi-target adapter exports, phase gates, and execution-pack manifest support while preserving the frozen v0.1.0, v0.1.1, v0.2.1, and v0.2.2 release folders.

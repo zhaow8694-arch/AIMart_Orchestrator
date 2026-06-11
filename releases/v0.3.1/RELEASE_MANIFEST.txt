@@ -1,0 +1,23 @@
+﻿# AIMart Orchestrator v0.3.1 Release Manifest
+
+Version: v0.3.1
+Release: Auto-Verified Customer Pack Runtime Validation
+GeneratedAt: 2026-06-12T04:24:39
+
+## Artifacts
+
+- aimart-orchestrator-v0.3.1-source.zip
+- samples/todo-api-generated-execution-pack.zip
+- SHA256.txt
+- RELEASE_MANIFEST.txt
+- dogfood/CUSTOMER_PACK_RUNTIME_VALIDATION.md
+
+## Validation Summary
+
+- pnpm test: PASS
+- pnpm lint: PASS
+- pnpm build: PASS
+- source ZIP: PASS
+- sample execution-pack ZIP: PASS
+- customer runtime entrypoints: PASS
+- adapter directories: Codex, Claude Code, Trae, Cursor

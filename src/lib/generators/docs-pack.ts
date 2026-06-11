@@ -48,7 +48,7 @@ export function generateDocsPack(
 function renderReadme(projectSpec: ProjectSpec, taskQueue: TaskQueue): string {
   return `# ${projectSpec.projectName}
 
-This generated execution-pack ZIP describes the local v0.3.0 End-to-End delivery plan for ${projectSpec.projectName}. It is different from an AIMart source release ZIP: source release ZIPs contain the generator source, while generated execution-pack ZIPs contain common/runtime/scripts/agent_adapters/docs for a target project.
+This generated execution-pack ZIP describes the local v0.3.1 Auto-Verified Customer Pack Runtime Validation plan for ${projectSpec.projectName}. It keeps End-to-End delivery state visible from the customer pack root. It is different from an AIMart source release ZIP: source release ZIPs contain the generator source, while generated execution-pack ZIPs contain root launchers plus common/runtime/scripts/agent_adapters/docs for a target project.
 
 Selected adapters: ${formatSelectedAdapters(projectSpec)}
 Execution scope: ${projectSpec.executionScope}
@@ -72,7 +72,7 @@ ${taskQueue.tasks.map((task) => `- ${task.id}: ${task.title}`).join("\n")}
 
 Unified autonomous runs must finish with the Autonomous Completion Gate before reporting success. Review runtime/AUTONOMOUS_COMPLETION_GATE.md and runtime/AUTONOMOUS_VERIFICATION_REPORT.md after every unattended run.
 
-Start with docs/RUN_APP.md, then follow common/TASK_QUEUE.md in order.
+Start with START_HERE.md, run one root-level launcher, then follow common/TASK_QUEUE.md in order. Before accepting delivery, run scripts/verify-customer-delivery.* and review runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md.
 `;
 }
 
@@ -83,6 +83,20 @@ Project: ${projectSpec.projectName}
 Selected adapters: ${formatSelectedAdapters(projectSpec)}
 Execution scope: ${projectSpec.executionScope}
 Selected execution mode: ${projectSpec.executionMode}
+
+## Customer Root Start
+
+After unzipping the execution pack, start from the pack root:
+
+\`\`\`powershell
+./START_CODEX_AUTONOMOUS.ps1
+\`\`\`
+
+\`\`\`cmd
+START_CODEX_AUTONOMOUS.cmd
+\`\`\`
+
+Use START_CODEX_SUPERVISED.ps1 or START_CODEX_SUPERVISED.cmd for supervised runs. The customer runner shows project name, selected AI adapter, current lifecycle phase, current target version, current task, log updated time, release output status, completion gate status, blocked/known issue status, and final PASS or FAIL summary.
 
 ## Local Setup
 
@@ -169,6 +183,16 @@ Run the platform-specific finalize script:
 
 \`\`\`bash
 ./scripts/finalize.sh
+\`\`\`
+
+Then run the customer delivery verifier:
+
+\`\`\`powershell
+./scripts/verify-customer-delivery.ps1
+\`\`\`
+
+\`\`\`bash
+bash scripts/verify-customer-delivery.sh
 \`\`\`
 `;
 }
@@ -261,27 +285,30 @@ ${asBullets(projectSpec.inferredAssumptions)}
 
 ${asBullets(projectSpec.openQuestions)}
 
-## v0.3.0 End-to-End Autonomous Delivery
+## v0.3.1 Auto-Verified Customer Pack Runtime Validation
 
-Generated packs include runtime/AUTONOMOUS_COMPLETION_GATE.md, runtime/AUTONOMOUS_VERIFICATION_REPORT.md, runtime/RUN_STATE.json, runtime/CURRENT_TASK.md, runtime/PHASE_GATE_REPORT.md, runtime/COMPLETION_GATE_REPORT.md, and independent adapter options for ${formatSelectedAdapters(projectSpec)}. The selected adapter must show PASS or FAIL before final delivery.
+Generated packs include START_HERE.md, START_CODEX_AUTONOMOUS.*, scripts/run-customer-autonomous.*, scripts/verify-customer-delivery.*, runtime/FULL_LIFECYCLE_RUN_STATE.json, runtime/VERSION_LADDER.json, runtime/PHASE_STATUS.json, runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md, Autonomous Completion Gate files, and independent adapter options for ${formatSelectedAdapters(projectSpec)}. The selected adapter and customer verifier must show PASS or FAIL before final delivery.
 `;
 }
 
 function renderReleaseNotes(projectSpec: ProjectSpec): string {
   return `# Release Notes
 
-## v0.3.0
+## v0.3.1
 
-Initial local v0.3.0 End-to-End execution pack for ${projectSpec.projectName}.
+Initial local v0.3.1 Auto-Verified Customer Pack Runtime Validation execution pack for ${projectSpec.projectName}.
 
 ### Included
 
+- Customer root START_HERE.md and START_CODEX_* launchers
 - Structured ProjectSpec
 - Generated TaskQueue
 - Runtime and permission policy
+- Full lifecycle customer state files
 - SAFE_COMMANDS, DENIED_COMMANDS, and autonomous execution policy
 - Autonomous Completion Gate runtime docs
 - End-to-End runtime state, phase gate, current task, morning report, and next-version handoff files
+- Customer one-window runner and delivery verifier scripts
 - Agent Adapter Registry output
 - Independent adapter options for ${formatSelectedAdapters(projectSpec)}
 - Local finalize scripts
@@ -295,7 +322,7 @@ function renderNextSteps(projectSpec: ProjectSpec): string {
 
 ## Immediate
 
-End-to-End autonomous delivery continues through phase gates until final usable delivery.
+v0.3.1 Auto-Verified Customer Pack Runtime Validation continues End-to-End autonomous delivery through phase gates until final usable delivery.
 
 1. Review PROJECT_SPEC.md for accuracy.
 2. Execute TASK_QUEUE.md from the first pending task.
@@ -306,10 +333,10 @@ End-to-End autonomous delivery continues through phase gates until final usable 
 
 ## Known Limitations
 
-- v0.3.0 is local-only.
-- v0.3.0 does not include a cloud runner.
-- v0.3.0 does not perform production deployment.
-- v0.3.0 does not read secrets or production credentials.
+- v0.3.1 is local-only.
+- v0.3.1 does not include a cloud runner.
+- v0.3.1 does not perform production deployment.
+- v0.3.1 does not read secrets or production credentials.
 
 ## Deferred Ideas
 

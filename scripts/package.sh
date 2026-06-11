@@ -24,6 +24,73 @@ zip -r "$OUT" . \
 mkdir -p "$SAMPLE_DIR"
 node scripts/create-sample-pack.mjs "$SAMPLE_OUT"
 
+DOGFOOD_DIR="$OUT_DIR/dogfood"
+DOGFOOD_EXTRACT_DIR="$DOGFOOD_DIR/todo-api-extracted"
+rm -rf "$DOGFOOD_DIR"
+mkdir -p "$DOGFOOD_EXTRACT_DIR"
+unzip -q "$SAMPLE_OUT" -d "$DOGFOOD_EXTRACT_DIR"
+
+dogfood_required=(
+  "START_HERE.md"
+  "START_CODEX_AUTONOMOUS.cmd"
+  "START_CODEX_AUTONOMOUS.ps1"
+  "runtime/FULL_LIFECYCLE_RUN_STATE.json"
+  "runtime/VERSION_LADDER.json"
+  "runtime/PHASE_STATUS.json"
+  "runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md"
+  "scripts/run-customer-autonomous.ps1"
+  "scripts/run-customer-autonomous.sh"
+  "scripts/verify-customer-delivery.ps1"
+  "scripts/verify-customer-delivery.sh"
+  "agent_adapters/codex"
+  "agent_adapters/claude-code"
+  "agent_adapters/claude-code/CLAUDE.md"
+  "agent_adapters/claude-code/CLAUDE_RUNBOOK.md"
+  "agent_adapters/claude-code/CLAUDE_TASK_PROMPT.md"
+  "agent_adapters/claude-code/CLAUDE_AUTONOMOUS_PROMPT.md"
+  "agent_adapters/claude-code/CLAUDE_END_TO_END_DELIVERY_RUNBOOK.md"
+  "agent_adapters/trae"
+  "agent_adapters/trae/TRAE_RUNBOOK.md"
+  "agent_adapters/trae/TRAE_TASK_PROMPT.md"
+  "agent_adapters/trae/TRAE_AUTONOMOUS_PROMPT.md"
+  "agent_adapters/trae/TRAE_END_TO_END_DELIVERY_RUNBOOK.md"
+  "agent_adapters/cursor"
+  "agent_adapters/cursor/CURSOR_RUNBOOK.md"
+  "agent_adapters/cursor/CURSOR_TASK_PROMPT.md"
+  "agent_adapters/cursor/CURSOR_AUTONOMOUS_RULES.md"
+  "agent_adapters/cursor/CURSOR_END_TO_END_DELIVERY_RUNBOOK.md"
+)
+
+for entry in "${dogfood_required[@]}"; do
+  [ -e "$DOGFOOD_EXTRACT_DIR/$entry" ] || { echo "Dogfood sample pack extraction missing required entry: $entry" >&2; exit 1; }
+done
+
+(
+  cd "$DOGFOOD_EXTRACT_DIR"
+  bash scripts/verify-customer-delivery.sh
+)
+
+unzip -Z1 "$SAMPLE_OUT" | sort > "$DOGFOOD_DIR/ZIP_ENTRIES.txt"
+cat > "$DOGFOOD_DIR/DOGFOOD_CUSTOMER_RUNTIME_VALIDATION.md" <<EOF
+# Dogfood Customer Runtime Validation
+
+Version: v$VERSION
+Sample ZIP: $SAMPLE_OUT
+Extracted pack: $DOGFOOD_EXTRACT_DIR
+
+## Checks
+
+- Root START_HERE.md exists: PASS
+- Root START_CODEX_AUTONOMOUS.cmd exists: PASS
+- Root START_CODEX_AUTONOMOUS.ps1 exists: PASS
+- Runtime lifecycle state files exist: PASS
+- Customer runner files exist: PASS
+- Adapter directories codex, claude-code, trae, cursor exist: PASS
+- Customer delivery verifier result: PASS
+
+Final result: PASS
+EOF
+
 SOURCE_HASH="$(sha256sum "$OUT" | awk '{print $1}')"
 SAMPLE_HASH="$(sha256sum "$SAMPLE_OUT" | awk '{print $1}')"
 cat > "$OUT_DIR/SHA256.txt" <<EOF
@@ -38,6 +105,8 @@ cat > "$OUT_DIR/RELEASE_MANIFEST.txt" <<EOF
 
 - aimart-orchestrator-v$VERSION-source.zip
 - samples/todo-api-generated-execution-pack.zip
+- dogfood/DOGFOOD_CUSTOMER_RUNTIME_VALIDATION.md
+- dogfood/ZIP_ENTRIES.txt
 - SHA256.txt
 - RELEASE_MANIFEST.txt
 
@@ -53,6 +122,11 @@ cat > "$OUT_DIR/RELEASE_MANIFEST.txt" <<EOF
 
 ## Sample Execution Pack Verification
 
+- START_HERE.md
+- START_CODEX_AUTONOMOUS.cmd
+- START_CODEX_AUTONOMOUS.ps1
+- START_CODEX_SUPERVISED.cmd
+- START_CODEX_SUPERVISED.ps1
 - EXECUTION_PACK_MANIFEST.md
 - common/PROJECT_SPEC.md
 - common/TASK_QUEUE.md
@@ -72,11 +146,22 @@ cat > "$OUT_DIR/RELEASE_MANIFEST.txt" <<EOF
 - runtime/AUTONOMOUS_VERIFICATION_REPORT.md
 - runtime/END_TO_END_AUTONOMOUS_POLICY.md
 - runtime/RUN_STATE.json
+- runtime/FULL_LIFECYCLE_RUN_STATE.json
+- runtime/VERSION_LADDER.json
+- runtime/PHASE_STATUS.json
 - runtime/CURRENT_TASK.md
+- runtime/CURRENT_PHASE.md
+- runtime/NEXT_ACTION.md
 - runtime/PHASE_GATE_REPORT.md
 - runtime/COMPLETION_GATE_REPORT.md
+- runtime/FINAL_DELIVERY_STATUS.md
+- runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md
 - runtime/MORNING_REPORT.md
 - runtime/HANDOFF_TO_NEXT_VERSION.md
+- scripts/run-customer-autonomous.ps1
+- scripts/run-customer-autonomous.sh
+- scripts/verify-customer-delivery.ps1
+- scripts/verify-customer-delivery.sh
 - agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md
 - agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md
 - agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md
@@ -92,14 +177,28 @@ cat > "$OUT_DIR/RELEASE_MANIFEST.txt" <<EOF
 - agent_adapters/codex/run-codex-unified-autonomous.sh
 - agent_adapters/codex/run-codex-end-to-end-autonomous.sh
 - agent_adapters/claude-code/CLAUDE.md
+- agent_adapters/claude-code/CLAUDE_RUNBOOK.md
 - agent_adapters/claude-code/CLAUDE_TASK_PROMPT.md
+- agent_adapters/claude-code/CLAUDE_AUTONOMOUS_PROMPT.md
+- agent_adapters/claude-code/CLAUDE_END_TO_END_DELIVERY_RUNBOOK.md
 - agent_adapters/trae/TRAE_RUNBOOK.md
 - agent_adapters/trae/TRAE_TASK_PROMPT.md
+- agent_adapters/trae/TRAE_AUTONOMOUS_PROMPT.md
+- agent_adapters/trae/TRAE_END_TO_END_DELIVERY_RUNBOOK.md
 - agent_adapters/cursor/CURSOR_RUNBOOK.md
 - agent_adapters/cursor/CURSOR_TASK_PROMPT.md
+- agent_adapters/cursor/CURSOR_AUTONOMOUS_RULES.md
+- agent_adapters/cursor/CURSOR_END_TO_END_DELIVERY_RUNBOOK.md
 - docs/README.md
 - docs/RUN_APP.md
 - docs/SECURITY_AND_PERMISSIONS.md
+
+## Dogfood Evidence
+
+- releases/v$VERSION/dogfood/DOGFOOD_CUSTOMER_RUNTIME_VALIDATION.md
+- releases/v$VERSION/dogfood/ZIP_ENTRIES.txt
+- releases/v$VERSION/dogfood/todo-api-extracted/runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md
+- customer runtime validation evidence: PASS
 EOF
 
 echo "[package] done"

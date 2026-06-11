@@ -96,10 +96,99 @@ function generateRootFiles(
 ): FileEntry[] {
   return [
     {
+      path: "START_HERE.md",
+      content: renderStartHere(projectSpec)
+    },
+    {
+      path: "START_CODEX_AUTONOMOUS.cmd",
+      content: renderStartCmd("START_CODEX_AUTONOMOUS.ps1")
+    },
+    {
+      path: "START_CODEX_AUTONOMOUS.ps1",
+      content: renderStartPowerShell("autonomous")
+    },
+    {
+      path: "START_CODEX_SUPERVISED.cmd",
+      content: renderStartCmd("START_CODEX_SUPERVISED.ps1")
+    },
+    {
+      path: "START_CODEX_SUPERVISED.ps1",
+      content: renderStartPowerShell("supervised")
+    },
+    {
       path: "EXECUTION_PACK_MANIFEST.md",
       content: renderExecutionPackManifest(projectSpec, adapterFiles)
     }
   ];
+}
+
+function renderStartHere(projectSpec: ProjectSpec): string {
+  return `# Start Here
+
+Project: ${projectSpec.projectName}
+
+This execution pack is meant to be run from the customer point of view after unzipping it into a project workspace.
+
+## Start Codex
+
+Use exactly one root launcher for one workspace.
+
+\`\`\`powershell
+./START_CODEX_AUTONOMOUS.ps1
+\`\`\`
+
+\`\`\`cmd
+START_CODEX_AUTONOMOUS.cmd
+\`\`\`
+
+Use START_CODEX_SUPERVISED.ps1 or START_CODEX_SUPERVISED.cmd when a human wants interactive approval prompts.
+
+## What The Launcher Shows
+
+- project name
+- selected AI adapter
+- current lifecycle phase
+- current target version
+- current task
+- log updated time
+- release output status
+- completion gate status
+- blocked/known issue status
+- final PASS or FAIL summary
+
+## Customer Validation
+
+\`\`\`powershell
+./scripts/verify-customer-delivery.ps1
+\`\`\`
+
+\`\`\`bash
+bash scripts/verify-customer-delivery.sh
+\`\`\`
+
+The verifier updates runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md.
+
+## Safety
+
+Use one selected AI adapter at a time. Generated Claude Code, Trae, and Cursor directories are independent export options, not collaborators. Do not run multiple agents against the same workspace unless a human manually coordinates ownership.
+`;
+}
+
+function renderStartCmd(scriptName: string): string {
+  return `@echo off
+setlocal
+powershell -ExecutionPolicy Bypass -File "%~dp0${scriptName}"
+exit /b %ERRORLEVEL%
+`;
+}
+
+function renderStartPowerShell(mode: "autonomous" | "supervised"): string {
+  return `$ErrorActionPreference = "Stop"
+$RootDir = $PSScriptRoot
+Set-Location $RootDir
+
+& (Join-Path $RootDir "scripts/run-customer-autonomous.ps1") -Mode ${mode}
+`;
 }
 
 function generateCommonFiles(
@@ -125,7 +214,7 @@ ${JSON.stringify(projectSpec, null, 2)}
       content: `# Execution Rules
 
 1. Follow TASK_QUEUE.md in order.
-2. Do not expand the v0.3.0 MVP scope.
+2. Do not expand the MVP scope.
 3. Write assumptions to ASSUMPTIONS.md when details are unknown.
 4. Write blockers to BLOCKERS.md only when work cannot continue.
 5. Queue high-risk commands in runtime/APPROVAL_QUEUE.md.
@@ -134,6 +223,7 @@ ${JSON.stringify(projectSpec, null, 2)}
 8. Run scripts/finalize.* before final delivery.
 9. Run the Autonomous Completion Gate and review runtime/AUTONOMOUS_VERIFICATION_REPORT.md before reporting success.
 10. Selecting multiple adapters means generating multiple independent execution options; choose one adapter for a workspace.
+11. Run scripts/verify-customer-delivery.* before accepting final customer delivery.
 `
     },
     {
@@ -188,8 +278,19 @@ ${asBullets(projectSpec.inferredAssumptions)}
       path: "common/BLOCKERS.md",
       content: `# Blockers
 
-| Time | Blocker | Impact | Needed Input |
+| Time | Severity | Status | Blocker | Impact | Needed Input |
+|---|---|---|---|---|---|
+`
+    },
+    {
+      path: "common/KNOWN_ISSUES.md",
+      content: `# Known Issues
+
+No open P0/P1 blockers are recorded at pack generation time.
+
+| Severity | Status | Issue | Recommendation |
 |---|---|---|---|
+| None | closed | No known issue recorded yet. | Continue customer runtime validation. |
 `
     },
     {
@@ -222,9 +323,10 @@ function renderExecutionPackManifest(
 ): string {
   const entries = getSelectedAgentAdapterRegistryEntries(projectSpec.selectedAdapterIds);
   const generatedFileSummary = [
+    "START_HERE.md and START_CODEX_* root launchers for customer entry",
     "common/ project specifications, task queue, autonomous roadmap, and phase gates",
-    "runtime/ permission policy, run state, current task, phase reports, and completion reports",
-    "scripts/ platform scripts and completion-gate verification",
+    "runtime/ permission policy, lifecycle run state, current task, phase reports, and completion reports",
+    "scripts/ platform scripts, customer runner, delivery verifier, and completion-gate verification",
     "agent_adapters/ independent adapter directories for selected targets",
     "docs/ customer-facing run and delivery documentation"
   ];
@@ -255,10 +357,10 @@ Adapter file count: ${adapterFiles.length}
 ## How To Start One Selected Agent
 
 1. Pick exactly one adapter directory under agent_adapters/.
-2. Read that adapter's runbook and task prompt.
-3. Read common/AUTONOMOUS_DELIVERY_ROADMAP.md, common/PHASE_GATE_PLAN.md, runtime/END_TO_END_AUTONOMOUS_POLICY.md, and runtime/RUN_STATE.json.
-4. Start the selected adapter using its documented supervised, autonomous, or end-to-end autonomous instructions.
-5. Continue until runtime/COMPLETION_GATE_REPORT.md reports PASS for the active phase.
+2. Read START_HERE.md.
+3. Run one root-level launcher such as START_CODEX_AUTONOMOUS.ps1.
+4. Let the selected adapter follow common/AUTONOMOUS_DELIVERY_ROADMAP.md, common/PHASE_GATE_PLAN.md, runtime/FULL_LIFECYCLE_RUN_STATE.json, and runtime/COMPLETION_GATE_REPORT.md.
+5. Continue until scripts/verify-customer-delivery.* and runtime/COMPLETION_GATE_REPORT.md report PASS.
 
 ## Completion Gate Requirements
 
@@ -266,8 +368,10 @@ ${entries
   .flatMap((entry) => entry.completionGateRequirements.map((item) => `- ${entry.displayName}: ${item}`))
   .join("\n")}
 - runtime/RUN_STATE.json must be valid JSON.
+- runtime/FULL_LIFECYCLE_RUN_STATE.json, runtime/VERSION_LADDER.json, and runtime/PHASE_STATUS.json must be coherent JSON.
 - runtime/CURRENT_TASK.md must exist.
 - runtime/PHASE_GATE_REPORT.md and runtime/COMPLETION_GATE_REPORT.md must be initialized or updated.
+- runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md must record PASS before customer delivery is accepted.
 
 ## High-Risk Command Policy
 

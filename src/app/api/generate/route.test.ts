@@ -134,8 +134,65 @@ describe("POST /api/generate", () => {
         "runtime/RUN_STATE.json",
         "agent_adapters/codex/CODEX_END_TO_END_AUTONOMOUS_PROMPT.md",
         "agent_adapters/claude-code/CLAUDE.md",
+        "agent_adapters/claude-code/CLAUDE_RUNBOOK.md",
+        "agent_adapters/claude-code/CLAUDE_TASK_PROMPT.md",
+        "agent_adapters/claude-code/CLAUDE_AUTONOMOUS_PROMPT.md",
+        "agent_adapters/claude-code/CLAUDE_END_TO_END_DELIVERY_RUNBOOK.md",
         "agent_adapters/trae/TRAE_RUNBOOK.md",
-        "agent_adapters/cursor/CURSOR_RUNBOOK.md"
+        "agent_adapters/trae/TRAE_TASK_PROMPT.md",
+        "agent_adapters/trae/TRAE_AUTONOMOUS_PROMPT.md",
+        "agent_adapters/trae/TRAE_END_TO_END_DELIVERY_RUNBOOK.md",
+        "agent_adapters/cursor/CURSOR_RUNBOOK.md",
+        "agent_adapters/cursor/CURSOR_TASK_PROMPT.md",
+        "agent_adapters/cursor/CURSOR_AUTONOMOUS_RULES.md",
+        "agent_adapters/cursor/CURSOR_END_TO_END_DELIVERY_RUNBOOK.md"
+      ])
+    );
+  });
+
+  it("defaults end-to-end delivery sample requests to all target adapters", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/generate", {
+        method: "POST",
+        body: JSON.stringify({
+          projectName: "Todo API",
+          rawDiscussion:
+            "Build a local Todo API MVP with CRUD endpoints, tests, generated docs, and completion-gate verification.",
+          executionScope: "end_to_end_delivery",
+          executionMode: "end_to_end_autonomous"
+        })
+      })
+    );
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      zipBase64: string;
+      projectSpec: { selectedAdapterIds: string[] };
+    };
+    const names = readCentralDirectoryNames(Buffer.from(body.zipBase64, "base64"));
+
+    expect(body.projectSpec.selectedAdapterIds).toEqual([
+      "codex",
+      "claude-code",
+      "trae",
+      "cursor"
+    ]);
+    expect(names).toEqual(
+      expect.arrayContaining([
+        "agent_adapters/codex/AGENTS.md",
+        "agent_adapters/claude-code/CLAUDE.md",
+        "agent_adapters/claude-code/CLAUDE_RUNBOOK.md",
+        "agent_adapters/claude-code/CLAUDE_TASK_PROMPT.md",
+        "agent_adapters/claude-code/CLAUDE_AUTONOMOUS_PROMPT.md",
+        "agent_adapters/claude-code/CLAUDE_END_TO_END_DELIVERY_RUNBOOK.md",
+        "agent_adapters/trae/TRAE_RUNBOOK.md",
+        "agent_adapters/trae/TRAE_TASK_PROMPT.md",
+        "agent_adapters/trae/TRAE_AUTONOMOUS_PROMPT.md",
+        "agent_adapters/trae/TRAE_END_TO_END_DELIVERY_RUNBOOK.md",
+        "agent_adapters/cursor/CURSOR_RUNBOOK.md",
+        "agent_adapters/cursor/CURSOR_TASK_PROMPT.md",
+        "agent_adapters/cursor/CURSOR_AUTONOMOUS_RULES.md",
+        "agent_adapters/cursor/CURSOR_END_TO_END_DELIVERY_RUNBOOK.md"
       ])
     );
   });
