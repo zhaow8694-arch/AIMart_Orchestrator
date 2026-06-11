@@ -119,7 +119,12 @@ try {
 
 $Failures = @($Results | Where-Object { $_.Status -eq "FAIL" })
 $FinalStatus = if ($Failures.Count -eq 0) { "PASS" } else { "FAIL" }
-$GitStatusText = try { (git status --short --branch) -join [Environment]::NewLine } catch { $_.Exception.Message }
+$GitStatusText = ""
+try {
+  $GitStatusText = (git status --short --branch) -join [Environment]::NewLine
+} catch {
+  $GitStatusText = $_.Exception.Message
+}
 
 $ReportLines = @(
   "# Autonomous Completion Gate Report",
@@ -142,9 +147,9 @@ $ReportLines += @(
   "",
   "## Git Status",
   "",
-  "```text",
+  '```text',
   $GitStatusText,
-  "```",
+  '```',
   "",
   "Final result: $FinalStatus"
 )

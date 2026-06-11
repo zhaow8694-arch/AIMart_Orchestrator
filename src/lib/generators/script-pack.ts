@@ -609,7 +609,7 @@ try {
   Add-Result "target version tag" "FAIL" $_.Exception.Message
 }
 $Final = if (($Results | Where-Object { $_.Status -eq "FAIL" }).Count -eq 0) { "PASS" } else { "FAIL" }
-@("# Autonomous Completion Gate Report", "", "TargetVersion: $TargetVersion", "", "| Gate | Status | Details |", "|---|---|---|") + ($Results | ForEach-Object { "| $($_.Gate) | $($_.Status) | $($_.Details -replace '\\|','/') |" }) + @("", "Final result: $Final") | Set-Content -Encoding UTF8 $ReportPath
+@("# Autonomous Completion Gate Report", "", "TargetVersion: $TargetVersion", "", "| Gate | Status | Details |", "|---|---|---|") + ($Results | ForEach-Object { "| $($_.Gate) | $($_.Status) | $($_.Details -replace '\\|','/') |" }) + @("", "Git status: $($GitStatus -join '; ')", "", "Final result: $Final") | Set-Content -Encoding UTF8 $ReportPath
 Write-Host "[Autonomous Completion Gate] $Final report=$ReportPath"
 if ($Final -ne "PASS") { throw "Autonomous Completion Gate FAIL. See $ReportPath" }
 `;
