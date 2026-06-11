@@ -4,6 +4,13 @@ Codex 每完成一个任务后更新这里。
 
 | Time | Task | Status | Notes |
 |---|---|---|---|
+| 2026-06-11 | TASK-041 Create v0.2.2 Completion Gate Plan | done | Added scoped v0.2.2 Autonomous Completion Gate tasks TASK-041 through TASK-047; historical release folders remain frozen. |
+| 2026-06-11 | TASK-042 Add v0.2.2 Tests | done | Added tests expecting completion-gate scripts, runtime gate docs, Codex completion-gate runbook, runner PASS/FAIL behavior, v0.2.2 version metadata, and generated ZIP entries. Focused red run was blocked by intermittent Windows sandbox process setup failures before Vitest started. |
+| 2026-06-11 | TASK-043 Implement Completion Gate Scripts | done | Added source and generated verification scripts for release artifacts, source ZIP exclusions, sample execution-pack extraction, historical release protection, and autonomous completion. |
+| 2026-06-11 | TASK-044 Implement Generated Completion Gate Pack Files | done | Added runtime AUTONOMOUS_COMPLETION_GATE/AUTONOMOUS_VERIFICATION_REPORT docs and Codex completion-gate runbook generation. |
+| 2026-06-11 | TASK-045 Update Unified Autonomous Runner Gate Behavior | done | Updated unified runner templates to show target version, startup state, artifact status, log activity, stalled-log status, and completion-gate PASS/FAIL reporting. |
+| 2026-06-11 | TASK-046 Update Version And v0.2.2 Delivery Docs | done | Updated package/UI version metadata and added v0.2.2 delivery evidence documents. |
+| 2026-06-11 | TASK-047 Verify And Package v0.2.2 | done | `scripts/finalize.ps1` passed lint, 13 test files / 52 tests, and build; generated `releases/v0.2.2` source ZIP, sample execution-pack ZIP, SHA256.txt, and RELEASE_MANIFEST.txt; release, source ZIP, sample pack, and historical release sub-gates passed. |
 | 2026-06-11 | TASK-034 Create v0.2.1 Execution Plan | done | Added scoped v0.2.1 Unified Autonomous Visual Runner tasks TASK-034 through TASK-040; historical release folders remain frozen. |
 | 2026-06-11 | TASK-035 Add v0.2.1 Tests | done | Added tests for unified autonomous mode, generated Codex unified runner files, runtime run status files, ZIP/API entries, and UI/version copy. `pnpm test` is currently blocked by Windows sandbox process setup errors before Vitest starts. |
 | 2026-06-11 | TASK-036 Implement Unified Autonomous Execution Mode | done | Added `unified_autonomous` schema/core handling and UI selector copy for one-window status display while preserving supervised/autonomous modes. |

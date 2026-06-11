@@ -100,4 +100,63 @@ describe("source release scripts and delivery docs", () => {
     expect(finalCheck).toContain("runtime/AUTONOMOUS_RUN_STATUS.md");
     expect(knownIssues).toContain("V0.2.1 Known Issues");
   });
+
+  it("includes v0.2.2 autonomous completion gate scripts", () => {
+    const expectedScripts = [
+      "scripts/verify-release.ps1",
+      "scripts/verify-release.sh",
+      "scripts/verify-sample-pack.ps1",
+      "scripts/verify-sample-pack.sh",
+      "scripts/verify-source-zip.ps1",
+      "scripts/verify-source-zip.sh",
+      "scripts/verify-history-releases.ps1",
+      "scripts/verify-history-releases.sh",
+      "scripts/verify-autonomous-completion.ps1",
+      "scripts/verify-autonomous-completion.sh"
+    ];
+
+    for (const scriptPath of expectedScripts) {
+      expect(readProjectFile(scriptPath)).toContain("Autonomous Completion Gate");
+    }
+
+    const gatePs1 = readProjectFile("scripts/verify-autonomous-completion.ps1");
+    const gateSh = readProjectFile("scripts/verify-autonomous-completion.sh");
+
+    for (const content of [gatePs1, gateSh]) {
+      expect(content).toContain("pnpm test");
+      expect(content).toContain("pnpm lint");
+      expect(content).toContain("pnpm build");
+      expect(content).toContain("verify-release");
+      expect(content).toContain("verify-source-zip");
+      expect(content).toContain("verify-sample-pack");
+      expect(content).toContain("verify-history-releases");
+      expect(content).toContain("V0.2.2_KNOWN_ISSUES.md");
+      expect(content).toContain("git status");
+      expect(content).toContain("TargetVersion");
+    }
+  });
+
+  it("includes v0.2.2 delivery documents for Autonomous Completion Gate", () => {
+    const implementationReport = readProjectFile("V0.2.2_IMPLEMENTATION_REPORT.md");
+    const releaseNotes = readProjectFile("V0.2.2_RELEASE_NOTES.md");
+    const finalCheck = readProjectFile("V0.2.2_FINAL_DELIVERY_CHECK.md");
+    const knownIssues = readProjectFile("V0.2.2_KNOWN_ISSUES.md");
+    const finalizePs1 = readProjectFile("scripts/finalize.ps1");
+    const finalizeSh = readProjectFile("scripts/finalize.sh");
+
+    for (const content of [
+      implementationReport,
+      releaseNotes,
+      finalCheck,
+      knownIssues,
+      finalizePs1,
+      finalizeSh
+    ]) {
+      expect(content).toContain("v0.2.2");
+      expect(content).toContain("Autonomous Completion Gate");
+    }
+    expect(finalCheck).toContain("verify-autonomous-completion.ps1");
+    expect(finalCheck).toContain("runtime/AUTONOMOUS_COMPLETION_GATE.md");
+    expect(finalCheck).toContain("CODEX_COMPLETION_GATE_RUNBOOK.md");
+  });
 });

@@ -111,13 +111,14 @@ ${JSON.stringify(projectSpec, null, 2)}
       content: `# Execution Rules
 
 1. Follow TASK_QUEUE.md in order.
-2. Do not expand the v0.2.1 MVP scope.
+2. Do not expand the v0.2.2 MVP scope.
 3. Write assumptions to ASSUMPTIONS.md when details are unknown.
 4. Write blockers to BLOCKERS.md only when work cannot continue.
 5. Queue high-risk commands in runtime/APPROVAL_QUEUE.md.
 6. Run only commands allowed by runtime/SAFE_COMMANDS.md during autonomous execution.
 7. Do not run commands listed in runtime/DENIED_COMMANDS.md.
 8. Run scripts/finalize.* before final delivery.
+9. Run the Autonomous Completion Gate and review runtime/AUTONOMOUS_VERIFICATION_REPORT.md before reporting success.
 `
     },
     {
@@ -142,6 +143,7 @@ ${JSON.stringify(projectSpec, null, 2)}
 - [ ] scripts/finalize.* completed.
 - [ ] ZIP artifact generated.
 - [ ] Unified autonomous runner summary reviewed.
+- [ ] Autonomous Completion Gate reports PASS.
 `
     },
     {
@@ -176,7 +178,7 @@ This pack is generated for Codex target execution of ${projectSpec.projectName}.
 
 Selected execution mode: ${projectSpec.executionMode}
 
-Use common/TASK_QUEUE.md, runtime/PERMISSION_POLICY.yaml, runtime/SAFE_COMMANDS.md, runtime/DENIED_COMMANDS.md, agent_adapters/codex/AGENTS.md, and agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md as the source of truth.
+Use common/TASK_QUEUE.md, runtime/PERMISSION_POLICY.yaml, runtime/SAFE_COMMANDS.md, runtime/DENIED_COMMANDS.md, runtime/AUTONOMOUS_COMPLETION_GATE.md, agent_adapters/codex/AGENTS.md, agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md, and agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md as the source of truth.
 `
     }
   ];

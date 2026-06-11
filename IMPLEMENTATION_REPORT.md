@@ -2,7 +2,7 @@
 
 ## Scope
 
-AIMart Orchestrator v0.2.1 implements Unified Autonomous Visual Runner integration for generated Codex execution packs.
+AIMart Orchestrator v0.2.2 implements the Autonomous Completion Gate and self-verification system for source releases and generated Codex execution packs.
 
 ## Completed
 
@@ -15,6 +15,9 @@ AIMart Orchestrator v0.2.1 implements Unified Autonomous Visual Runner integrati
 - v0.2.1 unified autonomous execution mode selection.
 - Generated runtime AUTONOMOUS_RUN_STATUS, AUTONOMOUS_RUN_SUMMARY, and AUTONOMOUS_HEALTH_CHECK files.
 - Generated Codex unified autonomous runbook and PowerShell/Bash one-window runner scripts.
+- v0.2.2 completion-gate verification scripts for release, source ZIP, sample pack, history protection, and autonomous completion.
+- Generated runtime AUTONOMOUS_COMPLETION_GATE and AUTONOMOUS_VERIFICATION_REPORT files.
+- Generated Codex completion-gate runbook and unified runner PASS/FAIL behavior.
 
 ## Verification
 
@@ -23,7 +26,8 @@ AIMart Orchestrator v0.2.1 implements Unified Autonomous Visual Runner integrati
 - pnpm test through scripts/test.ps1
 - pnpm build through scripts/test.ps1
 - Generated execution-pack ZIP structure verification
+- Autonomous Completion Gate verification through scripts/verify-autonomous-completion.ps1
 
 ## Security
 
-Unified Autonomous Mode is bounded to workspace-write with approval never. Remote pushes, production deployment, cloud resource mutation, real database migration, frozen release modification, and secret reads are not performed by default.
+Unified Autonomous Mode is bounded to workspace-write with approval never. Remote pushes, production deployment, cloud resource mutation, real database migration, frozen release modification, historical release deletion, and secret reads are not performed by default.

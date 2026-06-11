@@ -34,11 +34,16 @@ describe("execution pack packager", () => {
         "runtime/AUTONOMOUS_RUN_STATUS.md",
         "runtime/AUTONOMOUS_RUN_SUMMARY.md",
         "runtime/AUTONOMOUS_HEALTH_CHECK.md",
+        "runtime/AUTONOMOUS_COMPLETION_GATE.md",
+        "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
         "scripts/finalize.ps1",
         "scripts/finalize.sh",
+        "scripts/verify-autonomous-completion.ps1",
+        "scripts/verify-autonomous-completion.sh",
         "agent_adapters/codex/AGENTS.md",
         "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md",
         "agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md",
+        "agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md",
         "agent_adapters/codex/run-codex-autonomous.ps1",
         "agent_adapters/codex/run-codex-unified-autonomous.ps1",
         "docs/RUN_APP.md",
@@ -95,6 +100,8 @@ describe("execution pack packager", () => {
       "runtime/AUTONOMOUS_RUN_STATUS.md",
       "runtime/AUTONOMOUS_RUN_SUMMARY.md",
       "runtime/AUTONOMOUS_HEALTH_CHECK.md",
+      "runtime/AUTONOMOUS_COMPLETION_GATE.md",
+      "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
       "runtime/RUNTIME_STATUS.md",
       "runtime/ROLLBACK_PLAN.md",
       "scripts/preflight.ps1",
@@ -111,6 +118,16 @@ describe("execution pack packager", () => {
       "scripts/tag-release.sh",
       "scripts/package.ps1",
       "scripts/package.sh",
+      "scripts/verify-release.ps1",
+      "scripts/verify-release.sh",
+      "scripts/verify-sample-pack.ps1",
+      "scripts/verify-sample-pack.sh",
+      "scripts/verify-source-zip.ps1",
+      "scripts/verify-source-zip.sh",
+      "scripts/verify-history-releases.ps1",
+      "scripts/verify-history-releases.sh",
+      "scripts/verify-autonomous-completion.ps1",
+      "scripts/verify-autonomous-completion.sh",
       "scripts/finalize.ps1",
       "scripts/finalize.sh",
       "agent_adapters/codex/AGENTS.md",
@@ -120,6 +137,7 @@ describe("execution pack packager", () => {
       "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md",
       "agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md",
       "agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md",
+      "agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md",
       "agent_adapters/codex/run-codex-autonomous.ps1",
       "agent_adapters/codex/run-codex-supervised.ps1",
       "agent_adapters/codex/run-codex-unified-autonomous.ps1",
@@ -188,6 +206,11 @@ describe("execution pack packager", () => {
     expect(names).toContain("runtime/AUTONOMOUS_RUN_STATUS.md");
     expect(names).toContain("runtime/AUTONOMOUS_RUN_SUMMARY.md");
     expect(names).toContain("runtime/AUTONOMOUS_HEALTH_CHECK.md");
+    expect(names).toContain("runtime/AUTONOMOUS_COMPLETION_GATE.md");
+    expect(names).toContain("runtime/AUTONOMOUS_VERIFICATION_REPORT.md");
+    expect(names).toContain(
+      "agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md"
+    );
   });
 });
 

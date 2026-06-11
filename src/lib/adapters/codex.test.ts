@@ -37,6 +37,7 @@ describe("generateCodexAdapter", () => {
         "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md",
         "agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md",
         "agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md",
+        "agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md",
         "agent_adapters/codex/run-codex-autonomous.ps1",
         "agent_adapters/codex/run-codex-supervised.ps1",
         "agent_adapters/codex/run-codex-unified-autonomous.ps1",
@@ -159,8 +160,12 @@ describe("generateCodexAdapter", () => {
       adapter.files,
       "agent_adapters/codex/run-codex-unified-autonomous.sh"
     );
+    const completionRunbook = findFile(
+      adapter.files,
+      "agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md"
+    );
 
-    for (const content of [runbook, ps1, sh]) {
+    for (const content of [runbook, ps1, sh, completionRunbook]) {
       expect(content).toContain("one-window");
       expect(content).toContain("codex_runs");
       expect(content).toContain("AUTONOMOUS_RUN_STATUS.md");
@@ -180,6 +185,16 @@ describe("generateCodexAdapter", () => {
       expect(content).toContain("Known issues");
       expect(content).toContain("Final Summary");
       expect(content).toContain("Sample execution pack");
+      expect(content).toContain("Target version");
+      expect(content).toContain("Clean at startup");
+      expect(content).toContain("Existing Codex processes");
+      expect(content).toContain("Source ZIP");
+      expect(content).toContain("Latest log activity");
+      expect(content).toContain("Log appears stalled");
+      expect(content).toContain("Autonomous Completion Gate");
+      expect(content).toContain("PASS");
+      expect(content).toContain("FAIL");
+      expect(content).toContain("AUTONOMOUS_VERIFICATION_REPORT.md");
       expect(content).not.toContain("git push");
       expect(content).not.toContain("full-access");
     }

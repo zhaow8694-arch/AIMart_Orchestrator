@@ -100,7 +100,8 @@ export function generateRuntimePack(projectSpec: ProjectSpec): RuntimePack {
       "git push",
       "git push --tags",
       "Remove-Item releases/v0.1.0",
-      "Remove-Item releases/v0.1.1"
+      "Remove-Item releases/v0.1.1",
+      "Remove-Item releases/v0.2.1"
     ]
   });
 
@@ -184,6 +185,14 @@ export function generateRuntimePack(projectSpec: ProjectSpec): RuntimePack {
     {
       path: "runtime/AUTONOMOUS_HEALTH_CHECK.md",
       content: renderAutonomousHealthCheck(projectSpec)
+    },
+    {
+      path: "runtime/AUTONOMOUS_COMPLETION_GATE.md",
+      content: renderAutonomousCompletionGate(projectSpec)
+    },
+    {
+      path: "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
+      content: renderAutonomousVerificationReport(projectSpec)
     },
     {
       path: "runtime/RUNTIME_STATUS.md",
@@ -396,6 +405,58 @@ The unified autonomous runner provides a single-window status display and writes
 - [ ] Release directory status was checked.
 - [ ] Known issues status was checked.
 - [ ] No secret files or cloud credentials were read.
+`;
+}
+
+function renderAutonomousCompletionGate(projectSpec: ProjectSpec): string {
+  return `# Autonomous Completion Gate
+
+Project: ${projectSpec.projectName}
+Selected execution mode: ${projectSpec.executionMode}
+
+The autonomous runner must not report success until this gate passes.
+
+## Required Gates
+
+- Run \`pnpm test\`.
+- Run \`pnpm lint\`.
+- Run \`pnpm build\`.
+- Confirm the target release directory exists.
+- Confirm the source ZIP exists.
+- Confirm the sample execution-pack ZIP exists.
+- Confirm SHA256.txt and RELEASE_MANIFEST.txt exist.
+- Confirm SHA256 values match the actual source ZIP and sample execution-pack ZIP hashes.
+- Confirm the source ZIP excludes node_modules, .next, .git, codex_runs, temporary verification directories, old releases, .env files, and secret files.
+- Confirm the sample execution-pack ZIP contains required common, runtime, scripts, Codex adapter, and docs files.
+- Confirm historical release folders are not modified.
+- Confirm final delivery documents exist.
+- Report git status.
+- Confirm the target version tag exists and points to the final commit.
+
+## Result
+
+Record PASS or FAIL in runtime/AUTONOMOUS_VERIFICATION_REPORT.md before final delivery.
+`;
+}
+
+function renderAutonomousVerificationReport(projectSpec: ProjectSpec): string {
+  return `# Autonomous Verification Report
+
+Project: ${projectSpec.projectName}
+
+| Gate | Status | Notes |
+|---|---|---|
+| pnpm test | pending | PASS or FAIL is written by the runner. |
+| pnpm lint | pending | PASS or FAIL is written by the runner. |
+| pnpm build | pending | PASS or FAIL is written by the runner. |
+| release artifacts | pending | Source ZIP, sample execution-pack ZIP, SHA256.txt, and RELEASE_MANIFEST.txt. |
+| source ZIP verification | pending | Exclusions and SHA256 must match. |
+| sample execution-pack verification | pending | Required files must be present. |
+| historical release protection | pending | Frozen release folders must be unchanged. |
+| final delivery documents | pending | Required delivery evidence must exist. |
+| local tag | pending | Target version tag must point to final commit. |
+
+Final result: pending
 `;
 }
 

@@ -94,11 +94,43 @@ describe("generateDocsPack", () => {
     expect(runApp).toContain("run-codex-autonomous");
     expect(runApp).toContain("run-codex-unified-autonomous");
     expect(runApp).toContain("one-window status display");
+    expect(runApp).toContain("Autonomous Completion Gate");
     expect(runApp).toContain("logs");
     expect(security).toContain("runtime/SAFE_COMMANDS.md");
     expect(security).toContain("runtime/DENIED_COMMANDS.md");
     expect(security).toContain("runtime/APPROVAL_QUEUE.md");
+    expect(security).toContain("runtime/AUTONOMOUS_COMPLETION_GATE.md");
+    expect(security).toContain("runtime/AUTONOMOUS_VERIFICATION_REPORT.md");
     expect(security).toContain("Autonomous Mode");
+  });
+
+  it("documents v0.2.2 completion gate delivery behavior", () => {
+    const projectSpec = createProjectSpec(
+      {
+        projectName: "Tiny Planner",
+        rawDiscussion: "Build a local MVP for planning coding tasks.",
+        executionMode: "unified_autonomous"
+      },
+      { now: fixedNow }
+    );
+    const taskQueue = generateTaskQueue(projectSpec, { now: fixedNow });
+    const runtimePack = generateRuntimePack(projectSpec);
+
+    const docsPack = generateDocsPack(projectSpec, taskQueue, runtimePack);
+    const readme = findFile(docsPack.files, "docs/README.md");
+    const implementationReport = findFile(
+      docsPack.files,
+      "docs/IMPLEMENTATION_REPORT.md"
+    );
+    const releaseNotes = findFile(docsPack.files, "docs/RELEASE_NOTES.md");
+    const nextSteps = findFile(docsPack.files, "docs/NEXT_STEPS.md");
+
+    for (const content of [readme, implementationReport, releaseNotes, nextSteps]) {
+      expect(content).toContain("v0.2.2");
+      expect(content).toContain("Autonomous Completion Gate");
+    }
+    expect(releaseNotes).toContain("completion-gate runbook");
+    expect(nextSteps).toContain("AUTONOMOUS_VERIFICATION_REPORT.md");
   });
 
   it("uses the standardized forbidden items wording", () => {

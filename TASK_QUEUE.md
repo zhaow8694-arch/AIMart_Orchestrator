@@ -1,5 +1,104 @@
 # AIMart Orchestrator v0.1 Task Queue
 
+## v0.2.2 Autonomous Completion Gate Task Queue
+
+TASK-041 through TASK-047 are the scoped v0.2.2 tasks. They add the Autonomous Completion Gate and self-verification system while preserving the v0.1.0, v0.1.1, and v0.2.1 release folders.
+
+## TASK-041 Create v0.2.2 Completion Gate Plan
+
+```yaml
+status: done
+phase: plan
+dependencies: [TASK-040]
+done_criteria:
+  - v0.2.2 scope is limited to Autonomous Completion Gate and self-verification
+  - TASK_QUEUE.md records TASK-041 through TASK-047
+  - Historical release folders remain untouched
+```
+
+## TASK-042 Add v0.2.2 Tests
+
+```yaml
+status: done
+phase: qa
+dependencies: [TASK-041]
+done_criteria:
+  - Tests expect completion-gate verification scripts
+  - Tests expect generated runtime completion-gate docs
+  - Tests expect generated Codex completion-gate runbook
+  - Tests expect generated sample execution-pack ZIP entries
+```
+
+## TASK-043 Implement Completion Gate Scripts
+
+```yaml
+status: done
+phase: scripts
+dependencies: [TASK-042]
+done_criteria:
+  - verify-release scripts check release artifacts and SHA256 values
+  - verify-source-zip scripts reject forbidden source ZIP entries
+  - verify-sample-pack scripts extract and verify required sample pack files
+  - verify-history-releases scripts protect v0.1.0, v0.1.1, and v0.2.1
+  - verify-autonomous-completion scripts run all completion gates
+```
+
+## TASK-044 Implement Generated Completion Gate Pack Files
+
+```yaml
+status: done
+phase: generator
+dependencies: [TASK-043]
+done_criteria:
+  - runtime/AUTONOMOUS_COMPLETION_GATE.md is generated
+  - runtime/AUTONOMOUS_VERIFICATION_REPORT.md is generated
+  - agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md is generated
+  - generated docs reference v0.2.2 completion-gate behavior
+```
+
+## TASK-045 Update Unified Autonomous Runner Gate Behavior
+
+```yaml
+status: done
+phase: adapter
+dependencies: [TASK-044]
+done_criteria:
+  - Unified runner displays target version, branch, clean startup state, existing Codex process detection, release artifact status, log activity, and stalled-log status
+  - Unified runner runs the Autonomous Completion Gate at the end
+  - Unified runner prints PASS or FAIL and points to the verification report on failure
+```
+
+## TASK-046 Update Version And v0.2.2 Delivery Docs
+
+```yaml
+status: done
+phase: release
+dependencies: [TASK-045]
+done_criteria:
+  - package.json and UI metadata are updated to 0.2.2
+  - V0.2.2_IMPLEMENTATION_REPORT.md is generated
+  - V0.2.2_RELEASE_NOTES.md is generated
+  - V0.2.2_FINAL_DELIVERY_CHECK.md is generated
+  - V0.2.2_KNOWN_ISSUES.md is generated
+```
+
+## TASK-047 Verify And Package v0.2.2
+
+```yaml
+status: done
+phase: finalize
+dependencies: [TASK-046]
+done_criteria:
+  - pnpm test passes
+  - pnpm lint passes
+  - pnpm build passes
+  - releases/v0.2.2 source ZIP exists
+  - releases/v0.2.2/samples/todo-api-generated-execution-pack.zip exists
+  - SHA256.txt and RELEASE_MANIFEST.txt exist
+  - Autonomous Completion Gate passes
+  - local tag v0.2.2 exists and points to the final commit
+```
+
 ## v0.2.1 Unified Autonomous Visual Runner Task Queue
 
 TASK-034 through TASK-040 are the scoped v0.2.1 tasks. They add a single-window Codex unified autonomous runner to generated execution packs while preserving the v0.1.0, v0.1.1, and v0.2.0 release folders.

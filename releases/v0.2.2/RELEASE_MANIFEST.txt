@@ -1,0 +1,46 @@
+﻿# AIMart Orchestrator v0.2.2 Release Manifest
+
+## Artifacts
+
+- aimart-orchestrator-v0.2.2-source.zip
+- samples/todo-api-generated-execution-pack.zip
+- SHA256.txt
+- RELEASE_MANIFEST.txt
+
+## Source ZIP Exclusions
+
+- node_modules
+- .next
+- .git
+- codex_runs
+- temporary verification directories
+- historical releases
+- .env and secret files
+
+## Sample Execution Pack Verification
+
+- common/PROJECT_SPEC.md
+- common/TASK_QUEUE.md
+- common/EXECUTION_RULES.md
+- runtime/SAFE_COMMANDS.md
+- runtime/DENIED_COMMANDS.md
+- runtime/APPROVAL_QUEUE.md
+- runtime/AUTONOMOUS_EXECUTION_POLICY.md
+- runtime/AUTONOMOUS_RUN_STATUS.md
+- runtime/AUTONOMOUS_RUN_SUMMARY.md
+- runtime/AUTONOMOUS_HEALTH_CHECK.md
+- runtime/AUTONOMOUS_COMPLETION_GATE.md
+- runtime/AUTONOMOUS_VERIFICATION_REPORT.md
+- agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md
+- agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md
+- agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md
+- agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md
+- agent_adapters/codex/run-codex-autonomous.ps1
+- agent_adapters/codex/run-codex-supervised.ps1
+- agent_adapters/codex/run-codex-unified-autonomous.ps1
+- agent_adapters/codex/run-codex-autonomous.sh
+- agent_adapters/codex/run-codex-supervised.sh
+- agent_adapters/codex/run-codex-unified-autonomous.sh
+- docs/README.md
+- docs/RUN_APP.md
+- docs/SECURITY_AND_PERMISSIONS.md

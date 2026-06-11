@@ -33,6 +33,16 @@ describe("generateScriptPack", () => {
         "scripts/tag-release.sh",
         "scripts/package.ps1",
         "scripts/package.sh",
+        "scripts/verify-release.ps1",
+        "scripts/verify-release.sh",
+        "scripts/verify-sample-pack.ps1",
+        "scripts/verify-sample-pack.sh",
+        "scripts/verify-source-zip.ps1",
+        "scripts/verify-source-zip.sh",
+        "scripts/verify-history-releases.ps1",
+        "scripts/verify-history-releases.sh",
+        "scripts/verify-autonomous-completion.ps1",
+        "scripts/verify-autonomous-completion.sh",
         "scripts/finalize.ps1",
         "scripts/finalize.sh"
       ])
@@ -58,7 +68,8 @@ describe("generateScriptPack", () => {
       "test",
       "git-cleanup",
       "tag-release",
-      "package"
+      "package",
+      "verify-autonomous-completion"
     ]) {
       expect(finalizePs1).toContain(step);
       expect(finalizeSh).toContain(step);
@@ -100,6 +111,50 @@ describe("generateScriptPack", () => {
     expect(preflightSh).toContain("node pnpm git zip");
     expect(packageSh).toContain('zip -qr "$ARCHIVE"');
     expect(packageSh).not.toContain("zip unavailable");
+  });
+
+  it("generates autonomous completion verification scripts with release gates", () => {
+    const projectSpec = createProjectSpec(
+      {
+        projectName: "Tiny Planner",
+        rawDiscussion: "Build a local MVP for planning coding tasks."
+      },
+      { now: fixedNow }
+    );
+
+    const scriptPack = generateScriptPack(projectSpec);
+    const gatePs1 = findFile(
+      scriptPack.files,
+      "scripts/verify-autonomous-completion.ps1"
+    );
+    const gateSh = findFile(
+      scriptPack.files,
+      "scripts/verify-autonomous-completion.sh"
+    );
+    const samplePs1 = findFile(scriptPack.files, "scripts/verify-sample-pack.ps1");
+    const sourcePs1 = findFile(scriptPack.files, "scripts/verify-source-zip.ps1");
+    const historyPs1 = findFile(
+      scriptPack.files,
+      "scripts/verify-history-releases.ps1"
+    );
+
+    for (const content of [gatePs1, gateSh]) {
+      expect(content).toContain("pnpm test");
+      expect(content).toContain("pnpm lint");
+      expect(content).toContain("pnpm build");
+      expect(content).toContain("verify-release");
+      expect(content).toContain("verify-source-zip");
+      expect(content).toContain("verify-sample-pack");
+      expect(content).toContain("verify-history-releases");
+      expect(content).toContain("git status");
+      expect(content).toContain("TargetVersion");
+    }
+
+    expect(samplePs1).toContain("CODEX_COMPLETION_GATE_RUNBOOK.md");
+    expect(sourcePs1).toContain("node_modules");
+    expect(sourcePs1).toContain("SHA256");
+    expect(historyPs1).toContain("v0.1.0");
+    expect(historyPs1).toContain("v0.2.1");
   });
 });
 

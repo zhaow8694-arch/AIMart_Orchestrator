@@ -24,6 +24,12 @@ if [ -z "$VERSION" ]; then
 fi
 
 TAG="v$VERSION"
+DIRTY_COUNT="$(git status --short | wc -l | tr -d " ")"
+if [ "$DIRTY_COUNT" != "0" ]; then
+  echo "[tag-release] worktree has $DIRTY_COUNT changed file(s); create local tag $TAG after the final commit"
+  echo "[tag-release] remote push skipped. Use --push only after approval."
+  exit 0
+fi
 
 if git rev-parse "$TAG" >/dev/null 2>&1; then
   echo "[tag-release] tag already exists: $TAG"

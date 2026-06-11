@@ -24,6 +24,13 @@ if (-not $Version) {
 }
 
 $Tag = "v$Version"
+$Dirty = @(git status --short)
+if ($Dirty.Count -gt 0) {
+  Write-Host "[tag-release] worktree has $($Dirty.Count) changed file(s); create local tag $Tag after the final commit"
+  Write-Host "[tag-release] remote push skipped. Use -Push only after approval."
+  exit 0
+}
+
 $Exists = git tag --list $Tag
 if ($Exists) {
   Write-Host "[tag-release] tag already exists: $Tag"

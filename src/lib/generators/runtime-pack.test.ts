@@ -41,6 +41,8 @@ describe("generateRuntimePack", () => {
         "runtime/AUTONOMOUS_RUN_STATUS.md",
         "runtime/AUTONOMOUS_RUN_SUMMARY.md",
         "runtime/AUTONOMOUS_HEALTH_CHECK.md",
+        "runtime/AUTONOMOUS_COMPLETION_GATE.md",
+        "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
         "runtime/RUNTIME_STATUS.md",
         "runtime/ROLLBACK_PLAN.md"
       ])
@@ -185,6 +187,38 @@ describe("generateRuntimePack", () => {
     expect(runSummary).toContain("Next recommended action");
     expect(healthCheck).toContain("single-window");
     expect(healthCheck).toContain("codex_runs");
+  });
+
+  it("generates autonomous completion gate and verification report docs", () => {
+    const projectSpec = createProjectSpec(
+      {
+        projectName: "Tiny Planner",
+        rawDiscussion: "Build a local MVP for planning coding tasks.",
+        executionMode: "unified_autonomous"
+      },
+      { now: fixedNow }
+    );
+
+    const runtimePack = generateRuntimePack(projectSpec);
+    const completionGate = findFile(
+      runtimePack.files,
+      "runtime/AUTONOMOUS_COMPLETION_GATE.md"
+    );
+    const verificationReport = findFile(
+      runtimePack.files,
+      "runtime/AUTONOMOUS_VERIFICATION_REPORT.md"
+    );
+
+    expect(completionGate).toContain("Autonomous Completion Gate");
+    expect(completionGate).toContain("pnpm test");
+    expect(completionGate).toContain("pnpm lint");
+    expect(completionGate).toContain("pnpm build");
+    expect(completionGate).toContain("SHA256");
+    expect(completionGate).toContain("source ZIP");
+    expect(completionGate).toContain("sample execution-pack ZIP");
+    expect(verificationReport).toContain("PASS");
+    expect(verificationReport).toContain("FAIL");
+    expect(verificationReport).toContain("Gate");
   });
 });
 

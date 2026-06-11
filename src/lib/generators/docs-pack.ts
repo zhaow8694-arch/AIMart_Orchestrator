@@ -47,7 +47,7 @@ export function generateDocsPack(
 function renderReadme(projectSpec: ProjectSpec, taskQueue: TaskQueue): string {
   return `# ${projectSpec.projectName}
 
-This generated execution-pack ZIP describes the local v0.2.1 delivery plan for ${projectSpec.projectName}. It is different from an AIMart source release ZIP: source release ZIPs contain the generator source, while generated execution-pack ZIPs contain common/runtime/scripts/agent_adapters/docs for a target project.
+This generated execution-pack ZIP describes the local v0.2.2 delivery plan for ${projectSpec.projectName}. It is different from an AIMart source release ZIP: source release ZIPs contain the generator source, while generated execution-pack ZIPs contain common/runtime/scripts/agent_adapters/docs for a target project.
 
 Selected execution mode: ${projectSpec.executionMode}
 
@@ -62,6 +62,10 @@ ${asBullets(projectSpec.forbiddenItems)}
 ## Task Queue
 
 ${taskQueue.tasks.map((task) => `- ${task.id}: ${task.title}`).join("\n")}
+
+## Autonomous Completion Gate
+
+Unified autonomous runs must finish with the Autonomous Completion Gate before reporting success. Review runtime/AUTONOMOUS_COMPLETION_GATE.md and runtime/AUTONOMOUS_VERIFICATION_REPORT.md after every unattended run.
 
 Start with docs/RUN_APP.md, then follow common/TASK_QUEUE.md in order.
 `;
@@ -114,7 +118,7 @@ bash agent_adapters/codex/run-codex-autonomous.sh
 
 ## Start Codex Unified Autonomous Mode
 
-Unified Autonomous Mode provides the one-window status display. It starts Codex autonomously, shows elapsed time, Git branch, dirty file count, latest log tail, release directory status, and known issues status, then writes a final summary.
+Unified Autonomous Mode provides the one-window status display. It starts Codex autonomously, shows target version, Git branch, clean startup state, existing Codex process detection, release artifact status, latest log activity, stalled-log status, and final summary. It runs the Autonomous Completion Gate before reporting PASS.
 
 \`\`\`powershell
 ./agent_adapters/codex/run-codex-unified-autonomous.ps1
@@ -127,6 +131,10 @@ bash agent_adapters/codex/run-codex-unified-autonomous.sh
 ## Logs And Approval Queue
 
 Codex launcher logs are written under .aimart/logs for the legacy launchers and codex_runs for the unified autonomous runner. Commands outside the safe policy must be recorded in runtime/APPROVAL_QUEUE.md with the risk, reason, blocking status, and recommendation.
+
+## Autonomous Completion Gate
+
+The unified runner writes runtime/AUTONOMOUS_VERIFICATION_REPORT.md. If the gate reports FAIL, inspect that report before accepting the run.
 
 ## Final Delivery
 
@@ -190,6 +198,8 @@ Commands marked deny must not be executed.
 - Read runtime/SAFE_COMMANDS.md before running automated commands.
 - Read runtime/DENIED_COMMANDS.md before queueing or denying high-risk work.
 - Read runtime/AUTONOMOUS_EXECUTION_POLICY.md before unattended runs.
+- Read runtime/AUTONOMOUS_COMPLETION_GATE.md before reporting delivery success.
+- Review runtime/AUTONOMOUS_VERIFICATION_REPORT.md after the runner exits.
 - View logs under .aimart/logs after supervised or autonomous Codex sessions.
 - Use agent_adapters/codex/run-codex-unified-autonomous.* when you want the one-window autonomous runner with runtime/AUTONOMOUS_RUN_STATUS.md and runtime/AUTONOMOUS_RUN_SUMMARY.md updates.
 - Use runtime/APPROVAL_QUEUE.md for blocked or high-risk actions; Autonomous Mode should continue with safe independent tasks when possible.
@@ -212,6 +222,7 @@ Project: ${projectSpec.projectName}
 - PowerShell and Bash scripts
 - Codex target adapter
 - Delivery docs
+- Autonomous Completion Gate docs and verification report template
 
 ## Current Task Count
 
@@ -224,15 +235,19 @@ ${asBullets(projectSpec.inferredAssumptions)}
 ## Open Questions
 
 ${asBullets(projectSpec.openQuestions)}
+
+## v0.2.2 Completion Gate
+
+Generated packs include runtime/AUTONOMOUS_COMPLETION_GATE.md, runtime/AUTONOMOUS_VERIFICATION_REPORT.md, and the Codex completion-gate runbook. The unified autonomous runner must show PASS or FAIL before final delivery.
 `;
 }
 
 function renderReleaseNotes(projectSpec: ProjectSpec): string {
   return `# Release Notes
 
-## v0.1.0
+## v0.2.2
 
-Initial local v0.2.1 execution pack for ${projectSpec.projectName}.
+Initial local v0.2.2 execution pack for ${projectSpec.projectName}.
 
 ### Included
 
@@ -240,8 +255,9 @@ Initial local v0.2.1 execution pack for ${projectSpec.projectName}.
 - Generated TaskQueue
 - Runtime and permission policy
 - SAFE_COMMANDS, DENIED_COMMANDS, and autonomous execution policy
+- Autonomous Completion Gate runtime docs
 - Local finalize scripts
-- Codex target adapter with supervised, autonomous, and unified autonomous launch profiles
+- Codex target adapter with supervised, autonomous, unified autonomous launch profiles, and completion-gate runbook
 - ZIP-ready documentation
 `;
 }
@@ -254,13 +270,14 @@ function renderNextSteps(projectSpec: ProjectSpec): string {
 1. Review PROJECT_SPEC.md for accuracy.
 2. Execute TASK_QUEUE.md from the first pending task.
 3. Run scripts/finalize.* before delivery.
+4. Review runtime/AUTONOMOUS_VERIFICATION_REPORT.md and accept delivery only when the Autonomous Completion Gate reports PASS.
 
 ## Known Limitations
 
-- v0.2.1 is local-only.
-- v0.2.1 does not include a cloud runner.
-- v0.2.1 does not perform production deployment.
-- v0.2.1 does not read secrets or production credentials.
+- v0.2.2 is local-only.
+- v0.2.2 does not include a cloud runner.
+- v0.2.2 does not perform production deployment.
+- v0.2.2 does not read secrets or production credentials.
 
 ## Deferred Ideas
 

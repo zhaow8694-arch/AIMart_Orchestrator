@@ -43,6 +43,10 @@ export function generateCodexAdapter(
         content: renderUnifiedAutonomousRunbook(projectSpec)
       },
       {
+        path: "agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md",
+        content: renderCompletionGateRunbook(projectSpec)
+      },
+      {
         path: "agent_adapters/codex/run-codex-autonomous.ps1",
         content: renderCodexPs1("autonomous")
       },
@@ -269,6 +273,10 @@ bash agent_adapters/codex/run-codex-unified-autonomous.sh
 
 Launcher logs are written to .aimart/logs. Review the newest log after long autonomous runs or failed commands.
 
+## Autonomous Completion Gate
+
+The unified autonomous runner runs the Autonomous Completion Gate before reporting success. Review agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md and runtime/AUTONOMOUS_VERIFICATION_REPORT.md when the gate reports FAIL.
+
 ## Approval Queue
 
 When a command is outside runtime/SAFE_COMMANDS.md, write it to runtime/APPROVAL_QUEUE.md with the risk level, reason, and blocking status. Autonomous Mode must continue with safe tasks when the queued item is not blocking.
@@ -299,23 +307,67 @@ bash agent_adapters/codex/run-codex-unified-autonomous.sh
 
 ## What The Runner Shows
 
+- Target version.
 - Elapsed time.
 - Git branch.
+- Whether the Git worktree was clean at startup.
+- Whether existing Codex processes were detected.
 - Dirty file count.
 - Latest log tail from codex_runs.
 - Release directory status.
+- Source ZIP status.
+- Sample ZIP status.
+- Latest log activity time.
+- Whether the log appears stalled.
 - Known issues status.
-- Final Summary with exit code, release artifacts, sample execution pack, Git status, and next recommended action.
+- Autonomous Completion Gate PASS or FAIL.
+- Final Summary with exit code, release artifacts, sample execution pack, Git status, completion gate result, and next recommended action.
 
 ## Runtime Files
 
 - runtime/AUTONOMOUS_RUN_STATUS.md is updated during the run.
 - runtime/AUTONOMOUS_RUN_SUMMARY.md is updated at completion.
 - runtime/AUTONOMOUS_HEALTH_CHECK.md records the one-window runner checks.
+- runtime/AUTONOMOUS_COMPLETION_GATE.md defines the required completion checks.
+- runtime/AUTONOMOUS_VERIFICATION_REPORT.md records PASS or FAIL for the gate.
 
 ## Safety
 
 The unified runner uses Codex workspace-write sandboxing with approval never. It does not push remotes, read secrets, modify frozen release folders, deploy to production, run real database migrations, or create/delete cloud resources.
+`;
+}
+
+function renderCompletionGateRunbook(projectSpec: ProjectSpec): string {
+  return `# Codex Completion Gate Runbook
+
+Project: ${projectSpec.projectName}
+Selected execution mode: ${projectSpec.executionMode}
+
+This runbook is used by the one-window unified autonomous runner before it reports success.
+
+## one-window Completion Flow
+
+1. Run Codex with workspace-write sandboxing and approval never.
+2. Show Target version, Git branch, clean startup state, existing Codex processes, release directory, Source ZIP, Sample execution pack, latest log activity, and whether the log appears stalled.
+3. Run the Autonomous Completion Gate after Codex exits.
+4. Write runtime/AUTONOMOUS_VERIFICATION_REPORT.md.
+5. Display PASS or FAIL clearly in the final summary.
+6. If the gate reports FAIL, display which gate failed and point to runtime/AUTONOMOUS_VERIFICATION_REPORT.md.
+7. Store runner logs and completion-gate logs under codex_runs.
+
+## Required Gate Inputs
+
+- runtime/AUTONOMOUS_RUN_STATUS.md
+- runtime/AUTONOMOUS_RUN_SUMMARY.md
+- runtime/AUTONOMOUS_HEALTH_CHECK.md
+- runtime/AUTONOMOUS_COMPLETION_GATE.md
+- runtime/AUTONOMOUS_VERIFICATION_REPORT.md
+- scripts/verify-autonomous-completion.ps1 or scripts/verify-autonomous-completion.sh when present
+- Release artifacts for the target version when the project uses AIMart release packaging
+
+## Safety
+
+The gate must not read secrets, modify frozen release folders, publish remotes, deploy to production, run real database migrations, or create/delete cloud resources.
 `;
 }
 
@@ -333,7 +385,11 @@ $PromptPath = Join-Path $RootDir "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.m
 $StatusPath = Join-Path $RootDir "runtime/AUTONOMOUS_RUN_STATUS.md"
 $SummaryPath = Join-Path $RootDir "runtime/AUTONOMOUS_RUN_SUMMARY.md"
 $HealthPath = Join-Path $RootDir "runtime/AUTONOMOUS_HEALTH_CHECK.md"
+$VerificationReportPath = Join-Path $RootDir "runtime/AUTONOMOUS_VERIFICATION_REPORT.md"
 $StartTime = Get-Date
+$TargetVersion = "unknown"
+$CleanAtStartup = "unknown"
+$ExistingCodexProcesses = "unknown"
 
 Write-Host "[codex-unified] one-window dashboard: sandbox workspace-write, approval never"
 Write-Host "[codex-unified] log=$LogPath"
@@ -369,6 +425,85 @@ function Get-GitStatusText {
   } catch {
     return "git unavailable"
   }
+}
+
+function Get-TargetVersionText {
+  $PackagePath = Join-Path $RootDir "package.json"
+  if (-not (Test-Path $PackagePath)) {
+    return "unknown"
+  }
+
+  try {
+    $Pkg = Get-Content -Path $PackagePath -Raw | ConvertFrom-Json
+    if ($Pkg.version) { return "v$($Pkg.version)" }
+  } catch {}
+
+  return "unknown"
+}
+
+function Get-CleanAtStartupText {
+  $Dirty = Get-DirtyFileCount
+  if ($Dirty -lt 0) { return "git unavailable" }
+  if ($Dirty -eq 0) { return "yes" }
+  return "no ($Dirty changed file(s))"
+}
+
+function Get-ExistingCodexProcessesText {
+  try {
+    $Processes = @(Get-Process -Name "codex" -ErrorAction SilentlyContinue)
+    if ($Processes.Count -eq 0) { return "none detected" }
+    return "$($Processes.Count) detected"
+  } catch {
+    return "process check unavailable"
+  }
+}
+
+function Get-TargetReleaseDir {
+  if ($TargetVersion -eq "unknown") {
+    return Join-Path $RootDir "releases"
+  }
+  return Join-Path $RootDir "releases/$TargetVersion"
+}
+
+function Get-TargetReleaseDirectoryStatus {
+  $Path = Get-TargetReleaseDir
+  if (Test-Path $Path) { return "exists: $Path" }
+  return "missing: $Path"
+}
+
+function Get-SourceZipStatus {
+  if ($TargetVersion -eq "unknown") { return "unknown target version" }
+  $Path = Join-Path (Get-TargetReleaseDir) "aimart-orchestrator-$TargetVersion-source.zip"
+  if (Test-Path $Path) { return "exists" }
+  return "missing"
+}
+
+function Get-SampleZipStatus {
+  if ($TargetVersion -eq "unknown") { return "unknown target version" }
+  $Path = Join-Path (Get-TargetReleaseDir) "samples/todo-api-generated-execution-pack.zip"
+  if (Test-Path $Path) { return "exists" }
+  return "missing"
+}
+
+function Get-LatestLogActivityTime {
+  if (-not (Test-Path $LogPath)) {
+    return "none"
+  }
+
+  return (Get-Item $LogPath).LastWriteTime.ToString("s")
+}
+
+function Get-LogStalledText {
+  if (-not (Test-Path $LogPath)) {
+    return "no log yet"
+  }
+
+  $Age = (Get-Date) - (Get-Item $LogPath).LastWriteTime
+  if ($Age.TotalMinutes -ge 5) {
+    return "yes"
+  }
+
+  return "no"
 }
 
 function Get-ReleaseStatus {
@@ -435,6 +570,68 @@ function Get-LogTailText {
   return ($Tail -join [Environment]::NewLine)
 }
 
+function Invoke-CompletionGate {
+  $GateScript = Join-Path $RootDir "scripts/verify-autonomous-completion.ps1"
+  $GateLogPath = Join-Path $RunDir "completion-gate-$Stamp.log"
+  $Status = "FAIL"
+  $FailedGate = "Autonomous Completion Gate"
+  $Details = "scripts/verify-autonomous-completion.ps1 not found; ran local file gate"
+
+  if (Test-Path $GateScript) {
+    & powershell -ExecutionPolicy Bypass -File $GateScript -TargetVersion $TargetVersion *> $GateLogPath
+    $Code = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
+    if ($Code -eq 0) {
+      $Status = "PASS"
+      $FailedGate = "none"
+      $Details = "verify-autonomous-completion.ps1 exited 0; log: $GateLogPath"
+    } else {
+      $Status = "FAIL"
+      $FailedGate = "verify-autonomous-completion.ps1"
+      $Details = "exit $Code; log: $GateLogPath"
+    }
+  } else {
+    $RequiredFiles = @(
+      "runtime/AUTONOMOUS_COMPLETION_GATE.md",
+      "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
+      "runtime/AUTONOMOUS_RUN_SUMMARY.md",
+      "agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md"
+    )
+    $Missing = @()
+    foreach ($Path in $RequiredFiles) {
+      if (-not (Test-Path (Join-Path $RootDir $Path))) {
+        $Missing += $Path
+      }
+    }
+    if ($Missing.Count -eq 0) {
+      $Status = "PASS"
+      $FailedGate = "none"
+      $Details = "local generated-pack completion files exist"
+    } else {
+      $Status = "FAIL"
+      $FailedGate = "generated-pack file gate"
+      $Details = "missing: $($Missing -join ', ')"
+    }
+  }
+
+@"
+# Autonomous Verification Report
+
+| Gate | Status | Notes |
+|---|---|---|
+| Autonomous Completion Gate | $Status | $Details |
+| Failed gate | $Status | $FailedGate |
+
+Final result: $Status
+"@ | Set-Content -Encoding UTF8 -Path $VerificationReportPath
+
+  return [pscustomobject]@{
+    Status = $Status
+    FailedGate = $FailedGate
+    ReportPath = $VerificationReportPath
+    Details = $Details
+  }
+}
+
 function Write-RunStatus {
   param([string]$State, [string]$ExitCode = "running")
 
@@ -451,11 +648,19 @@ function Write-RunStatus {
 | Field | Value |
 |---|---|
 | Runner state | $State |
+| Target version | $TargetVersion |
 | Elapsed time | $Elapsed |
 | Git branch | $Branch |
+| Clean at startup | $CleanAtStartup |
+| Existing Codex processes | $ExistingCodexProcesses |
 | Dirty file count | $Dirty |
 | Latest log tail | See $LogPath |
+| Latest log activity time | $(Get-LatestLogActivityTime) |
+| Log appears stalled | $(Get-LogStalledText) |
 | Release directory status | $ReleaseStatus |
+| Target release directory exists | $(Get-TargetReleaseDirectoryStatus) |
+| Source ZIP exists | $(Get-SourceZipStatus) |
+| Sample ZIP exists | $(Get-SampleZipStatus) |
 | Known issues status | $KnownIssues |
 | Codex exit code | $ExitCode |
 | Last updated | $Updated |
@@ -471,6 +676,11 @@ function Write-HealthCheck {
 - [x] runtime/AUTONOMOUS_RUN_STATUS.md update attempted.
 - [x] runtime/AUTONOMOUS_RUN_SUMMARY.md update attempted at completion.
 - [x] Release directory status checked.
+- [x] Source ZIP status checked.
+- [x] Sample ZIP status checked.
+- [x] Latest log activity time checked.
+- [x] Log appears stalled status checked.
+- [x] Autonomous Completion Gate run at completion.
 - [x] Known issues status checked.
 - [x] No secret reads or remote pushes are performed by this runner.
 "@ | Set-Content -Encoding UTF8 -Path $HealthPath
@@ -490,12 +700,21 @@ function Show-Dashboard {
   Write-Host "AIMart Codex Unified Autonomous Runner"
   Write-Host "one-window status display"
   Write-Host ""
+  Write-Host "Target version: $TargetVersion"
   Write-Host "State: $State"
   Write-Host "Elapsed: $Elapsed"
   Write-Host "Git branch: $Branch"
+  Write-Host "Clean at startup: $CleanAtStartup"
+  Write-Host "Existing Codex processes: $ExistingCodexProcesses"
   Write-Host "Dirty files: $Dirty"
   Write-Host "Release directory: $ReleaseStatus"
+  Write-Host "Target release directory exists: $(Get-TargetReleaseDirectoryStatus)"
+  Write-Host "Source ZIP: $(Get-SourceZipStatus)"
+  Write-Host "Sample ZIP: $(Get-SampleZipStatus)"
+  Write-Host "Latest log activity: $(Get-LatestLogActivityTime)"
+  Write-Host "Log appears stalled: $(Get-LogStalledText)"
   Write-Host "Known issues: $KnownIssues"
+  Write-Host "Autonomous Completion Gate: pending"
   Write-Host "Log: $LogPath"
   Write-Host ""
   Write-Host "Latest log tail"
@@ -508,6 +727,10 @@ function Show-Dashboard {
 if (-not (Test-Path $PromptPath)) {
   throw "Missing prompt file: $PromptPath"
 }
+
+$TargetVersion = Get-TargetVersionText
+$CleanAtStartup = Get-CleanAtStartupText
+$ExistingCodexProcesses = Get-ExistingCodexProcessesText
 
 Write-HealthCheck
 Write-RunStatus -State "starting"
@@ -546,14 +769,26 @@ if (Test-Path $ExitPath) {
 
 Show-Dashboard -State "completed"
 Write-RunStatus -State "completed" -ExitCode "$ExitCode"
+$GateResult = Invoke-CompletionGate
+$FinalExitCode = 1
+if (($ExitCode -eq 0) -and ($GateResult.Status -eq "PASS")) {
+  $FinalExitCode = 0
+}
 
 $ReleaseStatus = Get-ReleaseStatus
 $SampleStatus = Get-SampleExecutionPackStatus
 $GitStatus = Get-GitStatusText
-$NextAction = if ($ExitCode -eq 0) {
+if ($GateResult.Status -eq "PASS") {
+  Write-Host "Autonomous Completion Gate: PASS"
+} else {
+  Write-Host "Autonomous Completion Gate: FAIL"
+  Write-Host "Failed gate: $($GateResult.FailedGate)"
+  Write-Host "Report file: $($GateResult.ReportPath)"
+}
+$NextAction = if ($FinalExitCode -eq 0) {
   "Review runtime/AUTONOMOUS_RUN_SUMMARY.md, inspect changed files, then run scripts/finalize for delivery."
 } else {
-  "Inspect the latest codex_runs log, fix the blocking issue, then rerun the unified autonomous runner."
+  "Inspect runtime/AUTONOMOUS_VERIFICATION_REPORT.md and the latest codex_runs log, fix the blocking issue, then rerun the unified autonomous runner."
 }
 
 @"
@@ -561,9 +796,13 @@ $NextAction = if ($ExitCode -eq 0) {
 
 | Field | Value |
 |---|---|
-| Exit code | $ExitCode |
+| Codex exit code | $ExitCode |
+| Final exit code | $FinalExitCode |
 | Release artifacts | $ReleaseStatus |
 | Sample execution pack | $SampleStatus |
+| Autonomous Completion Gate | $($GateResult.Status) |
+| Failed gate | $($GateResult.FailedGate) |
+| Verification report | $($GateResult.ReportPath) |
 | Git status | $GitStatus |
 | Latest log | $LogPath |
 | Next recommended action | $NextAction |
@@ -572,13 +811,17 @@ $NextAction = if ($ExitCode -eq 0) {
 Write-Host ""
 Write-Host "Final Summary"
 Write-Host "-------------"
-Write-Host "Exit code: $ExitCode"
+Write-Host "Codex exit code: $ExitCode"
+Write-Host "Final exit code: $FinalExitCode"
 Write-Host "Release artifacts: $ReleaseStatus"
 Write-Host "Sample execution pack: $SampleStatus"
+Write-Host "Autonomous Completion Gate: $($GateResult.Status)"
+Write-Host "Failed gate: $($GateResult.FailedGate)"
+Write-Host "Report file: $($GateResult.ReportPath)"
 Write-Host "Git status: $GitStatus"
 Write-Host "Next recommended action: $NextAction"
 
-exit $ExitCode
+exit $FinalExitCode
 `;
 }
 
@@ -651,7 +894,14 @@ PROMPT_PATH="$ROOT_DIR/agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md"
 STATUS_PATH="$ROOT_DIR/runtime/AUTONOMOUS_RUN_STATUS.md"
 SUMMARY_PATH="$ROOT_DIR/runtime/AUTONOMOUS_RUN_SUMMARY.md"
 HEALTH_PATH="$ROOT_DIR/runtime/AUTONOMOUS_HEALTH_CHECK.md"
+VERIFICATION_REPORT_PATH="$ROOT_DIR/runtime/AUTONOMOUS_VERIFICATION_REPORT.md"
 START_EPOCH="$(date +%s)"
+TARGET_VERSION="unknown"
+CLEAN_AT_STARTUP="unknown"
+EXISTING_CODEX_PROCESSES="unknown"
+COMPLETION_GATE_STATUS="PENDING"
+COMPLETION_GATE_FAILED="none"
+COMPLETION_GATE_REPORT="$VERIFICATION_REPORT_PATH"
 
 echo "[codex-unified] one-window dashboard: sandbox workspace-write, approval never"
 echo "[codex-unified] log=$LOG_PATH"
@@ -684,6 +934,96 @@ git_status_text() {
     printf "%s" "clean"
   else
     printf "%s" "$count changed file(s)"
+  fi
+}
+
+target_version_text() {
+  if [ -f "$ROOT_DIR/package.json" ]; then
+    node -e "const p=require('./package.json'); process.stdout.write(p.version ? 'v' + p.version : 'unknown')" 2>/dev/null || printf "%s" "unknown"
+  else
+    printf "%s" "unknown"
+  fi
+}
+
+clean_at_startup_text() {
+  local count
+  count="$(dirty_file_count)"
+  if [ "$count" = "0" ]; then
+    printf "%s" "yes"
+  else
+    printf "%s" "no ($count changed file(s))"
+  fi
+}
+
+existing_codex_processes_text() {
+  local count
+  count="$(tasklist 2>/dev/null | grep -i "codex" | wc -l | tr -d " " || true)"
+  if [ -z "$count" ] || [ "$count" = "0" ]; then
+    printf "%s" "none detected"
+  else
+    printf "%s" "$count detected"
+  fi
+}
+
+target_release_dir() {
+  if [ "$TARGET_VERSION" = "unknown" ]; then
+    printf "%s" "$ROOT_DIR/releases"
+  else
+    printf "%s" "$ROOT_DIR/releases/$TARGET_VERSION"
+  fi
+}
+
+target_release_directory_status() {
+  local path
+  path="$(target_release_dir)"
+  if [ -d "$path" ]; then
+    printf "%s" "exists: $path"
+  else
+    printf "%s" "missing: $path"
+  fi
+}
+
+source_zip_status() {
+  local path
+  if [ "$TARGET_VERSION" = "unknown" ]; then
+    printf "%s" "unknown target version"
+    return
+  fi
+  path="$(target_release_dir)/aimart-orchestrator-$TARGET_VERSION-source.zip"
+  [ -f "$path" ] && printf "%s" "exists" || printf "%s" "missing"
+}
+
+sample_zip_status() {
+  local path
+  if [ "$TARGET_VERSION" = "unknown" ]; then
+    printf "%s" "unknown target version"
+    return
+  fi
+  path="$(target_release_dir)/samples/todo-api-generated-execution-pack.zip"
+  [ -f "$path" ] && printf "%s" "exists" || printf "%s" "missing"
+}
+
+latest_log_activity_time() {
+  if [ ! -f "$LOG_PATH" ]; then
+    printf "%s" "none"
+    return
+  fi
+  date -r "$LOG_PATH" -Iseconds 2>/dev/null || printf "%s" "unavailable"
+}
+
+log_appears_stalled() {
+  if [ ! -f "$LOG_PATH" ]; then
+    printf "%s" "no log yet"
+    return
+  fi
+  local now modified age
+  now="$(date +%s)"
+  modified="$(date -r "$LOG_PATH" +%s 2>/dev/null || echo "$now")"
+  age=$((now - modified))
+  if [ "$age" -ge 300 ]; then
+    printf "%s" "yes"
+  else
+    printf "%s" "no"
   fi
 }
 
@@ -748,6 +1088,63 @@ log_tail_text() {
   tail -n 12 "$LOG_PATH"
 }
 
+run_completion_gate() {
+  local status failed_gate details gate_log code missing
+  status="FAIL"
+  failed_gate="Autonomous Completion Gate"
+  details="scripts/verify-autonomous-completion.sh not found; ran local file gate"
+  gate_log="$RUN_DIR/completion-gate-$STAMP.log"
+
+  if [ -f "$ROOT_DIR/scripts/verify-autonomous-completion.sh" ]; then
+    bash "$ROOT_DIR/scripts/verify-autonomous-completion.sh" "$TARGET_VERSION" > "$gate_log" 2>&1
+    code=$?
+    if [ "$code" -eq 0 ]; then
+      status="PASS"
+      failed_gate="none"
+      details="verify-autonomous-completion.sh exited 0; log: $gate_log"
+    else
+      status="FAIL"
+      failed_gate="verify-autonomous-completion.sh"
+      details="exit $code; log: $gate_log"
+    fi
+  else
+    missing=""
+    for path in \
+      "runtime/AUTONOMOUS_COMPLETION_GATE.md" \
+      "runtime/AUTONOMOUS_VERIFICATION_REPORT.md" \
+      "runtime/AUTONOMOUS_RUN_SUMMARY.md" \
+      "agent_adapters/codex/CODEX_COMPLETION_GATE_RUNBOOK.md"; do
+      if [ ! -f "$ROOT_DIR/$path" ]; then
+        missing="$missing $path"
+      fi
+    done
+    if [ -z "$missing" ]; then
+      status="PASS"
+      failed_gate="none"
+      details="local generated-pack completion files exist"
+    else
+      status="FAIL"
+      failed_gate="generated-pack file gate"
+      details="missing:$missing"
+    fi
+  fi
+
+  cat > "$VERIFICATION_REPORT_PATH" <<EOF
+# Autonomous Verification Report
+
+| Gate | Status | Notes |
+|---|---|---|
+| Autonomous Completion Gate | $status | $details |
+| Failed gate | $status | $failed_gate |
+
+Final result: $status
+EOF
+
+  COMPLETION_GATE_STATUS="$status"
+  COMPLETION_GATE_FAILED="$failed_gate"
+  COMPLETION_GATE_REPORT="$VERIFICATION_REPORT_PATH"
+}
+
 write_run_status() {
   local state exit_code elapsed branch dirty release known updated
   state="$1"
@@ -765,12 +1162,21 @@ write_run_status() {
 | Field | Value |
 |---|---|
 | Runner state | $state |
+| Target version | $TARGET_VERSION |
 | Elapsed time | $elapsed |
 | Git branch | $branch |
+| Clean at startup | $CLEAN_AT_STARTUP |
+| Existing Codex processes | $EXISTING_CODEX_PROCESSES |
 | Dirty file count | $dirty |
 | Latest log tail | See $LOG_PATH |
+| Latest log activity time | $(latest_log_activity_time) |
+| Log appears stalled | $(log_appears_stalled) |
 | Release directory status | $release |
+| Target release directory exists | $(target_release_directory_status) |
+| Source ZIP exists | $(source_zip_status) |
+| Sample ZIP exists | $(sample_zip_status) |
 | Known issues status | $known |
+| Autonomous Completion Gate | $COMPLETION_GATE_STATUS |
 | Codex exit code | $exit_code |
 | Last updated | $updated |
 EOF
@@ -785,6 +1191,11 @@ write_health_check() {
 - [x] runtime/AUTONOMOUS_RUN_STATUS.md update attempted.
 - [x] runtime/AUTONOMOUS_RUN_SUMMARY.md update attempted at completion.
 - [x] Release directory status checked.
+- [x] Source ZIP status checked.
+- [x] Sample ZIP status checked.
+- [x] Latest log activity time checked.
+- [x] Log appears stalled status checked.
+- [x] Autonomous Completion Gate run at completion.
 - [x] Known issues status checked.
 - [x] No secret reads or remote pushes are performed by this runner.
 EOF
@@ -802,12 +1213,21 @@ show_dashboard() {
   clear || true
   printf "%s\\n" "AIMart Codex Unified Autonomous Runner"
   printf "%s\\n\\n" "one-window status display"
+  printf "Target version: %s\\n" "$TARGET_VERSION"
   printf "State: %s\\n" "$state"
   printf "Elapsed: %s\\n" "$elapsed"
   printf "Git branch: %s\\n" "$branch"
+  printf "Clean at startup: %s\\n" "$CLEAN_AT_STARTUP"
+  printf "Existing Codex processes: %s\\n" "$EXISTING_CODEX_PROCESSES"
   printf "Dirty files: %s\\n" "$dirty"
   printf "Release directory: %s\\n" "$release"
+  printf "Target release directory exists: %s\\n" "$(target_release_directory_status)"
+  printf "Source ZIP: %s\\n" "$(source_zip_status)"
+  printf "Sample ZIP: %s\\n" "$(sample_zip_status)"
+  printf "Latest log activity: %s\\n" "$(latest_log_activity_time)"
+  printf "Log appears stalled: %s\\n" "$(log_appears_stalled)"
   printf "Known issues: %s\\n" "$known"
+  printf "Autonomous Completion Gate: %s\\n" "$COMPLETION_GATE_STATUS"
   printf "Log: %s\\n\\n" "$LOG_PATH"
   printf "%s\\n" "Latest log tail"
   printf "%s\\n" "---------------"
@@ -820,6 +1240,10 @@ if [ ! -f "$PROMPT_PATH" ]; then
   echo "Missing prompt file: $PROMPT_PATH" >&2
   exit 1
 fi
+
+TARGET_VERSION="$(target_version_text)"
+CLEAN_AT_STARTUP="$(clean_at_startup_text)"
+EXISTING_CODEX_PROCESSES="$(existing_codex_processes_text)"
 
 write_health_check
 write_run_status "starting" "running"
@@ -849,14 +1273,26 @@ fi
 
 show_dashboard "completed"
 write_run_status "completed" "$EXIT_CODE"
+run_completion_gate
+FINAL_EXIT_CODE="1"
+if [ "$EXIT_CODE" = "0" ] && [ "$COMPLETION_GATE_STATUS" = "PASS" ]; then
+  FINAL_EXIT_CODE="0"
+fi
 
 RELEASE_STATUS="$(release_status)"
 SAMPLE_STATUS="$(sample_execution_pack_status)"
 GIT_STATUS="$(git_status_text)"
-if [ "$EXIT_CODE" = "0" ]; then
+if [ "$COMPLETION_GATE_STATUS" = "PASS" ]; then
+  printf "%s\\n" "Autonomous Completion Gate: PASS"
+else
+  printf "%s\\n" "Autonomous Completion Gate: FAIL"
+  printf "Failed gate: %s\\n" "$COMPLETION_GATE_FAILED"
+  printf "Report file: %s\\n" "$COMPLETION_GATE_REPORT"
+fi
+if [ "$FINAL_EXIT_CODE" = "0" ]; then
   NEXT_ACTION="Review runtime/AUTONOMOUS_RUN_SUMMARY.md, inspect changed files, then run scripts/finalize for delivery."
 else
-  NEXT_ACTION="Inspect the latest codex_runs log, fix the blocking issue, then rerun the unified autonomous runner."
+  NEXT_ACTION="Inspect runtime/AUTONOMOUS_VERIFICATION_REPORT.md and the latest codex_runs log, fix the blocking issue, then rerun the unified autonomous runner."
 fi
 
 cat > "$SUMMARY_PATH" <<EOF
@@ -864,9 +1300,13 @@ cat > "$SUMMARY_PATH" <<EOF
 
 | Field | Value |
 |---|---|
-| Exit code | $EXIT_CODE |
+| Codex exit code | $EXIT_CODE |
+| Final exit code | $FINAL_EXIT_CODE |
 | Release artifacts | $RELEASE_STATUS |
 | Sample execution pack | $SAMPLE_STATUS |
+| Autonomous Completion Gate | $COMPLETION_GATE_STATUS |
+| Failed gate | $COMPLETION_GATE_FAILED |
+| Verification report | $COMPLETION_GATE_REPORT |
 | Git status | $GIT_STATUS |
 | Latest log | $LOG_PATH |
 | Next recommended action | $NEXT_ACTION |
@@ -874,13 +1314,17 @@ EOF
 
 printf "\\n%s\\n" "Final Summary"
 printf "%s\\n" "-------------"
-printf "Exit code: %s\\n" "$EXIT_CODE"
+printf "Codex exit code: %s\\n" "$EXIT_CODE"
+printf "Final exit code: %s\\n" "$FINAL_EXIT_CODE"
 printf "Release artifacts: %s\\n" "$RELEASE_STATUS"
 printf "Sample execution pack: %s\\n" "$SAMPLE_STATUS"
+printf "Autonomous Completion Gate: %s\\n" "$COMPLETION_GATE_STATUS"
+printf "Failed gate: %s\\n" "$COMPLETION_GATE_FAILED"
+printf "Report file: %s\\n" "$COMPLETION_GATE_REPORT"
 printf "Git status: %s\\n" "$GIT_STATUS"
 printf "Next recommended action: %s\\n" "$NEXT_ACTION"
 
-exit "$EXIT_CODE"
+exit "$FINAL_EXIT_CODE"
 `;
 }
 
