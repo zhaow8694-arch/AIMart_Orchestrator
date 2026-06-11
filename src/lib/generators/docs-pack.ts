@@ -48,7 +48,7 @@ export function generateDocsPack(
 function renderReadme(projectSpec: ProjectSpec, taskQueue: TaskQueue): string {
   return `# ${projectSpec.projectName}
 
-This generated execution-pack ZIP describes the local v0.3.1 Auto-Verified Customer Pack Runtime Validation plan for ${projectSpec.projectName}. It keeps End-to-End delivery state visible from the customer pack root. It is different from an AIMart source release ZIP: source release ZIPs contain the generator source, while generated execution-pack ZIPs contain root launchers plus common/runtime/scripts/agent_adapters/docs for a target project.
+This generated execution-pack ZIP describes the local v0.3.2 Autonomous Runner Hardening plan for ${projectSpec.projectName}. It keeps End-to-End delivery state visible from the customer pack root and uses one stable runner path instead of old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners. It is different from an AIMart source release ZIP: source release ZIPs contain the generator source, while generated execution-pack ZIPs contain root launchers plus common/runtime/scripts/agent_adapters/docs for a target project.
 
 Selected adapters: ${formatSelectedAdapters(projectSpec)}
 Execution scope: ${projectSpec.executionScope}
@@ -72,7 +72,7 @@ ${taskQueue.tasks.map((task) => `- ${task.id}: ${task.title}`).join("\n")}
 
 Unified autonomous runs must finish with the Autonomous Completion Gate before reporting success. Review runtime/AUTONOMOUS_COMPLETION_GATE.md and runtime/AUTONOMOUS_VERIFICATION_REPORT.md after every unattended run.
 
-Start with START_HERE.md, run one root-level launcher, then follow common/TASK_QUEUE.md in order. Before accepting delivery, run scripts/verify-customer-delivery.* and review runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md.
+Start with START_HERE.md, run the approved stable runner command, then follow common/TASK_QUEUE.md in order. Before accepting delivery, run scripts/verify-customer-delivery.* and review runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md.
 `;
 }
 
@@ -89,14 +89,10 @@ Selected execution mode: ${projectSpec.executionMode}
 After unzipping the execution pack, start from the pack root:
 
 \`\`\`powershell
-./START_CODEX_AUTONOMOUS.ps1
+powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion v1.0
 \`\`\`
 
-\`\`\`cmd
-START_CODEX_AUTONOMOUS.cmd
-\`\`\`
-
-Use START_CODEX_SUPERVISED.ps1 or START_CODEX_SUPERVISED.cmd for supervised runs. The customer runner shows project name, selected AI adapter, current lifecycle phase, current target version, current task, log updated time, release output status, completion gate status, blocked/known issue status, and final PASS or FAIL summary.
+Use START_CODEX_AUTONOMOUS.ps1 or START_CODEX_SUPERVISED.ps1 only as compatibility launchers. Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners. The stable runner shows project name, selected AI adapter, current lifecycle phase, current target version, current task, log updated time, release output status, completion gate status, blocked/known issue status, failure classification, and final PASS or FAIL summary.
 
 ## Local Setup
 
@@ -248,7 +244,9 @@ Commands marked deny must not be executed.
 - Read runtime/AUTONOMOUS_COMPLETION_GATE.md before reporting delivery success.
 - Review runtime/AUTONOMOUS_VERIFICATION_REPORT.md after the runner exits.
 - View logs under .aimart/logs after supervised or autonomous Codex sessions.
-- Use agent_adapters/codex/run-codex-unified-autonomous.* when you want the one-window autonomous runner with runtime/AUTONOMOUS_RUN_STATUS.md and runtime/AUTONOMOUS_RUN_SUMMARY.md updates.
+- Use scripts/run-autonomous-version.* when you want the stable v0.3.2 autonomous runner with runtime/RUNNER_STATE.json, runtime/RUNNER_NEXT_ACTION.md, and runtime/RUNNER_FINAL_SUMMARY.md updates.
+- Use scripts/normalize-sample-pack.* before validating sample execution-pack artifacts.
+- Use scripts/classify-runner-failure.* before writing blocker or known-issue entries for runner failures.
 - Use runtime/APPROVAL_QUEUE.md for blocked or high-risk actions; Autonomous Mode should continue with safe independent tasks when possible.
 `;
 }
@@ -272,6 +270,7 @@ Project: ${projectSpec.projectName}
 - Delivery docs
 - Autonomous Completion Gate docs and verification report template
 - End-to-End runtime state files and phase gate reports
+- v0.3.2 runner hardening files, stage machine, sample pack normalizer, and failure classifier
 
 ## Current Task Count
 
@@ -285,18 +284,18 @@ ${asBullets(projectSpec.inferredAssumptions)}
 
 ${asBullets(projectSpec.openQuestions)}
 
-## v0.3.1 Auto-Verified Customer Pack Runtime Validation
+## v0.3.2 Autonomous Runner Hardening
 
-Generated packs include START_HERE.md, START_CODEX_AUTONOMOUS.*, scripts/run-customer-autonomous.*, scripts/verify-customer-delivery.*, runtime/FULL_LIFECYCLE_RUN_STATE.json, runtime/VERSION_LADDER.json, runtime/PHASE_STATUS.json, runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md, Autonomous Completion Gate files, and independent adapter options for ${formatSelectedAdapters(projectSpec)}. The selected adapter and customer verifier must show PASS or FAIL before final delivery.
+Generated packs include START_HERE.md, START_CODEX_AUTONOMOUS.*, scripts/run-autonomous-version.*, scripts/runner-stage-machine.*, scripts/normalize-sample-pack.*, scripts/classify-runner-failure.*, scripts/run-customer-autonomous.*, scripts/verify-customer-delivery.*, runtime/RUNNER_STATE.json, runtime/RUNNER_FAILURE_CLASSIFICATION.md, runtime/RUNNER_RECOVERY_POLICY.md, runtime/RUNNER_NEXT_ACTION.md, runtime/RUNNER_FINAL_SUMMARY.md, runtime/FULL_LIFECYCLE_RUN_STATE.json, runtime/VERSION_LADDER.json, runtime/PHASE_STATUS.json, runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md, Autonomous Completion Gate files, and independent adapter options for ${formatSelectedAdapters(projectSpec)}. The selected adapter and customer verifier must show PASS or FAIL before final delivery.
 `;
 }
 
 function renderReleaseNotes(projectSpec: ProjectSpec): string {
   return `# Release Notes
 
-## v0.3.1
+## v0.3.2
 
-Initial local v0.3.1 Auto-Verified Customer Pack Runtime Validation execution pack for ${projectSpec.projectName}.
+Initial local v0.3.2 Autonomous Runner Hardening execution pack for ${projectSpec.projectName}.
 
 ### Included
 
@@ -309,6 +308,10 @@ Initial local v0.3.1 Auto-Verified Customer Pack Runtime Validation execution pa
 - Autonomous Completion Gate runtime docs
 - End-to-End runtime state, phase gate, current task, morning report, and next-version handoff files
 - Customer one-window runner and delivery verifier scripts
+- Stable autonomous version runner and stage machine
+- Sample pack normalizer for PK ZIP and JSON zipBase64 responses
+- Failure classifier with known runner failure categories
+- Old-runner prevention guidance for V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix paths
 - Agent Adapter Registry output
 - Independent adapter options for ${formatSelectedAdapters(projectSpec)}
 - Local finalize scripts
@@ -322,21 +325,22 @@ function renderNextSteps(projectSpec: ProjectSpec): string {
 
 ## Immediate
 
-v0.3.1 Auto-Verified Customer Pack Runtime Validation continues End-to-End autonomous delivery through phase gates until final usable delivery.
+v0.3.2 Autonomous Runner Hardening continues End-to-End autonomous delivery through phase gates until final usable delivery without repeated hotfix runner loops.
 
 1. Review PROJECT_SPEC.md for accuracy.
 2. Execute TASK_QUEUE.md from the first pending task.
 3. Choose one adapter from ${formatSelectedAdapters(projectSpec)} before working in a workspace.
 4. Use runtime/RUN_STATE.json, runtime/CURRENT_TASK.md, and common/PHASE_GATE_PLAN.md to continue across phases.
-5. Run scripts/finalize.* before delivery.
-6. Review runtime/AUTONOMOUS_VERIFICATION_REPORT.md and runtime/COMPLETION_GATE_REPORT.md; accept delivery only when the Autonomous Completion Gate reports PASS.
+5. Run scripts/run-autonomous-version.* as the stable runner path.
+6. Run scripts/finalize.* before delivery.
+7. Review runtime/AUTONOMOUS_VERIFICATION_REPORT.md and runtime/COMPLETION_GATE_REPORT.md; accept delivery only when the Autonomous Completion Gate reports PASS.
 
 ## Known Limitations
 
-- v0.3.1 is local-only.
-- v0.3.1 does not include a cloud runner.
-- v0.3.1 does not perform production deployment.
-- v0.3.1 does not read secrets or production credentials.
+- v0.3.2 is local-only.
+- v0.3.2 does not include a cloud runner.
+- v0.3.2 does not perform production deployment.
+- v0.3.2 does not read secrets or production credentials.
 
 ## Deferred Ideas
 

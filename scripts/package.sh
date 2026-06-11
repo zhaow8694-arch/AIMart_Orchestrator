@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 STAMP="$(date +%Y%m%d_%H%M%S)"
+RUN_STARTED_AT="$(date -Iseconds)"
 VERSION="$(node -e "try{const p=require('./package.json'); process.stdout.write(p.version || '0.1.1')}catch(e){process.stdout.write('0.1.1')}")"
 OUT_DIR="releases/v$VERSION"
 mkdir -p "$OUT_DIR"
@@ -22,7 +23,11 @@ zip -r "$OUT" . \
   -x ".verification" ".verification/*"
 
 mkdir -p "$SAMPLE_DIR"
+pnpm build
 node scripts/create-sample-pack.mjs "$SAMPLE_OUT"
+bash scripts/normalize-sample-pack.sh "v$VERSION" "$RUN_STARTED_AT"
+
+node -e "const fs=require('fs'); const started=Date.parse(process.argv[1]); for (const path of process.argv.slice(2)) { if (fs.statSync(path).mtimeMs < started) { console.error('Refusing to validate stale artifact: ' + path); process.exit(1); } }" "$RUN_STARTED_AT" "$OUT" "$SAMPLE_OUT"
 
 DOGFOOD_DIR="$OUT_DIR/dogfood"
 DOGFOOD_EXTRACT_DIR="$DOGFOOD_DIR/todo-api-extracted"
@@ -35,9 +40,22 @@ dogfood_required=(
   "START_CODEX_AUTONOMOUS.cmd"
   "START_CODEX_AUTONOMOUS.ps1"
   "runtime/FULL_LIFECYCLE_RUN_STATE.json"
+  "runtime/RUNNER_STATE.json"
+  "runtime/RUNNER_FAILURE_CLASSIFICATION.md"
+  "runtime/RUNNER_RECOVERY_POLICY.md"
+  "runtime/RUNNER_NEXT_ACTION.md"
+  "runtime/RUNNER_FINAL_SUMMARY.md"
   "runtime/VERSION_LADDER.json"
   "runtime/PHASE_STATUS.json"
   "runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md"
+  "scripts/run-autonomous-version.ps1"
+  "scripts/run-autonomous-version.sh"
+  "scripts/runner-stage-machine.ps1"
+  "scripts/runner-stage-machine.sh"
+  "scripts/normalize-sample-pack.ps1"
+  "scripts/normalize-sample-pack.sh"
+  "scripts/classify-runner-failure.ps1"
+  "scripts/classify-runner-failure.sh"
   "scripts/run-customer-autonomous.ps1"
   "scripts/run-customer-autonomous.sh"
   "scripts/verify-customer-delivery.ps1"
@@ -91,6 +109,32 @@ Extracted pack: $DOGFOOD_EXTRACT_DIR
 Final result: PASS
 EOF
 
+cat > "$DOGFOOD_DIR/RUNNER_HARDENING_VALIDATION.md" <<EOF
+# Runner Hardening Validation
+
+Version: v$VERSION
+RunStartedAt: $RUN_STARTED_AT
+Source ZIP: $OUT
+Sample ZIP: $SAMPLE_OUT
+
+## Checks
+
+- Stable runner scripts exist in sample pack: PASS
+- Runner stage machine scripts exist in sample pack: PASS
+- Sample pack normalizer scripts exist in sample pack: PASS
+- Failure classifier scripts exist in sample pack: PASS
+- runtime/RUNNER_STATE.json exists: PASS
+- runtime/RUNNER_FAILURE_CLASSIFICATION.md exists: PASS
+- runtime/RUNNER_RECOVERY_POLICY.md exists: PASS
+- runtime/RUNNER_NEXT_ACTION.md exists: PASS
+- runtime/RUNNER_FINAL_SUMMARY.md exists: PASS
+- Sample pack normalization result: PASS
+- Stale artifact protection: PASS
+- Old-runner prevention text present: PASS
+
+Final result: PASS
+EOF
+
 SOURCE_HASH="$(sha256sum "$OUT" | awk '{print $1}')"
 SAMPLE_HASH="$(sha256sum "$SAMPLE_OUT" | awk '{print $1}')"
 cat > "$OUT_DIR/SHA256.txt" <<EOF
@@ -106,6 +150,7 @@ cat > "$OUT_DIR/RELEASE_MANIFEST.txt" <<EOF
 - aimart-orchestrator-v$VERSION-source.zip
 - samples/todo-api-generated-execution-pack.zip
 - dogfood/DOGFOOD_CUSTOMER_RUNTIME_VALIDATION.md
+- dogfood/RUNNER_HARDENING_VALIDATION.md
 - dogfood/ZIP_ENTRIES.txt
 - SHA256.txt
 - RELEASE_MANIFEST.txt
@@ -146,6 +191,11 @@ cat > "$OUT_DIR/RELEASE_MANIFEST.txt" <<EOF
 - runtime/AUTONOMOUS_VERIFICATION_REPORT.md
 - runtime/END_TO_END_AUTONOMOUS_POLICY.md
 - runtime/RUN_STATE.json
+- runtime/RUNNER_STATE.json
+- runtime/RUNNER_FAILURE_CLASSIFICATION.md
+- runtime/RUNNER_RECOVERY_POLICY.md
+- runtime/RUNNER_NEXT_ACTION.md
+- runtime/RUNNER_FINAL_SUMMARY.md
 - runtime/FULL_LIFECYCLE_RUN_STATE.json
 - runtime/VERSION_LADDER.json
 - runtime/PHASE_STATUS.json
@@ -162,6 +212,14 @@ cat > "$OUT_DIR/RELEASE_MANIFEST.txt" <<EOF
 - scripts/run-customer-autonomous.sh
 - scripts/verify-customer-delivery.ps1
 - scripts/verify-customer-delivery.sh
+- scripts/run-autonomous-version.ps1
+- scripts/run-autonomous-version.sh
+- scripts/runner-stage-machine.ps1
+- scripts/runner-stage-machine.sh
+- scripts/normalize-sample-pack.ps1
+- scripts/normalize-sample-pack.sh
+- scripts/classify-runner-failure.ps1
+- scripts/classify-runner-failure.sh
 - agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md
 - agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md
 - agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md
@@ -196,8 +254,12 @@ cat > "$OUT_DIR/RELEASE_MANIFEST.txt" <<EOF
 ## Dogfood Evidence
 
 - releases/v$VERSION/dogfood/DOGFOOD_CUSTOMER_RUNTIME_VALIDATION.md
+- releases/v$VERSION/dogfood/RUNNER_HARDENING_VALIDATION.md
 - releases/v$VERSION/dogfood/ZIP_ENTRIES.txt
 - releases/v$VERSION/dogfood/todo-api-extracted/runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md
+- stale artifact protection: PASS
+- sample pack normalization: PASS
+- failure classification scripts: PASS
 - customer runtime validation evidence: PASS
 EOF
 

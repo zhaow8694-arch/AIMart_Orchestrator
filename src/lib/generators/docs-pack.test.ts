@@ -104,7 +104,7 @@ describe("generateDocsPack", () => {
     expect(security).toContain("Autonomous Mode");
   });
 
-  it("documents v0.3.1 customer runtime validation and multi-adapter delivery behavior", () => {
+  it("documents v0.3.2 runner hardening and multi-adapter delivery behavior", () => {
     const projectSpec = createProjectSpec(
       {
         projectName: "Tiny Planner",
@@ -128,8 +128,8 @@ describe("generateDocsPack", () => {
     const nextSteps = findFile(docsPack.files, "docs/NEXT_STEPS.md");
 
     for (const content of [readme, implementationReport, releaseNotes, nextSteps]) {
-      expect(content).toContain("v0.3.1");
-      expect(content).toContain("Auto-Verified");
+      expect(content).toContain("v0.3.2");
+      expect(content).toContain("Autonomous Runner Hardening");
       expect(content).toContain("Autonomous Completion Gate");
       expect(content).toContain("End-to-End");
       expect(content).toContain("Codex");
@@ -137,8 +137,12 @@ describe("generateDocsPack", () => {
       expect(content).toContain("Trae");
       expect(content).toContain("Cursor");
     }
+    expect(implementationReport).toContain("CUSTOMER_RUNTIME_VALIDATION_REPORT.md");
+    expect(releaseNotes).toContain("Sample pack normalizer");
+    expect(releaseNotes).toContain("Failure classifier");
     expect(releaseNotes).toContain("Agent Adapter Registry");
     expect(nextSteps).toContain("RUN_STATE.json");
+    expect(nextSteps).toContain("run-autonomous-version");
   });
 
   it("uses the standardized forbidden items wording", () => {

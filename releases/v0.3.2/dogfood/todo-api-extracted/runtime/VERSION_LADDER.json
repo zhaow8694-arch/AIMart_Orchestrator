@@ -1,0 +1,40 @@
+{
+  "projectName": "Todo API",
+  "versions": [
+    {
+      "version": "v0.0.1",
+      "phase": "discovery/spec",
+      "gate": "ProjectSpec, assumptions, and task queue are coherent."
+    },
+    {
+      "version": "v0.1.0",
+      "phase": "MVP implementation",
+      "gate": "Core workflow runs locally with tests."
+    },
+    {
+      "version": "v0.2.x",
+      "phase": "autonomous runtime and completion gates",
+      "gate": "Safe commands, reports, and completion gates pass."
+    },
+    {
+      "version": "v0.3.x",
+      "phase": "independent adapter options",
+      "gate": "Selected adapter directories, runbooks, prompts, and manifest pass."
+    },
+    {
+      "version": "v0.4.x",
+      "phase": "runner hardening",
+      "gate": "Resume, logs, blocked command handling, and recovery pass."
+    },
+    {
+      "version": "v0.5.x",
+      "phase": "delivery automation",
+      "gate": "Release freeze, source/sample ZIPs, checksums, and handoff pass."
+    },
+    {
+      "version": "v1.0",
+      "phase": "final usable delivery",
+      "gate": "Full acceptance criteria and final delivery gate PASS."
+    }
+  ]
+}

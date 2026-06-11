@@ -46,6 +46,10 @@ if (-not (Test-Path $SampleZip)) {
   throw "Missing sample execution-pack ZIP: $SampleZip"
 }
 
+& (Join-Path $PSScriptRoot "normalize-sample-pack.ps1") -TargetVersion $TargetVersion -SamplePath $SampleZip
+$NormalizedEntriesPath = "$SampleZip.entries.txt"
+$NormalizedZipEntries = if (Test-Path $NormalizedEntriesPath) { @(Get-Content $NormalizedEntriesPath) } else { @() }
+
 $TempRoot = Join-Path $RootDir "codex_runs"
 New-Item -ItemType Directory -Force -Path $TempRoot | Out-Null
 $TempDir = Join-Path $TempRoot "verify-sample-pack-$TargetVersion"
@@ -81,6 +85,11 @@ $RequiredEntries = @(
   "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
   "runtime/END_TO_END_AUTONOMOUS_POLICY.md",
   "runtime/RUN_STATE.json",
+  "runtime/RUNNER_STATE.json",
+  "runtime/RUNNER_FAILURE_CLASSIFICATION.md",
+  "runtime/RUNNER_RECOVERY_POLICY.md",
+  "runtime/RUNNER_NEXT_ACTION.md",
+  "runtime/RUNNER_FINAL_SUMMARY.md",
   "runtime/FULL_LIFECYCLE_RUN_STATE.json",
   "runtime/VERSION_LADDER.json",
   "runtime/PHASE_STATUS.json",
@@ -97,6 +106,14 @@ $RequiredEntries = @(
   "scripts/run-customer-autonomous.sh",
   "scripts/verify-customer-delivery.ps1",
   "scripts/verify-customer-delivery.sh",
+  "scripts/run-autonomous-version.ps1",
+  "scripts/run-autonomous-version.sh",
+  "scripts/runner-stage-machine.ps1",
+  "scripts/runner-stage-machine.sh",
+  "scripts/normalize-sample-pack.ps1",
+  "scripts/normalize-sample-pack.sh",
+  "scripts/classify-runner-failure.ps1",
+  "scripts/classify-runner-failure.sh",
   "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md",
   "agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md",
   "agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md",
@@ -138,6 +155,10 @@ $RequiredEntries = @(
 
 $Missing = @()
 foreach ($Entry in $RequiredEntries) {
+  if ($NormalizedZipEntries.Count -gt 0 -and $NormalizedZipEntries -notcontains $Entry) {
+    $Missing += $Entry
+    continue
+  }
   if (-not (Test-Path (Join-Path $TempDir $Entry))) {
     $Missing += $Entry
   }
@@ -152,6 +173,13 @@ try {
   Get-Content $RunStatePath -Raw | ConvertFrom-Json | Out-Null
 } catch {
   throw "runtime/RUN_STATE.json is not valid JSON"
+}
+
+$RunnerStatePath = Join-Path $TempDir "runtime/RUNNER_STATE.json"
+try {
+  Get-Content $RunnerStatePath -Raw | ConvertFrom-Json | Out-Null
+} catch {
+  throw "runtime/RUNNER_STATE.json is not valid JSON"
 }
 
 foreach ($JsonEntry in @("runtime/FULL_LIFECYCLE_RUN_STATE.json", "runtime/VERSION_LADDER.json", "runtime/PHASE_STATUS.json")) {

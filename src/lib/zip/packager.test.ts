@@ -47,6 +47,11 @@ describe("execution pack packager", () => {
         "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
         "runtime/END_TO_END_AUTONOMOUS_POLICY.md",
         "runtime/RUN_STATE.json",
+        "runtime/RUNNER_STATE.json",
+        "runtime/RUNNER_FAILURE_CLASSIFICATION.md",
+        "runtime/RUNNER_RECOVERY_POLICY.md",
+        "runtime/RUNNER_NEXT_ACTION.md",
+        "runtime/RUNNER_FINAL_SUMMARY.md",
         "runtime/FULL_LIFECYCLE_RUN_STATE.json",
         "runtime/VERSION_LADDER.json",
         "runtime/PHASE_STATUS.json",
@@ -67,6 +72,14 @@ describe("execution pack packager", () => {
         "scripts/finalize.sh",
         "scripts/verify-autonomous-completion.ps1",
         "scripts/verify-autonomous-completion.sh",
+        "scripts/run-autonomous-version.ps1",
+        "scripts/run-autonomous-version.sh",
+        "scripts/runner-stage-machine.ps1",
+        "scripts/runner-stage-machine.sh",
+        "scripts/normalize-sample-pack.ps1",
+        "scripts/normalize-sample-pack.sh",
+        "scripts/classify-runner-failure.ps1",
+        "scripts/classify-runner-failure.sh",
         "agent_adapters/codex/AGENTS.md",
         "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md",
         "agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md",
@@ -146,6 +159,11 @@ describe("execution pack packager", () => {
       "runtime/AUTONOMOUS_VERIFICATION_REPORT.md",
       "runtime/END_TO_END_AUTONOMOUS_POLICY.md",
       "runtime/RUN_STATE.json",
+      "runtime/RUNNER_STATE.json",
+      "runtime/RUNNER_FAILURE_CLASSIFICATION.md",
+      "runtime/RUNNER_RECOVERY_POLICY.md",
+      "runtime/RUNNER_NEXT_ACTION.md",
+      "runtime/RUNNER_FINAL_SUMMARY.md",
       "runtime/FULL_LIFECYCLE_RUN_STATE.json",
       "runtime/VERSION_LADDER.json",
       "runtime/PHASE_STATUS.json",
@@ -184,6 +202,14 @@ describe("execution pack packager", () => {
       "scripts/verify-history-releases.sh",
       "scripts/verify-autonomous-completion.ps1",
       "scripts/verify-autonomous-completion.sh",
+      "scripts/run-autonomous-version.ps1",
+      "scripts/run-autonomous-version.sh",
+      "scripts/runner-stage-machine.ps1",
+      "scripts/runner-stage-machine.sh",
+      "scripts/normalize-sample-pack.ps1",
+      "scripts/normalize-sample-pack.sh",
+      "scripts/classify-runner-failure.ps1",
+      "scripts/classify-runner-failure.sh",
       "scripts/run-customer-autonomous.ps1",
       "scripts/run-customer-autonomous.sh",
       "scripts/verify-customer-delivery.ps1",
@@ -337,6 +363,32 @@ describe("execution pack packager", () => {
     expect(autonomousPs1).toContain("-Mode autonomous");
     expect(autonomousCmd).toContain("START_CODEX_AUTONOMOUS.ps1");
     expect(supervisedPs1).toContain("-Mode supervised");
+  });
+
+  it("generates old-runner prevention docs with the approved autonomous command", () => {
+    const pack = createExecutionPack(
+      {
+        projectName: "Stable Runner Pack",
+        rawDiscussion: "Build a local MVP using the stable v0.3.2 autonomous runner.",
+        selectedAdapterIds: ["codex"],
+        executionScope: "end_to_end_delivery",
+        executionMode: "end_to_end_autonomous"
+      },
+      { now: fixedNow }
+    );
+
+    const startHere = findFile(pack.files, "START_HERE.md");
+    const manifest = findFile(pack.files, "EXECUTION_PACK_MANIFEST.md");
+    const runnerNextAction = findFile(pack.files, "runtime/RUNNER_NEXT_ACTION.md");
+    const runnerPs1 = findFile(pack.files, "scripts/run-autonomous-version.ps1");
+
+    for (const content of [startHere, manifest, runnerNextAction, runnerPs1]) {
+      expect(content).toContain("scripts/run-autonomous-version.ps1");
+      expect(content).toContain("old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners");
+    }
+    expect(startHere).toContain(
+      "powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion v1.0"
+    );
   });
 });
 

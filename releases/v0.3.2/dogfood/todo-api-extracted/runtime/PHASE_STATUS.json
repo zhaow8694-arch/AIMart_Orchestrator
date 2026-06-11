@@ -1,0 +1,47 @@
+{
+  "projectName": "Todo API",
+  "phases": [
+    {
+      "phase": "v0.0.1 discovery/spec",
+      "targetVersion": "v0.0.1",
+      "status": "current",
+      "completionGateStatus": "pending"
+    },
+    {
+      "phase": "v0.1.0 MVP implementation",
+      "targetVersion": "v0.1.0",
+      "status": "pending",
+      "completionGateStatus": "pending"
+    },
+    {
+      "phase": "v0.2.x autonomous runtime and completion gates",
+      "targetVersion": "v0.2.x",
+      "status": "pending",
+      "completionGateStatus": "pending"
+    },
+    {
+      "phase": "v0.3.x independent adapter options",
+      "targetVersion": "v0.3.x",
+      "status": "pending",
+      "completionGateStatus": "pending"
+    },
+    {
+      "phase": "v0.4.x runner hardening",
+      "targetVersion": "v0.4.x",
+      "status": "pending",
+      "completionGateStatus": "pending"
+    },
+    {
+      "phase": "v0.5.x delivery automation",
+      "targetVersion": "v0.5.x",
+      "status": "pending",
+      "completionGateStatus": "pending"
+    },
+    {
+      "phase": "v1.0 final usable delivery",
+      "targetVersion": "v1.0",
+      "status": "pending",
+      "completionGateStatus": "pending"
+    }
+  ]
+}

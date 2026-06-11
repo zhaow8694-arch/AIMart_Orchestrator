@@ -131,15 +131,15 @@ This execution pack is meant to be run from the customer point of view after unz
 
 ## Start Codex
 
-Use exactly one root launcher for one workspace.
+Use the stable v0.3.2 autonomous runner. It displays one approved command and prevents old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners from becoming the future path.
+
+Approved runner script path: scripts/run-autonomous-version.ps1
 
 \`\`\`powershell
-./START_CODEX_AUTONOMOUS.ps1
+powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion v1.0
 \`\`\`
 
-\`\`\`cmd
-START_CODEX_AUTONOMOUS.cmd
-\`\`\`
+START_CODEX_AUTONOMOUS.ps1 and START_CODEX_SUPERVISED.ps1 remain compatibility launchers; they route to the stable generated runner path.
 
 Use START_CODEX_SUPERVISED.ps1 or START_CODEX_SUPERVISED.cmd when a human wants interactive approval prompts.
 
@@ -187,7 +187,8 @@ function renderStartPowerShell(mode: "autonomous" | "supervised"): string {
 $RootDir = $PSScriptRoot
 Set-Location $RootDir
 
-& (Join-Path $RootDir "scripts/run-customer-autonomous.ps1") -Mode ${mode}
+# Legacy customer runner path retained for v0.3.1 compatibility: scripts/run-customer-autonomous.ps1
+& (Join-Path $RootDir "scripts/run-autonomous-version.ps1") -Mode ${mode} -TargetVersion v1.0
 `;
 }
 
@@ -326,7 +327,7 @@ function renderExecutionPackManifest(
     "START_HERE.md and START_CODEX_* root launchers for customer entry",
     "common/ project specifications, task queue, autonomous roadmap, and phase gates",
     "runtime/ permission policy, lifecycle run state, current task, phase reports, and completion reports",
-    "scripts/ platform scripts, customer runner, delivery verifier, and completion-gate verification",
+    "scripts/ stable autonomous version runner, stage machine, sample normalizer, failure classifier, customer runner, delivery verifier, and completion-gate verification",
     "agent_adapters/ independent adapter directories for selected targets",
     "docs/ customer-facing run and delivery documentation"
   ];
@@ -359,8 +360,12 @@ Adapter file count: ${adapterFiles.length}
 1. Pick exactly one adapter directory under agent_adapters/.
 2. Read START_HERE.md.
 3. Run one root-level launcher such as START_CODEX_AUTONOMOUS.ps1.
-4. Let the selected adapter follow common/AUTONOMOUS_DELIVERY_ROADMAP.md, common/PHASE_GATE_PLAN.md, runtime/FULL_LIFECYCLE_RUN_STATE.json, and runtime/COMPLETION_GATE_REPORT.md.
-5. Continue until scripts/verify-customer-delivery.* and runtime/COMPLETION_GATE_REPORT.md report PASS.
+4. Use the approved command only: \`powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion v1.0\`.
+5. Approved runner script path: scripts/run-autonomous-version.ps1.
+6. Let the selected adapter follow common/AUTONOMOUS_DELIVERY_ROADMAP.md, common/PHASE_GATE_PLAN.md, runtime/RUNNER_STATE.json, runtime/FULL_LIFECYCLE_RUN_STATE.json, and runtime/COMPLETION_GATE_REPORT.md.
+7. Continue until scripts/verify-customer-delivery.* and runtime/COMPLETION_GATE_REPORT.md report PASS.
+
+Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners.
 
 ## Completion Gate Requirements
 
@@ -368,6 +373,8 @@ ${entries
   .flatMap((entry) => entry.completionGateRequirements.map((item) => `- ${entry.displayName}: ${item}`))
   .join("\n")}
 - runtime/RUN_STATE.json must be valid JSON.
+- runtime/RUNNER_STATE.json must be valid JSON and list all v0.3.2 runner stages.
+- scripts/normalize-sample-pack.* and scripts/classify-runner-failure.* must exist.
 - runtime/FULL_LIFECYCLE_RUN_STATE.json, runtime/VERSION_LADDER.json, and runtime/PHASE_STATUS.json must be coherent JSON.
 - runtime/CURRENT_TASK.md must exist.
 - runtime/PHASE_GATE_REPORT.md and runtime/COMPLETION_GATE_REPORT.md must be initialized or updated.

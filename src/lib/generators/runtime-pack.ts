@@ -207,6 +207,26 @@ export function generateRuntimePack(projectSpec: ProjectSpec): RuntimePack {
       content: renderRunState(projectSpec)
     },
     {
+      path: "runtime/RUNNER_STATE.json",
+      content: renderRunnerState(projectSpec)
+    },
+    {
+      path: "runtime/RUNNER_FAILURE_CLASSIFICATION.md",
+      content: renderRunnerFailureClassification(projectSpec)
+    },
+    {
+      path: "runtime/RUNNER_RECOVERY_POLICY.md",
+      content: renderRunnerRecoveryPolicy(projectSpec)
+    },
+    {
+      path: "runtime/RUNNER_NEXT_ACTION.md",
+      content: renderRunnerNextAction(projectSpec)
+    },
+    {
+      path: "runtime/RUNNER_FINAL_SUMMARY.md",
+      content: renderRunnerFinalSummary(projectSpec)
+    },
+    {
       path: "runtime/FULL_LIFECYCLE_RUN_STATE.json",
       content: renderFullLifecycleRunState(projectSpec)
     },
@@ -580,6 +600,108 @@ function renderRunState(projectSpec: ProjectSpec): string {
 `;
 }
 
+function renderRunnerState(projectSpec: ProjectSpec): string {
+  return `${JSON.stringify(
+    {
+      projectName: projectSpec.projectName,
+      runnerVersion: "v0.3.2",
+      approvedCommand:
+        "powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion v1.0",
+      currentStage: "PREFLIGHT",
+      stages: runnerStages(),
+      runStartedAt: projectSpec.createdAt,
+      artifactHashes: {},
+      staleArtifactProtection: "regenerate artifacts or verify artifact timestamp after run start with newly recorded hash",
+      oldRunnerPrevention:
+        "Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners.",
+      lastFailureClassification: "none",
+      completionGateStatus: "pending",
+      finalResult: "pending",
+      updatedAt: projectSpec.createdAt
+    },
+    null,
+    2
+  )}
+`;
+}
+
+function renderRunnerFailureClassification(projectSpec: ProjectSpec): string {
+  return `# Runner Failure Classification
+
+Project: ${projectSpec.projectName}
+
+The stable v0.3.2 runner classifies failures before choosing recovery. Do not create old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners; use scripts/classify-runner-failure.* and scripts/run-autonomous-version.*.
+
+## Categories
+
+${runnerFailureCategories().map((category) => `- ${category}`).join("\n")}
+
+## Output Contract
+
+The classifier writes one category plus a short diagnostic. Unknown failures are treated as COMPLETION_GATE_FAILURE until a narrower category is added in a future version.
+`;
+}
+
+function renderRunnerRecoveryPolicy(projectSpec: ProjectSpec): string {
+  return `# Runner Recovery Policy
+
+Project: ${projectSpec.projectName}
+
+## Policy
+
+1. Use the single approved runner command.
+2. Update runtime/RUNNER_STATE.json before each stage.
+3. Classify any failure with scripts/classify-runner-failure.*.
+4. Write the classified failure to runtime/RUNNER_FAILURE_CLASSIFICATION.md.
+5. Continue safe independent checks after non-blocking failures.
+6. Do not validate stale source or sample ZIPs; regenerate artifacts or verify timestamps are after the run start and hashes are newly recorded.
+7. Do not modify historical release folders.
+8. Do not create old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners.
+
+## Stage Order
+
+${runnerStages().map((stage, index) => `${index + 1}. ${stage}`).join("\n")}
+`;
+}
+
+function renderRunnerNextAction(projectSpec: ProjectSpec): string {
+  return `# Runner Next Action
+
+Project: ${projectSpec.projectName}
+
+Use exactly this approved command for autonomous version execution:
+
+Approved runner script path: scripts/run-autonomous-version.ps1
+
+\`\`\`powershell
+powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion v1.0
+\`\`\`
+
+Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners.
+
+Next stage: PREFLIGHT
+`;
+}
+
+function renderRunnerFinalSummary(projectSpec: ProjectSpec): string {
+  return `# Runner Final Summary
+
+Project: ${projectSpec.projectName}
+
+| Field | Value |
+|---|---|
+| Runner version | v0.3.2 |
+| Final result | pending |
+| Last completed stage | pending |
+| Last failure classification | none |
+| Source ZIP hash | pending |
+| Sample pack hash | pending |
+| Completion Gate | pending |
+
+The final summary is valid only after FREEZE completes and the Completion Gate reports PASS.
+`;
+}
+
 function renderFullLifecycleRunState(projectSpec: ProjectSpec): string {
   const selectedAdapterId = projectSpec.selectedAdapterIds[0] ?? "codex";
 
@@ -908,4 +1030,41 @@ Project: ${projectSpec.projectName}
 
 function formatList(items: string[]): string {
   return items.length > 0 ? items.join(", ") : "Not specified";
+}
+
+function runnerStages(): string[] {
+  return [
+    "PREFLIGHT",
+    "CODEX_EXECUTION",
+    "VALIDATION_TEST_LINT_BUILD",
+    "SOURCE_ZIP",
+    "SAMPLE_PACK",
+    "SAMPLE_PACK_NORMALIZATION",
+    "ADAPTER_COMPLETENESS",
+    "SHA256_MANIFEST",
+    "DOGFOOD",
+    "COMMIT_TAG",
+    "COMPLETION_GATE",
+    "FREEZE"
+  ];
+}
+
+function runnerFailureCategories(): string[] {
+  return [
+    "PNPM_ARGUMENT_LOSS",
+    "POWERSHELL_51_SYNTAX",
+    "CODEX_ARGUMENT_ORDER",
+    "CODEX_PROMPT_ARGUMENT_SPLIT",
+    "NEXT_START_ARGUMENT_ORDER",
+    "SOURCE_ZIP_PATH_SEPARATOR",
+    "SOURCE_ZIP_FORBIDDEN_ENTRY",
+    "SAMPLE_PACK_JSON_BASE64_RESPONSE",
+    "SAMPLE_PACK_STALE_FILE",
+    "SAMPLE_PACK_INVALID_ZIP",
+    "SAMPLE_PACK_MISSING_ADAPTER",
+    "COMPLETION_GATE_FAILURE",
+    "TAG_NULL_TRIM",
+    "DIRTY_WORKTREE",
+    "HISTORICAL_RELEASE_MODIFIED"
+  ];
 }

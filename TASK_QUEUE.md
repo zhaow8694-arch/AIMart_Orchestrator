@@ -1,5 +1,127 @@
 # AIMart Orchestrator v0.1 Task Queue
 
+## v0.3.2 Autonomous Runner Hardening Task Queue
+
+TASK-065 through TASK-073 are the scoped v0.3.2 tasks. They harden the generated autonomous runner so future execution packs use one stable runner path, classify known runner failures, normalize sample packs, prevent stale artifact validation, and extend completion gates while preserving frozen historical release folders through v0.3.1.
+
+## TASK-065 Create v0.3.2 Runner Hardening Plan
+
+```yaml
+status: done
+phase: plan
+dependencies: [TASK-064]
+done_criteria:
+  - v0.3.2 scope is limited to Autonomous Runner Hardening
+  - Historical release folders through v0.3.1 remain untouched
+```
+
+## TASK-066 Add v0.3.2 Tests
+
+```yaml
+status: done
+phase: qa
+dependencies: [TASK-065]
+done_criteria:
+  - Tests expect generated runner hardening files
+  - Tests expect sample pack normalization behavior
+  - Tests expect slash-normalized ZIP entry comparison
+  - Tests expect all required failure classifier categories
+  - Tests expect old-runner prevention docs
+  - Tests expect v0.3.2 delivery docs
+```
+
+## TASK-067 Implement Stable Runner Runtime Files
+
+```yaml
+status: done
+phase: runtime
+dependencies: [TASK-066]
+done_criteria:
+  - runtime/RUNNER_STATE.json is generated
+  - runtime/RUNNER_FAILURE_CLASSIFICATION.md is generated
+  - runtime/RUNNER_RECOVERY_POLICY.md is generated
+  - runtime/RUNNER_NEXT_ACTION.md is generated
+  - runtime/RUNNER_FINAL_SUMMARY.md is generated
+```
+
+## TASK-068 Implement Runner Scripts And Stage Machine
+
+```yaml
+status: done
+phase: scripts
+dependencies: [TASK-067]
+done_criteria:
+  - scripts/run-autonomous-version.ps1 and .sh are generated
+  - scripts/runner-stage-machine.ps1 and .sh are generated
+  - all required runner stages are present
+  - old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners are prevented
+```
+
+## TASK-069 Implement Failure Classification And Sample Normalization
+
+```yaml
+status: done
+phase: scripts
+dependencies: [TASK-068]
+done_criteria:
+  - scripts/classify-runner-failure.ps1 and .sh include all required categories
+  - scripts/normalize-sample-pack.ps1 and .sh handle real ZIPs and JSON zipBase64 responses
+  - invalid sample responses write .ERROR.txt diagnostics
+  - ZIP entry comparison normalizes backslashes to slashes
+```
+
+## TASK-070 Extend Completion Gates And Stale Artifact Protection
+
+```yaml
+status: done
+phase: release
+dependencies: [TASK-069]
+done_criteria:
+  - verify-autonomous-completion checks runner hardening files
+  - verify-sample-pack checks generated normalizer and classifier scripts
+  - release packaging rejects stale source/sample artifacts
+  - releases/v0.3.2 dogfood includes RUNNER_HARDENING_VALIDATION.md
+```
+
+## TASK-071 Update Version And v0.3.2 Delivery Docs
+
+```yaml
+status: done
+phase: docs
+dependencies: [TASK-070]
+done_criteria:
+  - package.json and UI metadata are updated to 0.3.2
+  - V0.3.2 implementation report, release notes, final delivery check, and known issues docs exist
+```
+
+## TASK-072 Generate v0.3.2 Release Artifacts
+
+```yaml
+status: pending
+phase: package
+dependencies: [TASK-071]
+done_criteria:
+  - releases/v0.3.2 source ZIP exists
+  - releases/v0.3.2 sample execution-pack ZIP exists
+  - SHA256.txt and RELEASE_MANIFEST.txt exist
+  - dogfood/RUNNER_HARDENING_VALIDATION.md exists
+```
+
+## TASK-073 Verify And Freeze v0.3.2
+
+```yaml
+status: pending
+phase: finalize
+dependencies: [TASK-072]
+done_criteria:
+  - pnpm test passes
+  - pnpm lint passes
+  - pnpm build passes
+  - Autonomous Completion Gate passes for v0.3.2
+  - local commit and local tag v0.3.2 exist
+  - final git status is clean
+```
+
 ## v0.3.1 Auto-Verified Customer Pack Runtime Validation Task Queue
 
 TASK-057 through TASK-064 are the scoped v0.3.1 tasks. They add customer root entry files, customer-side lifecycle state, customer one-window runtime validation, dogfood evidence, and expanded autonomous completion gates while preserving frozen historical release folders through v0.3.0.

@@ -42,6 +42,8 @@ if [ ! -f "$SAMPLE_ZIP" ]; then
   exit 1
 fi
 
+bash scripts/normalize-sample-pack.sh "$TARGET_VERSION"
+NORMALIZED_ENTRIES_PATH="$SAMPLE_ZIP.entries.txt"
 TEMP_DIR="codex_runs/verify-sample-pack-$TARGET_VERSION"
 rm -rf "$TEMP_DIR"
 mkdir -p "$TEMP_DIR"
@@ -72,6 +74,11 @@ required=(
   "runtime/AUTONOMOUS_VERIFICATION_REPORT.md"
   "runtime/END_TO_END_AUTONOMOUS_POLICY.md"
   "runtime/RUN_STATE.json"
+  "runtime/RUNNER_STATE.json"
+  "runtime/RUNNER_FAILURE_CLASSIFICATION.md"
+  "runtime/RUNNER_RECOVERY_POLICY.md"
+  "runtime/RUNNER_NEXT_ACTION.md"
+  "runtime/RUNNER_FINAL_SUMMARY.md"
   "runtime/FULL_LIFECYCLE_RUN_STATE.json"
   "runtime/VERSION_LADDER.json"
   "runtime/PHASE_STATUS.json"
@@ -88,6 +95,14 @@ required=(
   "scripts/run-customer-autonomous.sh"
   "scripts/verify-customer-delivery.ps1"
   "scripts/verify-customer-delivery.sh"
+  "scripts/run-autonomous-version.ps1"
+  "scripts/run-autonomous-version.sh"
+  "scripts/runner-stage-machine.ps1"
+  "scripts/runner-stage-machine.sh"
+  "scripts/normalize-sample-pack.ps1"
+  "scripts/normalize-sample-pack.sh"
+  "scripts/classify-runner-failure.ps1"
+  "scripts/classify-runner-failure.sh"
   "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md"
   "agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md"
   "agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md"
@@ -129,7 +144,9 @@ required=(
 
 missing=()
 for entry in "${required[@]}"; do
-  if [ ! -f "$TEMP_DIR/$entry" ]; then
+  if [ -f "$NORMALIZED_ENTRIES_PATH" ] && ! grep -Fxq "$entry" "$NORMALIZED_ENTRIES_PATH"; then
+    missing+=("$entry")
+  elif [ ! -f "$TEMP_DIR/$entry" ]; then
     missing+=("$entry")
   fi
 done
@@ -140,7 +157,7 @@ if [ "${#missing[@]}" -gt 0 ]; then
   exit 1
 fi
 
-node -e "for (const p of ['runtime/RUN_STATE.json','runtime/FULL_LIFECYCLE_RUN_STATE.json','runtime/VERSION_LADDER.json','runtime/PHASE_STATUS.json']) JSON.parse(require('fs').readFileSync('$TEMP_DIR/' + p,'utf8'))"
+node -e "for (const p of ['runtime/RUN_STATE.json','runtime/RUNNER_STATE.json','runtime/FULL_LIFECYCLE_RUN_STATE.json','runtime/VERSION_LADDER.json','runtime/PHASE_STATUS.json']) JSON.parse(require('fs').readFileSync('$TEMP_DIR/' + p,'utf8'))"
 
 echo "[verify-sample-pack] PASS $TARGET_VERSION"
 

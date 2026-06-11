@@ -17,8 +17,9 @@ SOURCE_ZIP="$RELEASE_DIR/aimart-orchestrator-$TARGET_VERSION-source.zip"
 SAMPLE_ZIP="$RELEASE_DIR/samples/todo-api-generated-execution-pack.zip"
 SHA_FILE="$RELEASE_DIR/SHA256.txt"
 MANIFEST="$RELEASE_DIR/RELEASE_MANIFEST.txt"
+RUNNER_HARDENING_DOGFOOD="$RELEASE_DIR/dogfood/RUNNER_HARDENING_VALIDATION.md"
 
-for path in "$RELEASE_DIR" "$SOURCE_ZIP" "$SAMPLE_ZIP" "$SHA_FILE" "$MANIFEST"; do
+for path in "$RELEASE_DIR" "$SOURCE_ZIP" "$SAMPLE_ZIP" "$SHA_FILE" "$MANIFEST" "$RUNNER_HARDENING_DOGFOOD"; do
   if [ ! -e "$path" ]; then
     echo "Missing required release artifact: $path" >&2
     exit 1

@@ -11,9 +11,22 @@ const requiredSampleZipEntries = [
   "scripts/run-customer-autonomous.ps1",
   "scripts/verify-customer-delivery.ps1",
   "runtime/FULL_LIFECYCLE_RUN_STATE.json",
+  "runtime/RUNNER_STATE.json",
+  "runtime/RUNNER_FAILURE_CLASSIFICATION.md",
+  "runtime/RUNNER_RECOVERY_POLICY.md",
+  "runtime/RUNNER_NEXT_ACTION.md",
+  "runtime/RUNNER_FINAL_SUMMARY.md",
   "runtime/VERSION_LADDER.json",
   "runtime/PHASE_STATUS.json",
   "runtime/CUSTOMER_RUNTIME_VALIDATION_REPORT.md",
+  "scripts/run-autonomous-version.ps1",
+  "scripts/run-autonomous-version.sh",
+  "scripts/runner-stage-machine.ps1",
+  "scripts/runner-stage-machine.sh",
+  "scripts/normalize-sample-pack.ps1",
+  "scripts/normalize-sample-pack.sh",
+  "scripts/classify-runner-failure.ps1",
+  "scripts/classify-runner-failure.sh",
   "agent_adapters/codex/AGENTS.md",
   "agent_adapters/claude-code/CLAUDE.md",
   "agent_adapters/claude-code/CLAUDE_RUNBOOK.md",
@@ -135,7 +148,7 @@ function readCentralDirectoryNames(buffer) {
     const nameStart = offset + 46;
     const nameEnd = nameStart + nameLength;
 
-    names.push(buffer.subarray(nameStart, nameEnd).toString("utf8"));
+    names.push(buffer.subarray(nameStart, nameEnd).toString("utf8").replace(/\\/g, "/"));
     offset = nameEnd + extraLength + commentLength;
   }
 

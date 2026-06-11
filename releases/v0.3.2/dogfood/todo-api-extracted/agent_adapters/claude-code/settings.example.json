@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "mode": "workspace",
+    "highRiskPolicy": "record in runtime/APPROVAL_QUEUE.md"
+  },
+  "requiredFiles": [
+    "EXECUTION_PACK_MANIFEST.md",
+    "runtime/RUN_STATE.json",
+    "runtime/COMPLETION_GATE_REPORT.md"
+  ]
+}

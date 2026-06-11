@@ -22,8 +22,9 @@ $SourceZip = Join-Path $ReleaseDir "aimart-orchestrator-$TargetVersion-source.zi
 $SampleZip = Join-Path $ReleaseDir "samples/todo-api-generated-execution-pack.zip"
 $ShaFile = Join-Path $ReleaseDir "SHA256.txt"
 $Manifest = Join-Path $ReleaseDir "RELEASE_MANIFEST.txt"
+$RunnerHardeningDogfood = Join-Path $ReleaseDir "dogfood/RUNNER_HARDENING_VALIDATION.md"
 
-foreach ($Path in @($ReleaseDir, $SourceZip, $SampleZip, $ShaFile, $Manifest)) {
+foreach ($Path in @($ReleaseDir, $SourceZip, $SampleZip, $ShaFile, $Manifest, $RunnerHardeningDogfood)) {
   if (-not (Test-Path $Path)) {
     throw "Missing required release artifact: $Path"
   }

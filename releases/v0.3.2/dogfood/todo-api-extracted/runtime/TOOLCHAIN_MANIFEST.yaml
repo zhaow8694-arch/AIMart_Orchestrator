@@ -1,0 +1,15 @@
+runtime: Node.js 20+
+packageManager: pnpm
+language: TypeScript
+frameworks:
+  - Next.js
+  - TypeScript
+  - Zod
+  - Vitest
+  - pnpm
+testRunner: Vitest
+requiredCommands:
+  - pnpm install
+  - pnpm lint
+  - pnpm test
+  - pnpm build

@@ -43,6 +43,14 @@ describe("generateScriptPack", () => {
         "scripts/verify-history-releases.sh",
         "scripts/verify-autonomous-completion.ps1",
         "scripts/verify-autonomous-completion.sh",
+        "scripts/run-autonomous-version.ps1",
+        "scripts/run-autonomous-version.sh",
+        "scripts/runner-stage-machine.ps1",
+        "scripts/runner-stage-machine.sh",
+        "scripts/normalize-sample-pack.ps1",
+        "scripts/normalize-sample-pack.sh",
+        "scripts/classify-runner-failure.ps1",
+        "scripts/classify-runner-failure.sh",
         "scripts/run-customer-autonomous.ps1",
         "scripts/run-customer-autonomous.sh",
         "scripts/verify-customer-delivery.ps1",
@@ -172,6 +180,112 @@ describe("generateScriptPack", () => {
     expect(sourcePs1).toContain("SHA256");
     expect(historyPs1).toContain("v0.1.0");
     expect(historyPs1).toContain("v0.2.1");
+  });
+
+  it("generates the v0.3.2 runner hardening stage machine and approved runner", () => {
+    const projectSpec = createProjectSpec(
+      {
+        projectName: "Stable Runner",
+        rawDiscussion: "Build a local MVP with a stable autonomous runner.",
+        executionScope: "end_to_end_delivery",
+        executionMode: "end_to_end_autonomous"
+      },
+      { now: fixedNow }
+    );
+
+    const scriptPack = generateScriptPack(projectSpec);
+    const runnerPs1 = findFile(scriptPack.files, "scripts/run-autonomous-version.ps1");
+    const runnerSh = findFile(scriptPack.files, "scripts/run-autonomous-version.sh");
+    const stagePs1 = findFile(scriptPack.files, "scripts/runner-stage-machine.ps1");
+    const stageSh = findFile(scriptPack.files, "scripts/runner-stage-machine.sh");
+    const stages = [
+      "PREFLIGHT",
+      "CODEX_EXECUTION",
+      "VALIDATION_TEST_LINT_BUILD",
+      "SOURCE_ZIP",
+      "SAMPLE_PACK",
+      "SAMPLE_PACK_NORMALIZATION",
+      "ADAPTER_COMPLETENESS",
+      "SHA256_MANIFEST",
+      "DOGFOOD",
+      "COMMIT_TAG",
+      "COMPLETION_GATE",
+      "FREEZE"
+    ];
+
+    for (const content of [runnerPs1, runnerSh, stagePs1, stageSh]) {
+      for (const stage of stages) {
+        expect(content).toContain(stage);
+      }
+      expect(content).toContain("RUNNER_STATE.json");
+      expect(content).toContain("RUNNER_NEXT_ACTION.md");
+      expect(content).toContain("old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners");
+    }
+    expect(runnerPs1).toContain("powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion");
+    expect(runnerPs1).toContain(
+      'throw ("Runner failed with {0}: {1}" -f $Category, $Message)'
+    );
+    expect(runnerPs1).not.toContain("$Category`:");
+  });
+
+  it("generates failure classifier and sample-pack normalization scripts", () => {
+    const projectSpec = createProjectSpec(
+      {
+        projectName: "Classifier Pack",
+        rawDiscussion: "Build a local MVP with classified runner recovery."
+      },
+      { now: fixedNow }
+    );
+
+    const scriptPack = generateScriptPack(projectSpec);
+    const classifierPs1 = findFile(
+      scriptPack.files,
+      "scripts/classify-runner-failure.ps1"
+    );
+    const classifierSh = findFile(scriptPack.files, "scripts/classify-runner-failure.sh");
+    const normalizePs1 = findFile(
+      scriptPack.files,
+      "scripts/normalize-sample-pack.ps1"
+    );
+    const normalizeSh = findFile(scriptPack.files, "scripts/normalize-sample-pack.sh");
+    const categories = [
+      "PNPM_ARGUMENT_LOSS",
+      "POWERSHELL_51_SYNTAX",
+      "CODEX_ARGUMENT_ORDER",
+      "CODEX_PROMPT_ARGUMENT_SPLIT",
+      "NEXT_START_ARGUMENT_ORDER",
+      "SOURCE_ZIP_PATH_SEPARATOR",
+      "SOURCE_ZIP_FORBIDDEN_ENTRY",
+      "SAMPLE_PACK_JSON_BASE64_RESPONSE",
+      "SAMPLE_PACK_STALE_FILE",
+      "SAMPLE_PACK_INVALID_ZIP",
+      "SAMPLE_PACK_MISSING_ADAPTER",
+      "COMPLETION_GATE_FAILURE",
+      "TAG_NULL_TRIM",
+      "DIRTY_WORKTREE",
+      "HISTORICAL_RELEASE_MODIFIED"
+    ];
+
+    for (const content of [classifierPs1, classifierSh]) {
+      for (const category of categories) {
+        expect(content).toContain(category);
+      }
+    }
+
+    for (const content of [normalizePs1, normalizeSh]) {
+      expect(content).toContain("zipBase64");
+      expect(content).toContain(".ERROR.txt");
+      expect(content).toContain("SAMPLE_PACK_JSON_BASE64_RESPONSE");
+      expect(content).toContain("SAMPLE_PACK_INVALID_ZIP");
+      expect(content).toContain("Replace");
+      expect(content).toContain("\\");
+      expect(content).toContain("/");
+    }
+
+    expect(normalizePs1).toContain(
+      'throw ("{0}: {1}" -f $Category, $Details)'
+    );
+    expect(normalizePs1).not.toContain("$Category`:");
   });
 
   it("generates customer one-window runtime runner and delivery verifier scripts", () => {

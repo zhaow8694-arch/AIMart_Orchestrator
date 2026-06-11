@@ -1,29 +1,21 @@
 # Implementation Report
 
-## Scope
-
-AIMart Orchestrator v0.3.1 implements Auto-Verified Customer Pack Runtime Validation for generated execution packs.
+Version: v0.3.2
+Release: Autonomous Runner Hardening
 
 ## Completed
 
-- Customer root START_HERE.md and START_CODEX_* launchers.
-- Customer-side lifecycle state files under runtime/.
-- Customer one-window runner scripts.
-- Customer delivery verifier scripts.
-- Sample execution-pack verification for customer runtime files.
-- Dogfood extraction and customer runtime validation evidence under releases/v0.3.1/dogfood.
-- Autonomous completion gate coverage for previously manual final checks.
+- Stable generated autonomous runner architecture.
+- Runner stage machine with all required v0.3.2 stages.
+- Failure classifier with required categories.
+- Automatic sample pack normalization for real ZIP and JSON zipBase64 responses.
+- Stale source/sample artifact protection in release packaging.
+- Old-runner prevention docs and script guards.
+- Completion gate checks for runner hardening files.
 
 ## Preserved
 
-- v0.2.1 Unified Autonomous Visual Runner.
-- v0.2.2 Autonomous Completion Gate.
-- v0.3.0 End-to-End Autonomous Delivery and Agent Adapter Registry.
-
-## Verification
-
-Pending final v0.3.1 gate execution.
-
-## Security
-
-No remote push, production deployment, real database migration, cloud resource mutation, frozen release modification, historical release deletion, or secret read is part of this release.
+- v0.3.1 customer root entry files.
+- v0.3.1 customer lifecycle runtime files.
+- v0.3.1 customer runner and delivery verifier scripts.
+- Independent Codex, Claude Code, Trae, and Cursor adapter exports.
