@@ -129,15 +129,21 @@ describe("generateCodexAdapter", () => {
     expect(prompt).toContain("Selected execution mode: autonomous");
     expect(prompt).toContain("runtime/SAFE_COMMANDS.md");
     expect(runbook).toContain("logs");
-    expect(autonomousPs1).toContain("--sandbox workspace-write");
+    expect(autonomousPs1).toContain("sandbox=workspace-write");
     expect(autonomousPs1).toContain("--approve-for-me");
-    expect(autonomousSh).toContain("--sandbox workspace-write");
+    expect(autonomousPs1).not.toContain("--sandbox workspace-write");
+    expect(autonomousSh).toContain("sandbox=workspace-write");
     expect(autonomousSh).toContain("--approve-for-me");
+    expect(autonomousSh).not.toContain("--sandbox workspace-write");
+    expect(supervisedPs1).toContain("--sandbox workspace-write");
+    expect(supervisedSh).toContain("--sandbox workspace-write");
     expect(supervisedPs1).not.toContain("--approve-for-me");
     expect(supervisedSh).not.toContain("--approve-for-me");
     expect(scriptContent).not.toContain("--prompt-file");
     expect(scriptContent).not.toContain("--approval never");
     expect(scriptContent).not.toContain("--approval on-request");
+    // Execution packs are not git repos; the adapter must skip the repo check.
+    expect(scriptContent).toContain("--skip-git-repo-check");
     // PSScriptAnalyzer PSAvoidAssignmentToAutomaticVariable: never assign to $Args.
     expect(autonomousPs1).toContain("$CodexArgs = @(");
     expect(autonomousPs1).not.toContain("$Args = @(");

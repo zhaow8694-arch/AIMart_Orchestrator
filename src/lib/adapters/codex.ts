@@ -501,7 +501,7 @@ Write-Host "[codex-end-to-end] log=$LogPath"
 Write-Host "[codex-end-to-end] phase plan=common/PHASE_GATE_PLAN.md"
 Write-Host "[codex-end-to-end] final result must be PASS or FAIL in runtime/COMPLETION_GATE_REPORT.md"
 
-Get-Content $PromptPath -Raw | codex exec --sandbox workspace-write --approve-for-me --cd $RootDir 2>&1 | Tee-Object -FilePath $LogPath
+Get-Content $PromptPath -Raw | codex exec --approve-for-me --skip-git-repo-check --cd $RootDir 2>&1 | Tee-Object -FilePath $LogPath
 $Code = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
 Write-Host "[codex-end-to-end] Codex exit code: $Code"
 Write-Host "[codex-end-to-end] Check runtime/RUN_STATE.json, runtime/PHASE_GATE_REPORT.md, and runtime/COMPLETION_GATE_REPORT.md"
@@ -528,8 +528,8 @@ echo "[codex-end-to-end] phase plan=common/PHASE_GATE_PLAN.md"
 echo "[codex-end-to-end] final result must be PASS or FAIL in runtime/COMPLETION_GATE_REPORT.md"
 
 cat "$PROMPT_PATH" | codex exec \\
-  --sandbox workspace-write \\
   --approve-for-me \\
+  --skip-git-repo-check \\
   --cd "$ROOT_DIR" 2>&1 | tee "$LOG_PATH"
 code="\${PIPESTATUS[0]}"
 echo "[codex-end-to-end] Codex exit code: $code"
@@ -905,13 +905,13 @@ $ExistingCodexProcesses = Get-ExistingCodexProcessesText
 Write-HealthCheck
 Write-RunStatus -State "starting"
 
-# Effective Codex flags: codex exec --sandbox workspace-write --approve-for-me (prompt via stdin)
+# Effective Codex flags: codex exec --approve-for-me --skip-git-repo-check (prompt via stdin; workspace-write sandbox implied)
 $CodexJob = Start-Job -ScriptBlock {
   param($JobRootDir, $JobPromptPath, $JobLogPath, $JobExitPath)
 
   Set-Location $JobRootDir
   try {
-    Get-Content $JobPromptPath -Raw | codex exec --sandbox workspace-write --approve-for-me --cd $JobRootDir *> $JobLogPath
+    Get-Content $JobPromptPath -Raw | codex exec --approve-for-me --skip-git-repo-check --cd $JobRootDir *> $JobLogPath
     $Code = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
   } catch {
     $_ | Out-String | Add-Content -Encoding UTF8 -Path $JobLogPath
@@ -1000,7 +1000,10 @@ function renderCodexPs1(mode: "autonomous" | "supervised"): string {
   // --approve-for-me (auto approval review, keeps workspace-write sandbox);
   // supervised mode keeps the default interactive approval behavior.
   const approvalText = mode === "autonomous" ? "auto (approve-for-me)" : "prompt (default)";
-  const autoApproveArg = mode === "autonomous" ? '\n  "--approve-for-me",' : "";
+  // --approve-for-me implies the workspace-write sandbox; --sandbox cannot be
+  // combined with it. Supervised mode keeps explicit workspace-write sandbox
+  // with default interactive approval prompts.
+  const sandboxArgs = mode === "autonomous" ? '"--approve-for-me", "--skip-git-repo-check",' : '"--sandbox", "workspace-write", "--skip-git-repo-check",';
 
   return `$ErrorActionPreference = "Stop"
 $RootDir = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path))
@@ -1015,10 +1018,10 @@ $PromptPath = Join-Path $RootDir "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.m
 Write-Host "[codex-${mode}] sandbox=workspace-write approval=${approvalText}"
 Write-Host "[codex-${mode}] log=$LogPath"
 
-# Effective Codex flags: --sandbox workspace-write${mode === "autonomous" ? " --approve-for-me" : ""} (prompt via stdin)
+# Effective Codex flags: exec ${mode === "autonomous" ? "--approve-for-me" : "--sandbox workspace-write"} (prompt via stdin)
 $CodexArgs = @(
   "exec",
-  "--sandbox", "workspace-write",${autoApproveArg}
+  ${sandboxArgs}
   "--cd", $RootDir
 )
 
@@ -1028,7 +1031,12 @@ Get-Content $PromptPath -Raw | & codex @CodexArgs 2>&1 | Tee-Object -FilePath $L
 
 function renderCodexSh(mode: "autonomous" | "supervised"): string {
   const approvalText = mode === "autonomous" ? "auto (approve-for-me)" : "prompt (default)";
-  const autoApproveArg = mode === "autonomous" ? ' \\\n  --approve-for-me' : "";
+  // --approve-for-me implies the workspace-write sandbox; --sandbox cannot be
+  // combined with it. Execution packs are not git repos, so --skip-git-repo-check
+  // is always passed.
+  const sandboxLine = mode === "autonomous"
+    ? "  --approve-for-me \\"
+    : "  --sandbox workspace-write \\";
 
   return `#!/usr/bin/env bash
 set -euo pipefail
@@ -1045,7 +1053,8 @@ echo "[codex-${mode}] sandbox=workspace-write approval=${approvalText}"
 echo "[codex-${mode}] log=$LOG_PATH"
 
 cat "$PROMPT_PATH" | codex exec \\
-  --sandbox workspace-write${autoApproveArg} \\
+${sandboxLine}
+  --skip-git-repo-check \\
   --cd "$ROOT_DIR" 2>&1 | tee "$LOG_PATH"
 `;
 }
@@ -1419,10 +1428,10 @@ EXISTING_CODEX_PROCESSES="$(existing_codex_processes_text)"
 write_health_check
 write_run_status "starting" "running"
 
-# Effective Codex flags: codex exec --sandbox workspace-write --approve-for-me (prompt via stdin)
+# Effective Codex flags: codex exec --approve-for-me --skip-git-repo-check (prompt via stdin; workspace-write sandbox implied)
 (
   set +e
-  cat "$PROMPT_PATH" | codex exec --sandbox workspace-write --approve-for-me --cd "$ROOT_DIR" > "$LOG_PATH" 2>&1
+  cat "$PROMPT_PATH" | codex exec --approve-for-me --cd "$ROOT_DIR" > "$LOG_PATH" 2>&1
   code=$?
   printf "%s" "$code" > "$EXIT_PATH"
 ) &
