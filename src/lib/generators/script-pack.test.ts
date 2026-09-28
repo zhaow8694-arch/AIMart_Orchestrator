@@ -389,6 +389,46 @@ describe("generateScriptPack", () => {
     );
     expect(verifyRelease).not.toContain('$Version = $TargetVersion.TrimStart');
   });
+
+  it("never leaves an odd trailing backtick run inside an expandable PowerShell heredoc", () => {
+    // Regression test: a line ending with an odd number of backticks inside an
+    // @"..."@ heredoc escapes the newline, so the "@ terminator no longer sits
+    // at the start of a line and the heredoc swallows the rest of the script.
+    // (Dogfood 2026-09-28: this silently turned `try {` into a command call and
+    // left `catch` orphaned in scripts/run-autonomous-version.ps1.)
+    const projectSpec = createProjectSpec(
+      {
+        projectName: "Heredoc Probe",
+        rawDiscussion: "probe"
+      },
+      { now: fixedNow }
+    );
+
+    const scriptPack = generateScriptPack(projectSpec);
+    const hazards: string[] = [];
+
+    for (const file of scriptPack.files) {
+      if (!file.path.endsWith(".ps1")) continue;
+      let inHeredoc = false;
+      file.content.split("\n").forEach((line, index) => {
+        const trimmed = line.trim();
+        if (!inHeredoc) {
+          if (trimmed === '@"' || trimmed.endsWith('@"')) inHeredoc = true;
+          return;
+        }
+        if (trimmed.startsWith('"@')) {
+          inHeredoc = false;
+          return;
+        }
+        const run = line.match(/(`+)\s*$/);
+        if (run && run[1].length % 2 === 1) {
+          hazards.push(`${file.path}:${index + 1}: ${line}`);
+        }
+      });
+    }
+
+    expect(hazards).toEqual([]);
+  });
 });
 
 function findFile(files: { path: string; content: string }[], path: string): string {

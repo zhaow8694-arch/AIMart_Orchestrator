@@ -1454,9 +1454,9 @@ Message: $Message
 RunStartedAt: $($RunStartedAt.ToString("o"))
 
 Next command:
-\`\`\`powershell
+\`\`\`\`\`\`powershell
 $ApprovedCommand
-\`\`\`
+\`\`\`\`\`\`
 "@ | Set-Content -Encoding UTF8 $FailurePath
   throw ("Runner failed with {0}: {1}" -f $Category, $Message)
 }
@@ -1624,9 +1624,9 @@ Current stage: $Stage
 Target version: $TargetVersion
 
 Approved command:
-\`\`\`powershell
+\`\`\`\`\`\`powershell
 $ApprovedCommand
-\`\`\`
+\`\`\`\`\`\`
 
 Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners.
 "@ | Set-Content -Encoding UTF8 $NextActionPath
