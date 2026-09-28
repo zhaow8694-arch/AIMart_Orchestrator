@@ -362,6 +362,9 @@ describe("execution pack packager", () => {
     expect(autonomousPs1).toContain("scripts/run-customer-autonomous.ps1");
     expect(autonomousPs1).toContain("-Mode autonomous");
     expect(autonomousCmd).toContain("START_CODEX_AUTONOMOUS.ps1");
+    expect(autonomousCmd).toContain(
+      "REM -ExecutionPolicy Bypass applies to this PowerShell process only"
+    );
     expect(supervisedPs1).toContain("-Mode supervised");
   });
 
@@ -389,6 +392,7 @@ describe("execution pack packager", () => {
     expect(startHere).toContain(
       "powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion v1.0"
     );
+    expect(manifest).toContain("applies to that one PowerShell process only");
   });
 });
 

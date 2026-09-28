@@ -202,6 +202,10 @@ describe("generateCodexAdapter", () => {
       expect(content).not.toContain("git push");
       expect(content).not.toContain("full-access");
     }
+
+    expect(ps1).toContain(
+      "# -ExecutionPolicy Bypass applies to this PowerShell process only"
+    );
   });
 
   it("generates Codex end-to-end autonomous delivery instructions and launchers", () => {

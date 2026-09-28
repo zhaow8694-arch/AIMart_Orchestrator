@@ -1430,6 +1430,7 @@ $RootDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $RootDir
 
 $RunStartedAt = Get-Date
+# -ExecutionPolicy Bypass applies to this PowerShell process only; it does not change the machine's execution policy.
 $ApprovedCommand = "powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion $TargetVersion"
 $Stages = @(${runnerStages().map((stage) => `"${stage}"`).join(", ")})
 $StatePath = Join-Path $RootDir "runtime/RUNNER_STATE.json"
@@ -1603,6 +1604,7 @@ Set-Location $RootDir
 $StatePath = Join-Path $RootDir "runtime/RUNNER_STATE.json"
 $NextActionPath = Join-Path $RootDir "runtime/RUNNER_NEXT_ACTION.md"
 $Stages = @(${runnerStages().map((stage) => `"${stage}"`).join(", ")})
+# -ExecutionPolicy Bypass applies to this PowerShell process only; it does not change the machine's execution policy.
 $ApprovedCommand = "powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion $TargetVersion"
 
 New-Item -ItemType Directory -Force -Path (Join-Path $RootDir "runtime") | Out-Null

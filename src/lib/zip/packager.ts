@@ -139,6 +139,8 @@ Approved runner script path: scripts/run-autonomous-version.ps1
 powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion v1.0
 \`\`\`
 
+> \`-ExecutionPolicy Bypass\` applies to that one PowerShell process only and does not change your machine's execution policy. It lets the pack launch straight from a downloaded ZIP without a manual unblock step.
+
 START_CODEX_AUTONOMOUS.ps1 and START_CODEX_SUPERVISED.ps1 remain compatibility launchers; they route to the stable generated runner path.
 
 Use START_CODEX_SUPERVISED.ps1 or START_CODEX_SUPERVISED.cmd when a human wants interactive approval prompts.
@@ -177,6 +179,7 @@ Use one selected AI adapter at a time. Generated Claude Code, Trae, and Cursor d
 function renderStartCmd(scriptName: string): string {
   return `@echo off
 setlocal
+REM -ExecutionPolicy Bypass applies to this PowerShell process only; it does not change the machine's execution policy.
 powershell -ExecutionPolicy Bypass -File "%~dp0${scriptName}"
 exit /b %ERRORLEVEL%
 `;
@@ -364,6 +367,8 @@ Adapter file count: ${adapterFiles.length}
 5. Approved runner script path: scripts/run-autonomous-version.ps1.
 6. Let the selected adapter follow common/AUTONOMOUS_DELIVERY_ROADMAP.md, common/PHASE_GATE_PLAN.md, runtime/RUNNER_STATE.json, runtime/FULL_LIFECYCLE_RUN_STATE.json, and runtime/COMPLETION_GATE_REPORT.md.
 7. Continue until scripts/verify-customer-delivery.* and runtime/COMPLETION_GATE_REPORT.md report PASS.
+
+> \`-ExecutionPolicy Bypass\` applies to that one PowerShell process only and does not change your machine's execution policy. It lets the pack launch straight from a downloaded ZIP without a manual unblock step.
 
 Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners.
 

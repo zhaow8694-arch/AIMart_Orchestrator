@@ -746,6 +746,7 @@ function Invoke-CompletionGate {
   $Details = "scripts/verify-autonomous-completion.ps1 not found; ran local file gate"
 
   if (Test-Path $GateScript) {
+    # -ExecutionPolicy Bypass applies to this PowerShell process only; it does not change the machine's execution policy.
     & powershell -ExecutionPolicy Bypass -File $GateScript -TargetVersion $TargetVersion *> $GateLogPath
     $Code = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
     if ($Code -eq 0) {

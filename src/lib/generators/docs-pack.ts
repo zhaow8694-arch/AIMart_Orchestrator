@@ -92,6 +92,8 @@ After unzipping the execution pack, start from the pack root:
 powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion v1.0
 \`\`\`
 
+> \`-ExecutionPolicy Bypass\` applies to that one PowerShell process only and does not change your machine's execution policy. It lets the pack launch straight from a downloaded ZIP without a manual unblock step.
+
 Use START_CODEX_AUTONOMOUS.ps1 or START_CODEX_SUPERVISED.ps1 only as compatibility launchers. Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners. The stable runner shows project name, selected AI adapter, current lifecycle phase, current target version, current task, log updated time, release output status, completion gate status, blocked/known issue status, failure classification, and final PASS or FAIL summary.
 
 ## Local Setup

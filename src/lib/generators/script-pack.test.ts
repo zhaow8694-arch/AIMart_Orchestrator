@@ -223,6 +223,12 @@ describe("generateScriptPack", () => {
     }
     expect(runnerPs1).toContain("powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion");
     expect(runnerPs1).toContain(
+      "# -ExecutionPolicy Bypass applies to this PowerShell process only"
+    );
+    expect(stagePs1).toContain(
+      "# -ExecutionPolicy Bypass applies to this PowerShell process only"
+    );
+    expect(runnerPs1).toContain(
       'throw ("Runner failed with {0}: {1}" -f $Category, $Message)'
     );
     expect(runnerPs1).not.toContain("$Category`:");
