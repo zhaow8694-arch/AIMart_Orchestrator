@@ -130,11 +130,14 @@ describe("generateCodexAdapter", () => {
     expect(prompt).toContain("runtime/SAFE_COMMANDS.md");
     expect(runbook).toContain("logs");
     expect(autonomousPs1).toContain("--sandbox workspace-write");
-    expect(autonomousPs1).toContain("--approval never");
+    expect(autonomousPs1).toContain("--approve-for-me");
     expect(autonomousSh).toContain("--sandbox workspace-write");
-    expect(autonomousSh).toContain("--approval never");
-    expect(supervisedPs1).toContain("--approval on-request");
-    expect(supervisedSh).toContain("--approval on-request");
+    expect(autonomousSh).toContain("--approve-for-me");
+    expect(supervisedPs1).not.toContain("--approve-for-me");
+    expect(supervisedSh).not.toContain("--approve-for-me");
+    expect(scriptContent).not.toContain("--prompt-file");
+    expect(scriptContent).not.toContain("--approval never");
+    expect(scriptContent).not.toContain("--approval on-request");
     // PSScriptAnalyzer PSAvoidAssignmentToAutomaticVariable: never assign to $Args.
     expect(autonomousPs1).toContain("$CodexArgs = @(");
     expect(autonomousPs1).not.toContain("$Args = @(");
@@ -258,9 +261,9 @@ describe("generateCodexAdapter", () => {
     expect(prompt).toContain("v0.0.1");
     expect(prompt).toContain("v1.0");
     expect(ps1).toContain("workspace-write");
-    expect(ps1).toContain("approval never");
+    expect(ps1).toContain("approve-for-me");
     expect(sh).toContain("workspace-write");
-    expect(sh).toContain("approval never");
+    expect(sh).toContain("approve-for-me");
   });
 });
 

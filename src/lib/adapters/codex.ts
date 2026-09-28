@@ -496,12 +496,12 @@ $LogPath = Join-Path $LogDir "codex-end-to-end-autonomous-$Stamp.log"
 $PromptPath = Join-Path $RootDir "agent_adapters/codex/CODEX_END_TO_END_AUTONOMOUS_PROMPT.md"
 
 Write-Host "[codex-end-to-end] End-to-End Autonomous Delivery"
-Write-Host "[codex-end-to-end] sandbox=workspace-write approval=never"
+Write-Host "[codex-end-to-end] sandbox=workspace-write approval=auto (approve-for-me)"
 Write-Host "[codex-end-to-end] log=$LogPath"
 Write-Host "[codex-end-to-end] phase plan=common/PHASE_GATE_PLAN.md"
 Write-Host "[codex-end-to-end] final result must be PASS or FAIL in runtime/COMPLETION_GATE_REPORT.md"
 
-& codex exec --sandbox workspace-write --approval never --cd $RootDir --prompt-file $PromptPath 2>&1 | Tee-Object -FilePath $LogPath
+Get-Content $PromptPath -Raw | codex exec --sandbox workspace-write --approve-for-me --cd $RootDir 2>&1 | Tee-Object -FilePath $LogPath
 $Code = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
 Write-Host "[codex-end-to-end] Codex exit code: $Code"
 Write-Host "[codex-end-to-end] Check runtime/RUN_STATE.json, runtime/PHASE_GATE_REPORT.md, and runtime/COMPLETION_GATE_REPORT.md"
@@ -522,16 +522,15 @@ LOG_PATH="$LOG_DIR/codex-end-to-end-autonomous-$STAMP.log"
 PROMPT_PATH="$ROOT_DIR/agent_adapters/codex/CODEX_END_TO_END_AUTONOMOUS_PROMPT.md"
 
 echo "[codex-end-to-end] End-to-End Autonomous Delivery"
-echo "[codex-end-to-end] sandbox=workspace-write approval=never"
+echo "[codex-end-to-end] sandbox=workspace-write approval=auto (approve-for-me)"
 echo "[codex-end-to-end] log=$LOG_PATH"
 echo "[codex-end-to-end] phase plan=common/PHASE_GATE_PLAN.md"
 echo "[codex-end-to-end] final result must be PASS or FAIL in runtime/COMPLETION_GATE_REPORT.md"
 
-codex exec \\
+cat "$PROMPT_PATH" | codex exec \\
   --sandbox workspace-write \\
-  --approval never \\
-  --cd "$ROOT_DIR" \\
-  --prompt-file "$PROMPT_PATH" 2>&1 | tee "$LOG_PATH"
+  --approve-for-me \\
+  --cd "$ROOT_DIR" 2>&1 | tee "$LOG_PATH"
 code="\${PIPESTATUS[0]}"
 echo "[codex-end-to-end] Codex exit code: $code"
 echo "[codex-end-to-end] Check runtime/RUN_STATE.json, runtime/PHASE_GATE_REPORT.md, and runtime/COMPLETION_GATE_REPORT.md"
@@ -906,13 +905,13 @@ $ExistingCodexProcesses = Get-ExistingCodexProcessesText
 Write-HealthCheck
 Write-RunStatus -State "starting"
 
-# Effective Codex flags: codex exec --sandbox workspace-write --approval never
+# Effective Codex flags: codex exec --sandbox workspace-write --approve-for-me (prompt via stdin)
 $CodexJob = Start-Job -ScriptBlock {
   param($JobRootDir, $JobPromptPath, $JobLogPath, $JobExitPath)
 
   Set-Location $JobRootDir
   try {
-    & codex exec --sandbox workspace-write --approval never --cd $JobRootDir --prompt-file $JobPromptPath *> $JobLogPath
+    Get-Content $JobPromptPath -Raw | codex exec --sandbox workspace-write --approve-for-me --cd $JobRootDir *> $JobLogPath
     $Code = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
   } catch {
     $_ | Out-String | Add-Content -Encoding UTF8 -Path $JobLogPath
@@ -997,7 +996,11 @@ exit $FinalExitCode
 }
 
 function renderCodexPs1(mode: "autonomous" | "supervised"): string {
-  const approval = mode === "autonomous" ? "never" : "on-request";
+  // codex >= 0.147 removed --approval/--prompt-file. Autonomous mode uses
+  // --approve-for-me (auto approval review, keeps workspace-write sandbox);
+  // supervised mode keeps the default interactive approval behavior.
+  const approvalText = mode === "autonomous" ? "auto (approve-for-me)" : "prompt (default)";
+  const autoApproveArg = mode === "autonomous" ? '\n  "--approve-for-me",' : "";
 
   return `$ErrorActionPreference = "Stop"
 $RootDir = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path))
@@ -1009,24 +1012,23 @@ $Stamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $LogPath = Join-Path $LogDir "codex-${mode}-$Stamp.log"
 $PromptPath = Join-Path $RootDir "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md"
 
-Write-Host "[codex-${mode}] sandbox=workspace-write approval=${approval}"
+Write-Host "[codex-${mode}] sandbox=workspace-write approval=${approvalText}"
 Write-Host "[codex-${mode}] log=$LogPath"
 
-# Effective Codex flags: --sandbox workspace-write --approval ${approval}
+# Effective Codex flags: --sandbox workspace-write${mode === "autonomous" ? " --approve-for-me" : ""} (prompt via stdin)
 $CodexArgs = @(
   "exec",
-  "--sandbox", "workspace-write",
-  "--approval", "${approval}",
-  "--cd", $RootDir,
-  "--prompt-file", $PromptPath
+  "--sandbox", "workspace-write",${autoApproveArg}
+  "--cd", $RootDir
 )
 
-& codex @CodexArgs 2>&1 | Tee-Object -FilePath $LogPath
+Get-Content $PromptPath -Raw | & codex @CodexArgs 2>&1 | Tee-Object -FilePath $LogPath
 `;
 }
 
 function renderCodexSh(mode: "autonomous" | "supervised"): string {
-  const approval = mode === "autonomous" ? "never" : "on-request";
+  const approvalText = mode === "autonomous" ? "auto (approve-for-me)" : "prompt (default)";
+  const autoApproveArg = mode === "autonomous" ? ' \\\n  --approve-for-me' : "";
 
   return `#!/usr/bin/env bash
 set -euo pipefail
@@ -1039,14 +1041,12 @@ STAMP="$(date +%Y%m%d_%H%M%S)"
 LOG_PATH="$LOG_DIR/codex-${mode}-$STAMP.log"
 PROMPT_PATH="$ROOT_DIR/agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md"
 
-echo "[codex-${mode}] sandbox=workspace-write approval=${approval}"
+echo "[codex-${mode}] sandbox=workspace-write approval=${approvalText}"
 echo "[codex-${mode}] log=$LOG_PATH"
 
-codex exec \\
-  --sandbox workspace-write \\
-  --approval ${approval} \\
-  --cd "$ROOT_DIR" \\
-  --prompt-file "$PROMPT_PATH" 2>&1 | tee "$LOG_PATH"
+cat "$PROMPT_PATH" | codex exec \\
+  --sandbox workspace-write${autoApproveArg} \\
+  --cd "$ROOT_DIR" 2>&1 | tee "$LOG_PATH"
 `;
 }
 
@@ -1419,10 +1419,10 @@ EXISTING_CODEX_PROCESSES="$(existing_codex_processes_text)"
 write_health_check
 write_run_status "starting" "running"
 
-# Effective Codex flags: codex exec --sandbox workspace-write --approval never
+# Effective Codex flags: codex exec --sandbox workspace-write --approve-for-me (prompt via stdin)
 (
   set +e
-  codex exec --sandbox workspace-write --approval never --cd "$ROOT_DIR" --prompt-file "$PROMPT_PATH" > "$LOG_PATH" 2>&1
+  cat "$PROMPT_PATH" | codex exec --sandbox workspace-write --approve-for-me --cd "$ROOT_DIR" > "$LOG_PATH" 2>&1
   code=$?
   printf "%s" "$code" > "$EXIT_PATH"
 ) &
