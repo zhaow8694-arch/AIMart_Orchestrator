@@ -1475,7 +1475,7 @@ try {
     if ($Stage -eq "CODEX_EXECUTION" -and -not $SkipAdapterRun) {
       $CustomerRunner = Join-Path $RootDir "scripts/run-customer-autonomous.ps1"
       if (Test-Path $CustomerRunner) {
-        & $CustomerRunner -Mode $Mode -SkipAdapterRun
+        & $CustomerRunner -Mode $Mode -SkipAdapterRun:$SkipAdapterRun
       }
     }
 
@@ -1693,6 +1693,8 @@ $ErrorPath = "$SamplePath.ERROR.txt"
 $EntriesPath = "$SamplePath.entries.txt"
 
 function Write-NormalizationError([string]$Category, [string]$Details) {
+  $ErrorDir = Split-Path -Parent $ErrorPath
+  if ($ErrorDir -and -not (Test-Path $ErrorDir)) { New-Item -ItemType Directory -Force -Path $ErrorDir | Out-Null }
   "$Category\`n$Details" | Set-Content -Encoding UTF8 $ErrorPath
   throw ("{0}: {1}" -f $Category, $Details)
 }

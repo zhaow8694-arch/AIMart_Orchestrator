@@ -429,6 +429,27 @@ describe("generateScriptPack", () => {
 
     expect(hazards).toEqual([]);
   });
+
+  it("passes SkipAdapterRun through to the customer runner instead of hardcoding it", () => {
+    // Regression test (dogfood 2026-09-28): the autonomous runner invoked the
+    // customer runner with a hardcoded -SkipAdapterRun, so the codex adapter
+    // never executed and CODEX_EXECUTION was a silent no-op.
+    const projectSpec = createProjectSpec(
+      {
+        projectName: "Adapter Probe",
+        rawDiscussion: "probe"
+      },
+      { now: fixedNow }
+    );
+
+    const scriptPack = generateScriptPack(projectSpec);
+    const runner = findFile(
+      scriptPack.files,
+      "scripts/run-autonomous-version.ps1"
+    );
+    expect(runner).toContain("-SkipAdapterRun:$SkipAdapterRun");
+    expect(runner).not.toMatch(/\$CustomerRunner -Mode \$Mode -SkipAdapterRun\r?\n/);
+  });
 });
 
 function findFile(files: { path: string; content: string }[], path: string): string {
