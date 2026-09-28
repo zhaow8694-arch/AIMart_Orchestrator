@@ -501,7 +501,16 @@ Write-Host "[codex-end-to-end] log=$LogPath"
 Write-Host "[codex-end-to-end] phase plan=common/PHASE_GATE_PLAN.md"
 Write-Host "[codex-end-to-end] final result must be PASS or FAIL in runtime/COMPLETION_GATE_REPORT.md"
 
-Get-Content $PromptPath -Raw | codex exec --approve-for-me --skip-git-repo-check --cd $RootDir 2>&1 | Tee-Object -FilePath $LogPath
+# NOTE: codex prints informational lines (e.g. "Reading prompt from stdin...")
+# to stderr; under $ErrorActionPreference="Stop" PowerShell promotes those to
+# terminating errors and kills the pipeline before codex runs. Relax it here.
+$PrevEAP = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+  Get-Content $PromptPath -Raw | codex exec --approve-for-me --skip-git-repo-check --cd $RootDir 2>&1 | Tee-Object -FilePath $LogPath
+} finally {
+  $ErrorActionPreference = $PrevEAP
+}
 $Code = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
 Write-Host "[codex-end-to-end] Codex exit code: $Code"
 Write-Host "[codex-end-to-end] Check runtime/RUN_STATE.json, runtime/PHASE_GATE_REPORT.md, and runtime/COMPLETION_GATE_REPORT.md"
@@ -1025,7 +1034,16 @@ $CodexArgs = @(
   "--cd", $RootDir
 )
 
-Get-Content $PromptPath -Raw | & codex @CodexArgs 2>&1 | Tee-Object -FilePath $LogPath
+# NOTE: codex prints informational lines (e.g. "Reading prompt from stdin...")
+# to stderr; under $ErrorActionPreference="Stop" PowerShell promotes those to
+# terminating errors and kills the pipeline before codex runs. Relax it here.
+$PrevEAP = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+  Get-Content $PromptPath -Raw | & codex @CodexArgs 2>&1 | Tee-Object -FilePath $LogPath
+} finally {
+  $ErrorActionPreference = $PrevEAP
+}
 `;
 }
 

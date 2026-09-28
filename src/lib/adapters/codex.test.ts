@@ -144,6 +144,11 @@ describe("generateCodexAdapter", () => {
     expect(scriptContent).not.toContain("--approval on-request");
     // Execution packs are not git repos; the adapter must skip the repo check.
     expect(scriptContent).toContain("--skip-git-repo-check");
+    // codex writes informational lines to stderr; the PS adapters must relax
+    // $ErrorActionPreference around the codex call so those lines don't become
+    // terminating errors (dogfood round 4 finding).
+    expect(autonomousPs1).toContain('$ErrorActionPreference = "Continue"');
+    expect(supervisedPs1).toContain('$ErrorActionPreference = "Continue"');
     // PSScriptAnalyzer PSAvoidAssignmentToAutomaticVariable: never assign to $Args.
     expect(autonomousPs1).toContain("$CodexArgs = @(");
     expect(autonomousPs1).not.toContain("$Args = @(");
