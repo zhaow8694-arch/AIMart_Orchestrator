@@ -196,6 +196,21 @@ describe("POST /api/generate", () => {
       ])
     );
   });
+  it("rejects request bodies larger than 1MB with 413", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/generate", {
+        method: "POST",
+        body: JSON.stringify({
+          projectName: "Tiny Planner",
+          rawDiscussion: "x".repeat(1_100_000)
+        })
+      })
+    );
+
+    expect(response.status).toBe(413);
+    const body = (await response.json()) as { error: string };
+    expect(body.error).toBe("Request body too large.");
+  });
 });
 
 function readCentralDirectoryNames(buffer: Buffer): string[] {

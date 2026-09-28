@@ -3,9 +3,57 @@ import { createExecutionPackZip } from "@/lib/zip/packager";
 
 export const runtime = "nodejs";
 
+// Generation input is plain text; anything above 1MB is abuse, not a project.
+// The content-length header is a fast path only — it can be missing (chunked
+// uploads, some runtimes), so the body stream itself is capped while reading.
+const MAX_BODY_BYTES = 1_000_000;
+
+class BodyTooLargeError extends Error {}
+
+async function readBoundedBodyText(request: Request): Promise<string> {
+  const contentLength = request.headers.get("content-length");
+  if (contentLength !== null && Number(contentLength) > MAX_BODY_BYTES) {
+    throw new BodyTooLargeError();
+  }
+
+  const reader = request.body?.getReader();
+  if (!reader) {
+    return "";
+  }
+
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    totalBytes += value.byteLength;
+    if (totalBytes > MAX_BODY_BYTES) {
+      await reader.cancel();
+      throw new BodyTooLargeError();
+    }
+    chunks.push(value);
+  }
+
+  return Buffer.concat(chunks).toString("utf8");
+}
+
 export async function POST(request: Request): Promise<Response> {
+  let input: ProjectSpecInput;
   try {
-    const input = (await request.json()) as ProjectSpecInput;
+    input = JSON.parse(await readBoundedBodyText(request)) as ProjectSpecInput;
+  } catch (error) {
+    if (error instanceof BodyTooLargeError) {
+      return Response.json(
+        { error: "Request body too large." },
+        { status: 413 }
+      );
+    }
+    return Response.json({ error: "Invalid request payload." }, { status: 400 });
+  }
+
+  try {
     const { pack, zipBuffer } = await createExecutionPackZip(input);
 
     return Response.json({

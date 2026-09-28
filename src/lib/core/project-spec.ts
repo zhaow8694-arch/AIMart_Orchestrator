@@ -1,5 +1,6 @@
 import {
   AgentAdapterIdSchema,
+  MAX_LIST_ITEM_LENGTH,
   ProjectSpecSchema,
   type AgentAdapterId,
   type ExecutionScope,
@@ -142,7 +143,7 @@ function extractExplicitRequirements(rawDiscussion: string): string[] {
   return unique(
     rawDiscussion
       .split(/\r?\n/)
-      .map((line) => line.trim())
+      .map((line) => line.trim().slice(0, MAX_LIST_ITEM_LENGTH))
       .filter((line) => {
         const lower = line.toLowerCase();
         return REQUIREMENT_MARKERS.some((marker) => lower.includes(marker));

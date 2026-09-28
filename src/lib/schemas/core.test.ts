@@ -3,6 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   AgentAdapterSchema,
   GeneratedPackSchema,
+  MAX_LIST_ITEM_LENGTH,
+  MAX_LIST_ITEMS,
+  MAX_PROJECT_NAME_LENGTH,
+  MAX_RAW_DISCUSSION_LENGTH,
   PermissionPolicySchema,
   ProjectSpecSchema,
   RuntimePolicySchema,
@@ -219,6 +223,32 @@ describe("core schemas", () => {
       expect(message).toContain("tasks.0.riskLevel");
       expect(message).toContain("tasks.0.doneCriteria");
     }
+  });
+
+  it("rejects oversized text input", () => {
+    const oversizedName = ProjectSpecSchema.safeParse({
+      ...validProjectSpec,
+      projectName: "x".repeat(MAX_PROJECT_NAME_LENGTH + 1)
+    });
+    expect(oversizedName.success).toBe(false);
+
+    const oversizedDiscussion = ProjectSpecSchema.safeParse({
+      ...validProjectSpec,
+      rawDiscussion: "x".repeat(MAX_RAW_DISCUSSION_LENGTH + 1)
+    });
+    expect(oversizedDiscussion.success).toBe(false);
+
+    const oversizedItem = ProjectSpecSchema.safeParse({
+      ...validProjectSpec,
+      mvpScope: ["x".repeat(MAX_LIST_ITEM_LENGTH + 1)]
+    });
+    expect(oversizedItem.success).toBe(false);
+
+    const oversizedList = ProjectSpecSchema.safeParse({
+      ...validProjectSpec,
+      mvpScope: Array.from({ length: MAX_LIST_ITEMS + 1 }, () => "item")
+    });
+    expect(oversizedList.success).toBe(false);
   });
 
   it("exports each required v0.1 schema", () => {

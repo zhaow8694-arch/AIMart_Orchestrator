@@ -2,6 +2,23 @@ import { z, type ZodError } from "zod";
 
 const NonEmptyStringSchema = z.string().trim().min(1);
 
+// Inbound size limits: pack input arrives over HTTP, and unbounded strings let
+// a single request exhaust server memory while the pack is being generated.
+export const MAX_PROJECT_NAME_LENGTH = 200;
+export const MAX_TEXT_FIELD_LENGTH = 20_000;
+export const MAX_RAW_DISCUSSION_LENGTH = 200_000;
+export const MAX_LIST_ITEM_LENGTH = 5_000;
+export const MAX_LIST_ITEMS = 200;
+
+const BoundedNonEmptyString = (maxLength: number) =>
+  z.string().trim().min(1).max(maxLength);
+const BoundedText = (maxLength: number) => z.string().trim().max(maxLength);
+const BoundedTextList = (itemMaxLength: number, listMaxLength: number) =>
+  z
+    .array(z.string().trim().min(1).max(itemMaxLength))
+    .max(listMaxLength)
+    .default([]);
+
 export const RiskLevelSchema = z.enum(["L0", "L1", "L2", "L3", "L4", "L5"]);
 
 export const TaskStatusSchema = z.enum([
@@ -38,22 +55,22 @@ export const ExecutionModeSchema = z.preprocess((value) => {
 }, z.enum(["supervised", "autonomous", "end_to_end_autonomous"]).default("supervised"));
 
 export const ProjectSpecSchema = z.object({
-  projectName: NonEmptyStringSchema,
-  background: z.string().trim().default(""),
-  rawDiscussion: NonEmptyStringSchema,
-  mvpScope: z.array(NonEmptyStringSchema).default([]),
-  forbiddenItems: z.array(NonEmptyStringSchema).default([]),
-  techStackPreferences: z.array(NonEmptyStringSchema).default([]),
+  projectName: BoundedNonEmptyString(MAX_PROJECT_NAME_LENGTH),
+  background: BoundedText(MAX_TEXT_FIELD_LENGTH).default(""),
+  rawDiscussion: BoundedNonEmptyString(MAX_RAW_DISCUSSION_LENGTH),
+  mvpScope: BoundedTextList(MAX_LIST_ITEM_LENGTH, MAX_LIST_ITEMS),
+  forbiddenItems: BoundedTextList(MAX_LIST_ITEM_LENGTH, MAX_LIST_ITEMS),
+  techStackPreferences: BoundedTextList(MAX_LIST_ITEM_LENGTH, MAX_LIST_ITEMS),
   targetAdapterType: AgentAdapterIdSchema.default("codex"),
   selectedAdapterIds: z.array(AgentAdapterIdSchema).min(1).default(["codex"]),
   executionScope: ExecutionScopeSchema,
   executionMode: ExecutionModeSchema,
-  testingRequirements: z.array(NonEmptyStringSchema).default([]),
-  deliveryRequirements: z.array(NonEmptyStringSchema).default([]),
-  securityBoundaries: z.array(NonEmptyStringSchema).default([]),
-  explicitRequirements: z.array(NonEmptyStringSchema).default([]),
-  inferredAssumptions: z.array(NonEmptyStringSchema).default([]),
-  openQuestions: z.array(NonEmptyStringSchema).default([]),
+  testingRequirements: BoundedTextList(MAX_LIST_ITEM_LENGTH, MAX_LIST_ITEMS),
+  deliveryRequirements: BoundedTextList(MAX_LIST_ITEM_LENGTH, MAX_LIST_ITEMS),
+  securityBoundaries: BoundedTextList(MAX_LIST_ITEM_LENGTH, MAX_LIST_ITEMS),
+  explicitRequirements: BoundedTextList(MAX_LIST_ITEM_LENGTH, MAX_LIST_ITEMS),
+  inferredAssumptions: BoundedTextList(MAX_LIST_ITEM_LENGTH, MAX_LIST_ITEMS),
+  openQuestions: BoundedTextList(MAX_LIST_ITEM_LENGTH, MAX_LIST_ITEMS),
   createdAt: z.string().datetime()
 });
 
