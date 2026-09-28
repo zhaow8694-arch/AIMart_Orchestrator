@@ -346,6 +346,49 @@ describe("generateScriptPack", () => {
       expect(content).toContain("CUSTOMER_RUNTIME_VALIDATION_REPORT.md");
     }
   });
+
+  it("keeps generated PowerShell scripts PSScriptAnalyzer-clean", () => {
+    const projectSpec = createProjectSpec(
+      {
+        projectName: "Stock Desk",
+        rawDiscussion: "必须支持库存录入。"
+      },
+      { now: fixedNow }
+    );
+
+    const scriptPack = generateScriptPack(projectSpec);
+    const ps1Files = scriptPack.files.filter((file) =>
+      file.path.endsWith(".ps1")
+    );
+    expect(ps1Files.length).toBeGreaterThan(0);
+
+    for (const file of ps1Files) {
+      // PSScriptAnalyzer PSAvoidUsingEmptyCatchBlock: every catch must do something.
+      expect(`${file.path}: ${file.content}`).not.toContain("} catch {}");
+    }
+
+    // PSScriptAnalyzer PSUseApprovedVerbs: "Fail" is not an approved verb.
+    const normalizer = findFile(
+      scriptPack.files,
+      "scripts/normalize-sample-pack.ps1"
+    );
+    expect(normalizer).toContain("function Write-NormalizationError(");
+    expect(normalizer).not.toContain("Fail-Normalization");
+
+    // PSScriptAnalyzer PSUseDeclaredVarsMoreThanAssignments: no dead variables.
+    const runner = findFile(
+      scriptPack.files,
+      "scripts/run-autonomous-version.ps1"
+    );
+    expect(runner).not.toContain('$StatePath = Join-Path $RootDir');
+    expect(runner).not.toContain('$NextActionPath = Join-Path $RootDir');
+
+    const verifyRelease = findFile(
+      scriptPack.files,
+      "scripts/verify-release.ps1"
+    );
+    expect(verifyRelease).not.toContain('$Version = $TargetVersion.TrimStart');
+  });
 });
 
 function findFile(files: { path: string; content: string }[], path: string): string {

@@ -604,7 +604,9 @@ function Get-TargetVersionText {
   try {
     $Pkg = Get-Content -Path $PackagePath -Raw | ConvertFrom-Json
     if ($Pkg.version) { return "v$($Pkg.version)" }
-  } catch {}
+  } catch {
+    Write-Verbose "package.json unreadable, using 'unknown': $($_.Exception.Message)"
+  }
 
   return "unknown"
 }
@@ -1011,7 +1013,7 @@ Write-Host "[codex-${mode}] sandbox=workspace-write approval=${approval}"
 Write-Host "[codex-${mode}] log=$LogPath"
 
 # Effective Codex flags: --sandbox workspace-write --approval ${approval}
-$Args = @(
+$CodexArgs = @(
   "exec",
   "--sandbox", "workspace-write",
   "--approval", "${approval}",
@@ -1019,7 +1021,7 @@ $Args = @(
   "--prompt-file", $PromptPath
 )
 
-& codex @Args 2>&1 | Tee-Object -FilePath $LogPath
+& codex @CodexArgs 2>&1 | Tee-Object -FilePath $LogPath
 `;
 }
 

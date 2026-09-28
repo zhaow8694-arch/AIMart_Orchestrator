@@ -369,7 +369,7 @@ $LogPath = Join-Path $RunDir "customer-$Mode-$Stamp.log"
 
 function Read-LifecycleState {
   if (Test-Path $StatePath) {
-    try { return Get-Content $StatePath -Raw | ConvertFrom-Json } catch {}
+    try { return Get-Content $StatePath -Raw | ConvertFrom-Json } catch { Write-Verbose "lifecycle state unreadable: $($_.Exception.Message)"; return $null }
   }
 
   return [pscustomobject]@{
@@ -839,7 +839,6 @@ if (-not $TargetVersion) {
   $TargetVersion = "v$($Pkg.version)"
 }
 if (-not $TargetVersion.StartsWith("v")) { $TargetVersion = "v$TargetVersion" }
-$Version = $TargetVersion.TrimStart("v")
 $ReleaseDir = Join-Path $RootDir "releases/$TargetVersion"
 $SourceZip = Join-Path $ReleaseDir "aimart-orchestrator-$TargetVersion-source.zip"
 $SampleZip = Join-Path $ReleaseDir "samples/todo-api-generated-execution-pack.zip"
@@ -1286,7 +1285,7 @@ Add-Result "git status" "PASS" ($GitStatus -join "; ")
 try {
   $Head = (git rev-parse HEAD).Trim()
   $TagCommit = ""
-  try { $TagCommit = (git rev-parse $TargetVersion).Trim() } catch {}
+  try { $TagCommit = (git rev-parse $TargetVersion).Trim() } catch { Write-Verbose "tag not found yet: $($_.Exception.Message)" }
   if ($TagCommit -and $Head -eq $TagCommit) { Add-Result "target version tag" "PASS" "$TargetVersion -> $Head" } elseif ($TagCommit) { Add-Result "target version tag" "PASS" "pre-freeze check recorded mismatch: $TargetVersion -> $TagCommit, HEAD -> $Head" } else { Add-Result "target version tag" "PASS" "pre-freeze check; tag will be created after gates pass" }
 } catch {
   Add-Result "target version tag" "FAIL" $_.Exception.Message
@@ -1433,10 +1432,8 @@ $RunStartedAt = Get-Date
 # -ExecutionPolicy Bypass applies to this PowerShell process only; it does not change the machine's execution policy.
 $ApprovedCommand = "powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion $TargetVersion"
 $Stages = @(${runnerStages().map((stage) => `"${stage}"`).join(", ")})
-$StatePath = Join-Path $RootDir "runtime/RUNNER_STATE.json"
 $SummaryPath = Join-Path $RootDir "runtime/RUNNER_FINAL_SUMMARY.md"
 $FailurePath = Join-Path $RootDir "runtime/RUNNER_FAILURE_CLASSIFICATION.md"
-$NextActionPath = Join-Path $RootDir "runtime/RUNNER_NEXT_ACTION.md"
 
 Write-Host "Approved command: $ApprovedCommand"
 Write-Host "Approved runner script path: scripts/run-autonomous-version.ps1"
@@ -1695,17 +1692,17 @@ if (-not $SamplePath) { $SamplePath = Join-Path $RootDir "releases/$TargetVersio
 $ErrorPath = "$SamplePath.ERROR.txt"
 $EntriesPath = "$SamplePath.entries.txt"
 
-function Fail-Normalization([string]$Category, [string]$Details) {
+function Write-NormalizationError([string]$Category, [string]$Details) {
   "$Category\`n$Details" | Set-Content -Encoding UTF8 $ErrorPath
   throw ("{0}: {1}" -f $Category, $Details)
 }
 
-if (-not (Test-Path $SamplePath)) { Fail-Normalization "SAMPLE_PACK_INVALID_ZIP" "Missing sample file: $SamplePath" }
+if (-not (Test-Path $SamplePath)) { Write-NormalizationError "SAMPLE_PACK_INVALID_ZIP" "Missing sample file: $SamplePath" }
 if ($RunStartedAt) {
   $StartedAt = [DateTime]::Parse($RunStartedAt)
   $Item = Get-Item $SamplePath
   if ($Item.LastWriteTime -lt $StartedAt) {
-    Fail-Normalization "SAMPLE_PACK_STALE_FILE" "Sample pack timestamp is before current run start."
+    Write-NormalizationError "SAMPLE_PACK_STALE_FILE" "Sample pack timestamp is before current run start."
   }
 }
 
@@ -1720,10 +1717,10 @@ if (-not $IsZip) {
       [System.IO.File]::WriteAllBytes((Resolve-Path $SamplePath).Path, $Bytes)
       Write-Host "SAMPLE_PACK_JSON_BASE64_RESPONSE"
     } else {
-      Fail-Normalization "SAMPLE_PACK_INVALID_ZIP" "JSON response did not contain zipBase64."
+      Write-NormalizationError "SAMPLE_PACK_INVALID_ZIP" "JSON response did not contain zipBase64."
     }
   } catch {
-    Fail-Normalization "SAMPLE_PACK_INVALID_ZIP" "Sample file is HTML/text/error JSON, not a ZIP."
+    Write-NormalizationError "SAMPLE_PACK_INVALID_ZIP" "Sample file is HTML/text/error JSON, not a ZIP."
   }
 }
 
@@ -1734,7 +1731,7 @@ try {
   $Entries = @($Zip.Entries | ForEach-Object { $_.FullName.Replace("\\", "/") } | Sort-Object)
   $Entries | Set-Content -Encoding UTF8 $EntriesPath
 } catch {
-  Fail-Normalization "SAMPLE_PACK_INVALID_ZIP" $_.Exception.Message
+  Write-NormalizationError "SAMPLE_PACK_INVALID_ZIP" $_.Exception.Message
 } finally {
   if ($Zip) { $Zip.Dispose() }
 }

@@ -135,6 +135,11 @@ describe("generateCodexAdapter", () => {
     expect(autonomousSh).toContain("--approval never");
     expect(supervisedPs1).toContain("--approval on-request");
     expect(supervisedSh).toContain("--approval on-request");
+    // PSScriptAnalyzer PSAvoidAssignmentToAutomaticVariable: never assign to $Args.
+    expect(autonomousPs1).toContain("$CodexArgs = @(");
+    expect(autonomousPs1).not.toContain("$Args = @(");
+    expect(supervisedPs1).toContain("$CodexArgs = @(");
+    expect(supervisedPs1).not.toContain("$Args = @(");
     expect(scriptContent).not.toContain("dangerously-bypass-approvals-and-sandbox");
     expect(scriptContent).not.toContain("full-access");
   });
@@ -206,6 +211,8 @@ describe("generateCodexAdapter", () => {
     expect(ps1).toContain(
       "# -ExecutionPolicy Bypass applies to this PowerShell process only"
     );
+    // PSScriptAnalyzer PSAvoidUsingEmptyCatchBlock: every catch must do something.
+    expect(ps1).not.toContain("} catch {}");
   });
 
   it("generates Codex end-to-end autonomous delivery instructions and launchers", () => {
