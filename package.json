@@ -12,6 +12,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.0",
     "archiver": "^8.0.0",
     "js-yaml": "^4.2.0",
     "next": "^16.2.7",
