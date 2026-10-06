@@ -1,21 +1,22 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL ?? "https://ai-mart-orchestrator.vercel.app";
   const card = {
     name: "AIMart Execution Pack Generator",
     description:
-      "把自然语言项目描述转成 AI Coding Agent 无人值守执行包（含启动脚本、任务清单、验收标准），下载即用。",
+      "Turns natural-language project descriptions into self-contained execution packs for AI coding agents (startup scripts, task checklists, acceptance criteria). Download and run.",
     url: baseUrl,
     version: "0.3.2",
     capabilities: { streaming: false, pushNotifications: false },
     skills: [
       {
         id: "generate-execution-pack",
-        name: "生成无人值守执行包",
+        name: "Generate Unattended Execution Pack",
         description:
-          "输入一段项目描述（纯文本，1MB 以内），返回可下载的执行包 ZIP。",
-        examples: ["帮我生成一个 Python 爬虫项目的无人值守执行包"],
+          "Input a project description (plain text, under 1MB), get a downloadable execution pack ZIP.",
+        examples: ["Generate an unattended execution pack for my Python crawler project"],
       },
     ],
     authentication: { schemes: ["none"] },
