@@ -9,6 +9,7 @@ async function handle(req: Request): Promise<Response> {
   const server = createAIMartMcpServer();
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
+    enableJsonResponse: true    
   });
   await server.connect(transport);
   try {
