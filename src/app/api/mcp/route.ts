@@ -1,13 +1,12 @@
-import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createAIMartMcpServer } from "@/mcp/server";
 
 export const runtime = "nodejs";
 
-// Stateless mode: a fresh server + transport per request (required by the SDK:
-// a stateless transport cannot be reused across requests).
+// Stateless mode: a fresh server + transport per request
 async function handle(req: Request): Promise<Response> {
   const server = createAIMartMcpServer();
-  const transport = new WebStandardStreamableHTTPServerTransport({
+  const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
   });
   await server.connect(transport);
