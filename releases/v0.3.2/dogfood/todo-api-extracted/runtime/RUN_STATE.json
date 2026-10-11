@@ -1,0 +1,17 @@
+{
+  "projectName": "Todo API",
+  "executionScope": "end_to_end_delivery",
+  "executionMode": "end_to_end_autonomous",
+  "selectedAdapterIds": [
+    "codex",
+    "claude-code",
+    "trae",
+    "cursor"
+  ],
+  "currentPhase": "v0.0.1",
+  "currentTaskId": "TASK-001",
+  "phaseGateStatus": "pending",
+  "completionGateStatus": "pending",
+  "finalResult": "pending",
+  "updatedAt": "2026-09-28T17:17:20.067Z"
+}

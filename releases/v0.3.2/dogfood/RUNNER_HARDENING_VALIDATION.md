@@ -1,17 +1,23 @@
 ﻿# Runner Hardening Validation
 
 Version: v0.3.2
-Release: Autonomous Runner Hardening
-GeneratedAt: 2026-06-12 05:34:17
+RunStartedAt: 2026-09-29T01:17:09.1901073+08:00
+Source ZIP: releases\v0.3.2\aimart-orchestrator-v0.3.2-source.zip
+Sample ZIP: releases\v0.3.2\samples\todo-api-generated-execution-pack.zip
 
-## Results
+## Checks
 
-- Runner Self-Test: PASS
-- Failure Classifier artifacts: PASS
-- stale sample cleanup: PASS
-- ZIP magic / JSON zipBase64 handling: PASS
-- normalized ZIP entry paths: PASS
-- PowerShell 5.1 compatibility safeguards: PASS
-- single current runner entry: PASS
-- source ZIP validation: PASS
-- sample execution-pack validation: PASS
+- Stable runner scripts exist in sample pack: PASS
+- Runner stage machine scripts exist in sample pack: PASS
+- Sample pack normalizer scripts exist in sample pack: PASS
+- Failure classifier scripts exist in sample pack: PASS
+- runtime/RUNNER_STATE.json exists: PASS
+- runtime/RUNNER_FAILURE_CLASSIFICATION.md exists: PASS
+- runtime/RUNNER_RECOVERY_POLICY.md exists: PASS
+- runtime/RUNNER_NEXT_ACTION.md exists: PASS
+- runtime/RUNNER_FINAL_SUMMARY.md exists: PASS
+- Sample pack normalization result: PASS
+- Stale artifact protection: PASS
+- Old-runner prevention text present: PASS
+
+Final result: PASS

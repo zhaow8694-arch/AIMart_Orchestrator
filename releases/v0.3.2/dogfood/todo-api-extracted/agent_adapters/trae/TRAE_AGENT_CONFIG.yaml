@@ -1,0 +1,8 @@
+project: Todo API
+adapter: trae
+mode: end_to_end_autonomous
+scope: end_to_end_delivery
+policy:
+  workspace: project-local
+  highRiskCommands: runtime/APPROVAL_QUEUE.md
+  completionGate: runtime/COMPLETION_GATE_REPORT.md

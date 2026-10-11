@@ -1,0 +1,28 @@
+{
+  "projectName": "Todo API",
+  "runnerVersion": "v0.3.2",
+  "approvedCommand": "powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion v1.0",
+  "currentStage": "PREFLIGHT",
+  "stages": [
+    "PREFLIGHT",
+    "CODEX_EXECUTION",
+    "VALIDATION_TEST_LINT_BUILD",
+    "SOURCE_ZIP",
+    "SAMPLE_PACK",
+    "SAMPLE_PACK_NORMALIZATION",
+    "ADAPTER_COMPLETENESS",
+    "SHA256_MANIFEST",
+    "DOGFOOD",
+    "COMMIT_TAG",
+    "COMPLETION_GATE",
+    "FREEZE"
+  ],
+  "runStartedAt": "2026-09-28T17:17:20.067Z",
+  "artifactHashes": {},
+  "staleArtifactProtection": "regenerate artifacts or verify artifact timestamp after run start with newly recorded hash",
+  "oldRunnerPrevention": "Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners.",
+  "lastFailureClassification": "none",
+  "completionGateStatus": "pending",
+  "finalResult": "pending",
+  "updatedAt": "2026-09-28T17:17:20.067Z"
+}

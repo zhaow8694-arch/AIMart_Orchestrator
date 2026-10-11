@@ -1,0 +1,198 @@
+levels:
+  - level: L0
+    name: read_only
+    description: Read-only project inspection such as listing files or checking status.
+    defaultAction: allow
+  - level: L1
+    name: project_safe
+    description: Project-local install, lint, test, and build commands.
+    defaultAction: allow
+  - level: L2
+    name: recoverable_project_change
+    description: Project-local generated files, formatting, or lockfile updates.
+    defaultAction: allow
+  - level: L3
+    name: environment_change
+    description: Docker, database migrations, or system-level dependency changes.
+    defaultAction: queue_for_approval
+  - level: L4
+    name: external_resource_change
+    description: Remote Git, deployment, cloud, or PR merge operations.
+    defaultAction: queue_for_approval
+  - level: L5
+    name: destructive_or_secret_access
+    description: Destructive commands or commands that read secrets.
+    defaultAction: deny
+commandRules:
+  - command: git status
+    riskLevel: L0
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: git diff
+    riskLevel: L0
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: pnpm install
+    riskLevel: L1
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: pnpm lint
+    riskLevel: L1
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: pnpm test
+    riskLevel: L1
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: pnpm build
+    riskLevel: L1
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: scripts/finalize.ps1
+    riskLevel: L1
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: scripts/finalize.sh
+    riskLevel: L1
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: scripts/verify-customer-delivery.ps1
+    riskLevel: L1
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: scripts/verify-customer-delivery.sh
+    riskLevel: L1
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: read ZIP entries
+    riskLevel: L1
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: local port lookup
+    riskLevel: L1
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: write current-version release artifacts
+    riskLevel: L1
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: node -v
+    riskLevel: L1
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: pnpm -v
+    riskLevel: L1
+    action: allow
+    reason: Allowed project-local verification or read-only command.
+  - command: git push
+    riskLevel: L4
+    action: queue_for_approval
+    reason: External resource changes require explicit approval.
+  - command: git push --tags
+    riskLevel: L4
+    action: queue_for_approval
+    reason: External resource changes require explicit approval.
+  - command: gh pr create
+    riskLevel: L4
+    action: queue_for_approval
+    reason: External resource changes require explicit approval.
+  - command: vercel deploy
+    riskLevel: L4
+    action: queue_for_approval
+    reason: External resource changes require explicit approval.
+  - command: terraform apply
+    riskLevel: L4
+    action: queue_for_approval
+    reason: External resource changes require explicit approval.
+  - command: kubectl apply
+    riskLevel: L4
+    action: queue_for_approval
+    reason: External resource changes require explicit approval.
+  - command: production deployment
+    riskLevel: L4
+    action: queue_for_approval
+    reason: External resource changes require explicit approval.
+  - command: real database migration
+    riskLevel: L4
+    action: queue_for_approval
+    reason: External resource changes require explicit approval.
+  - command: cloud resource creation
+    riskLevel: L4
+    action: queue_for_approval
+    reason: External resource changes require explicit approval.
+  - command: cloud resource deletion
+    riskLevel: L4
+    action: queue_for_approval
+    reason: External resource changes require explicit approval.
+  - command: delete historical release folders
+    riskLevel: L4
+    action: queue_for_approval
+    reason: External resource changes require explicit approval.
+  - command: rm -rf /
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: sudo rm -rf
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: cat ~/.ssh/*
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: cat ~/.aws/*
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: cat .env
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: type .env
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: Get-Content .env
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: printenv
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: terraform destroy
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: kubectl delete
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: git push
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: git push --tags
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: Remove-Item releases/v0.1.0
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: Remove-Item releases/v0.1.1
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: Remove-Item releases/v0.2.1
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: Remove-Item releases/v0.2.2
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.
+  - command: Remove-Item releases/v0.3.0
+    riskLevel: L5
+    action: deny
+    reason: Secret access or destructive operation is forbidden by default.

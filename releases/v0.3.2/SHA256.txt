@@ -1,2 +1,2 @@
-﻿2658C07AF117A227FAAFF5F824CCD36D55E8A33774CA401940B806746D19E6A5  aimart-orchestrator-v0.3.2-source.zip
-A82AC08F19DFDDAD0E3EABB08367CEE7D2B924DED1779542FF8EF5B494FE7BA0  samples/todo-api-generated-execution-pack.zip
+﻿2d11a60cd8c340c88a7ec970f12106b0d6b74127e7b37649d7b6bd83a9290f9f  aimart-orchestrator-v0.3.2-source.zip
+cce246ed324577422e5433ce9849e63741fabbc3ba4bc8c13faf20bec965ad17  samples/todo-api-generated-execution-pack.zip
