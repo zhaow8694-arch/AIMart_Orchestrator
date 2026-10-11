@@ -49,6 +49,6 @@ releases/     历史发布包（含 SHA256 校验）
 
 ## 状态说明
 
-- 本仓库为私有仓库，v0.3.2 为当前开发版本
+- 本仓库为公开仓库，v0.3.2 为当前开发版本
 - Windows 沙箱隔离可执行文件（codex-windows-sandbox-setup.exe）暂缺，完整沙箱隔离尚未启用
 - 详细验收标准见 `ACCEPTANCE_CRITERIA.md`，发布说明见 `releases/v0.3.2/`
