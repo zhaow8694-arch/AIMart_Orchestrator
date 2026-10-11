@@ -83,3 +83,5 @@ Windows：
 ```powershell
 ./scripts/finalize.ps1
 ```
+
+可选的 Claude Code 冒烟（不进默认 `pnpm test`）：本机有 `claude` 时，在临时目录执行 `claude -p "ping" --max-turns 1`，或打开 `AIMART_ENABLE_CLAUDE_CODE_LAUNCHER` 后运行生成包里的 `agent_adapters/claude-code/run-claude-supervised.ps1`。期望退出码为 0，或输出/日志里出现 `CLAUDE_NOT_AUTHENTICATED`，并且 `.aimart/logs/` 下出现日志。没有 `claude` 命令时跳过，不算失败。

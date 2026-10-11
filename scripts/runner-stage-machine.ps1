@@ -15,7 +15,8 @@ param(
   )]
   [string]$Stage,
   [string]$TargetVersion = "v0.3.2",
-  [string]$RunStartedAt = ""
+  [string]$RunStartedAt = "",
+  [string]$AdapterId = "codex"
 )
 
 $ErrorActionPreference = "Stop"
@@ -51,6 +52,9 @@ $State = [ordered]@{
   approvedCommand = $ApprovedCommand
   activeAdapterId = "codex"
   oldRunnerPrevention = "Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners."
+}
+if ($AdapterId -and $AdapterId -ne "codex") {
+  $State.activeAdapterId = $AdapterId
 }
 $State | ConvertTo-Json -Depth 6 | Set-Content -Encoding UTF8 $StatePath
 

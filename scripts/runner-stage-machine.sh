@@ -4,6 +4,7 @@ set -euo pipefail
 STAGE="${1:-PREFLIGHT}"
 TARGET_VERSION="${2:-v0.3.2}"
 RUN_STARTED_AT="${3:-}"
+ADAPTER_ID="${4:-${AIMART_ADAPTER_ID:-codex}}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
@@ -17,7 +18,7 @@ mkdir -p runtime
 APPROVED_COMMAND="bash scripts/run-autonomous-version.sh $TARGET_VERSION"
 STAGES_TEXT="${STAGES[*]}"
 
-node -e "const fs=require('fs'); const state={runnerVersion:'v0.3.2',targetVersion:process.argv[1],currentStage:process.argv[2],stages:process.argv[3].split(' '),runStartedAt:process.argv[4],updatedAt:new Date().toISOString(),approvedCommand:process.argv[5],activeAdapterId:'codex',oldRunnerPrevention:'Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners.'}; fs.writeFileSync('runtime/RUNNER_STATE.json', JSON.stringify(state,null,2)+'\n');" "$TARGET_VERSION" "$STAGE" "$STAGES_TEXT" "$RUN_STARTED_AT" "$APPROVED_COMMAND"
+node -e "const fs=require('fs'); const state={runnerVersion:'v0.3.2',targetVersion:process.argv[1],currentStage:process.argv[2],stages:process.argv[3].split(' '),runStartedAt:process.argv[4],updatedAt:new Date().toISOString(),approvedCommand:process.argv[5],activeAdapterId:(process.argv[6] || 'codex'),oldRunnerPrevention:'Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners.'}; fs.writeFileSync('runtime/RUNNER_STATE.json', JSON.stringify(state,null,2)+'\n');" "$TARGET_VERSION" "$STAGE" "$STAGES_TEXT" "$RUN_STARTED_AT" "$APPROVED_COMMAND" "$ADAPTER_ID"
 
 {
   echo "# Runner Next Action"

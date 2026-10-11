@@ -140,6 +140,7 @@ describe("execution pack packager", () => {
       "common/SELF_REVIEW.md",
       "common/FINAL_DELIVERY_CHECK.md",
       "common/ASSUMPTIONS.md",
+      "common/OPEN_QUESTIONS.md",
       "common/BLOCKERS.md",
       "common/KNOWN_ISSUES.md",
       "common/PROGRESS_LOG.md",

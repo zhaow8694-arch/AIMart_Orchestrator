@@ -1,3 +1,4 @@
+import { isClaudeCodeLauncherEnabled } from "@/lib/adapters/feature-flag";
 import type { AgentAdapterId } from "@/lib/schemas/core";
 
 export type AdapterRunMode =
@@ -126,10 +127,27 @@ export const AGENT_ADAPTER_REGISTRY: Record<
   }
 };
 
+const CLAUDE_LAUNCHER_GATE_REQUIREMENTS = [
+  "settings.json exists beside settings.example.json.",
+  "PowerShell and Bash launchers exist for supervised, autonomous, unified, and end-to-end autonomous modes.",
+  "Autonomous launcher uses --permission-mode dontAsk, --output-format stream-json, and a stdin prompt."
+];
+
 export function getAgentAdapterRegistryEntry(
   id: AgentAdapterId
 ): AgentAdapterRegistryEntry {
-  return AGENT_ADAPTER_REGISTRY[id];
+  const entry = AGENT_ADAPTER_REGISTRY[id];
+  if (id !== "claude-code" || !isClaudeCodeLauncherEnabled()) {
+    return entry;
+  }
+
+  return {
+    ...entry,
+    completionGateRequirements: [
+      ...entry.completionGateRequirements,
+      ...CLAUDE_LAUNCHER_GATE_REQUIREMENTS
+    ]
+  };
 }
 
 export function getSelectedAgentAdapterRegistryEntries(

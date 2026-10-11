@@ -125,7 +125,7 @@ for path in \
   [ -f "$path" ] && add_result "source runner hardening script $path" "PASS" "exists" || add_result "source runner hardening script $path" "FAIL" "missing"
 done
 CLASSIFIER_CONTENT="$(cat scripts/classify-runner-failure.ps1 scripts/classify-runner-failure.sh 2>/dev/null)"
-for category in PNPM_ARGUMENT_LOSS POWERSHELL_51_SYNTAX CODEX_ARGUMENT_ORDER CODEX_PROMPT_ARGUMENT_SPLIT NEXT_START_ARGUMENT_ORDER SOURCE_ZIP_PATH_SEPARATOR SOURCE_ZIP_FORBIDDEN_ENTRY SAMPLE_PACK_JSON_BASE64_RESPONSE SAMPLE_PACK_STALE_FILE SAMPLE_PACK_INVALID_ZIP SAMPLE_PACK_MISSING_ADAPTER COMPLETION_GATE_FAILURE TAG_NULL_TRIM DIRTY_WORKTREE HISTORICAL_RELEASE_MODIFIED; do
+for category in PNPM_ARGUMENT_LOSS POWERSHELL_51_SYNTAX CODEX_ARGUMENT_ORDER CODEX_PROMPT_ARGUMENT_SPLIT CLAUDE_NOT_AUTHENTICATED CLAUDE_MAX_TURNS CLAUDE_STREAM_TRUNCATED CLAUDE_PERMISSION_DENIED CLAUDE_LAUNCHER_DISABLED NEXT_START_ARGUMENT_ORDER SOURCE_ZIP_PATH_SEPARATOR SOURCE_ZIP_FORBIDDEN_ENTRY SAMPLE_PACK_JSON_BASE64_RESPONSE SAMPLE_PACK_STALE_FILE SAMPLE_PACK_INVALID_ZIP SAMPLE_PACK_MISSING_ADAPTER COMPLETION_GATE_FAILURE TAG_NULL_TRIM DIRTY_WORKTREE HISTORICAL_RELEASE_MODIFIED; do
   case "$CLASSIFIER_CONTENT" in
     *"$category"*) add_result "failure classifier category $category" "PASS" "present" ;;
     *) add_result "failure classifier category $category" "FAIL" "missing" ;;
@@ -200,6 +200,81 @@ if [ -z "$FINAL_SHORT_STATUS" ]; then
   add_result "final git status is clean" "PASS" "clean"
 else
   add_result "final git status is clean" "PASS" "pre-freeze working tree has pending release changes: $(printf "%s" "$FINAL_SHORT_STATUS" | tr '\n' ';')"
+fi
+
+CLAUDE_DIR="agent_adapters/claude-code"
+if [ -d "$CLAUDE_DIR" ]; then
+  for name in CLAUDE.md CLAUDE_RUNBOOK.md CLAUDE_TASK_PROMPT.md CLAUDE_AUTONOMOUS_PROMPT.md CLAUDE_END_TO_END_DELIVERY_RUNBOOK.md settings.example.json run-claude-supervised.md run-claude-autonomous.md; do
+    if [ -f "$CLAUDE_DIR/$name" ]; then add_result "claude baseline $name" "PASS" "exists"; else add_result "claude baseline $name" "FAIL" "missing"; fi
+  done
+  FLAG_RAW="${AIMART_ENABLE_CLAUDE_CODE_LAUNCHER:-}"
+  FLAG_VALUE="$(printf '%s' "$FLAG_RAW" | tr '[:upper:]' '[:lower:]')"
+  FLAG_ON=0
+  case "$FLAG_VALUE" in
+    ""|0|false|no|off) FLAG_ON=0 ;;
+    *) FLAG_ON=1 ;;
+  esac
+  LAUNCHER_PRESENT=0
+  for name in settings.json run-claude-autonomous.ps1 run-claude-supervised.ps1 run-claude-unified-autonomous.ps1 run-claude-end-to-end-autonomous.ps1 run-claude-autonomous.sh run-claude-supervised.sh run-claude-unified-autonomous.sh run-claude-end-to-end-autonomous.sh; do
+    if [ -f "$CLAUDE_DIR/$name" ]; then LAUNCHER_PRESENT=1; fi
+  done
+  if [ "$FLAG_ON" -eq 1 ] || [ "$LAUNCHER_PRESENT" -eq 1 ]; then
+    for name in settings.json run-claude-autonomous.ps1 run-claude-supervised.ps1 run-claude-unified-autonomous.ps1 run-claude-end-to-end-autonomous.ps1 run-claude-autonomous.sh run-claude-supervised.sh run-claude-unified-autonomous.sh run-claude-end-to-end-autonomous.sh; do
+      if [ -f "$CLAUDE_DIR/$name" ]; then add_result "claude launcher $name" "PASS" "exists"; else add_result "claude launcher $name" "FAIL" "missing"; fi
+    done
+    if [ -f "$CLAUDE_DIR/run-claude-autonomous.ps1" ]; then
+      LAUNCHER_TEXT="$(cat "$CLAUDE_DIR/run-claude-autonomous.ps1")"
+      case "$LAUNCHER_TEXT" in
+        *dangerously-skip-permissions*|*bypassPermissions*) add_result "claude launcher permission switches" "FAIL" "forbidden permission switch" ;;
+        *) add_result "claude launcher permission switches" "PASS" "no forbidden switch" ;;
+      esac
+      HAS_DONTASK=0; HAS_STREAM=0; HAS_STDIN=0
+      case "$LAUNCHER_TEXT" in *dontAsk*) HAS_DONTASK=1 ;; esac
+      case "$LAUNCHER_TEXT" in *stream-json*) HAS_STREAM=1 ;; esac
+      case "$LAUNCHER_TEXT" in *Get-Content*|*cat\ *) HAS_STDIN=1 ;; esac
+      if [ "$HAS_DONTASK" -eq 1 ] && [ "$HAS_STREAM" -eq 1 ] && [ "$HAS_STDIN" -eq 1 ]; then
+        add_result "claude autonomous stdin" "PASS" "dontAsk stream-json stdin"
+      else
+        add_result "claude autonomous stdin" "FAIL" "missing dontAsk, stream-json, or stdin pipe"
+      fi
+    fi
+  else
+    add_result "claude launchers" "PASS" "not required while AIMART_ENABLE_CLAUDE_CODE_LAUNCHER is off"
+  fi
+else
+  add_result "claude adapter directory" "PASS" "not applicable"
+fi
+ACTIVE_ADAPTER_ID="codex"
+if [ -f runtime/RUNNER_STATE.json ]; then
+  PARSED_ADAPTER="$(node -e "const fs=require('fs'); try { const s=JSON.parse(fs.readFileSync('runtime/RUNNER_STATE.json','utf8')); if (s.activeAdapterId) process.stdout.write(String(s.activeAdapterId)); } catch (e) {}")"
+  if [ -n "$PARSED_ADAPTER" ]; then ACTIVE_ADAPTER_ID="$PARSED_ADAPTER"; fi
+fi
+if [ "$ACTIVE_ADAPTER_ID" = "claude-code" ]; then
+  HAS_FINISHED=0
+  FINISHED_ERROR=0
+  if [ -f runtime/events.jsonl ]; then
+    if grep -q '"type":"run_finished"' runtime/events.jsonl; then HAS_FINISHED=1; fi
+    if grep '"type":"run_finished"' runtime/events.jsonl | grep -q '"isError":true'; then FINISHED_ERROR=1; fi
+  fi
+  if [ "$HAS_FINISHED" -eq 1 ] && [ "$FINISHED_ERROR" -eq 0 ]; then
+    add_result "claude events run_finished" "PASS" "run_finished isError is not true"
+  else
+    add_result "claude events run_finished" "FAIL" "missing clean run_finished"
+  fi
+  SUMMARY_TEXT=""
+  if [ -f runtime/AUTONOMOUS_RUN_SUMMARY.md ]; then SUMMARY_TEXT="$(cat runtime/AUTONOMOUS_RUN_SUMMARY.md)"; fi
+  case "$SUMMARY_TEXT" in
+    *"| Adapter | claude-code |"*) add_result "claude summary adapter" "PASS" "Adapter is claude-code" ;;
+    *) add_result "claude summary adapter" "FAIL" "Adapter line is not claude-code" ;;
+  esac
+  GATE_TEXT=""
+  if [ -f runtime/COMPLETION_GATE_REPORT.md ]; then GATE_TEXT="$(cat runtime/COMPLETION_GATE_REPORT.md)"; fi
+  case "$GATE_TEXT" in
+    *PASS*) add_result "claude completion consistency" "PASS" "report contains PASS; costUsd is not a gate condition" ;;
+    *) add_result "claude completion consistency" "FAIL" "COMPLETION_GATE_REPORT does not contain PASS" ;;
+  esac
+else
+  add_result "claude active adapter events" "PASS" "not applicable"
 fi
 
 if [ "${#FAILURES[@]}" -eq 0 ]; then

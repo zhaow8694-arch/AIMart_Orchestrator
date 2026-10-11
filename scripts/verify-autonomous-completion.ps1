@@ -171,7 +171,7 @@ $ClassifierContent = ""
 foreach ($Path in @("scripts/classify-runner-failure.ps1", "scripts/classify-runner-failure.sh")) {
   if (Test-Path $Path) { $ClassifierContent += "`n" + (Get-Content $Path -Raw) }
 }
-foreach ($Category in @("SANDBOX_TIMEOUT", "SANDBOX_ELEVATED_PARENT", "CODEX_SANDBOX_HELPER_MISSING", "PNPM_ARGUMENT_LOSS", "POWERSHELL_51_SYNTAX", "CODEX_ARGUMENT_ORDER", "CODEX_PROMPT_ARGUMENT_SPLIT", "NEXT_START_ARGUMENT_ORDER", "SOURCE_ZIP_PATH_SEPARATOR", "SOURCE_ZIP_FORBIDDEN_ENTRY", "SAMPLE_PACK_JSON_BASE64_RESPONSE", "SAMPLE_PACK_STALE_FILE", "SAMPLE_PACK_INVALID_ZIP", "SAMPLE_PACK_MISSING_ADAPTER", "COMPLETION_GATE_FAILURE", "TAG_NULL_TRIM", "DIRTY_WORKTREE", "HISTORICAL_RELEASE_MODIFIED")) {
+foreach ($Category in @("SANDBOX_TIMEOUT", "SANDBOX_ELEVATED_PARENT", "CODEX_SANDBOX_HELPER_MISSING", "PNPM_ARGUMENT_LOSS", "POWERSHELL_51_SYNTAX", "CODEX_ARGUMENT_ORDER", "CODEX_PROMPT_ARGUMENT_SPLIT", "CLAUDE_NOT_AUTHENTICATED", "CLAUDE_MAX_TURNS", "CLAUDE_STREAM_TRUNCATED", "CLAUDE_PERMISSION_DENIED", "CLAUDE_LAUNCHER_DISABLED", "NEXT_START_ARGUMENT_ORDER", "SOURCE_ZIP_PATH_SEPARATOR", "SOURCE_ZIP_FORBIDDEN_ENTRY", "SAMPLE_PACK_JSON_BASE64_RESPONSE", "SAMPLE_PACK_STALE_FILE", "SAMPLE_PACK_INVALID_ZIP", "SAMPLE_PACK_MISSING_ADAPTER", "COMPLETION_GATE_FAILURE", "TAG_NULL_TRIM", "DIRTY_WORKTREE", "HISTORICAL_RELEASE_MODIFIED")) {
   if ($ClassifierContent.Contains($Category)) {
     Add-GateResult "failure classifier category $Category" "PASS" "present"
   } else {
@@ -354,6 +354,85 @@ if (-not $SandboxAuditPath -or -not (Test-Path -LiteralPath $SandboxAuditPath)) 
   $ProxyText = "none"
   if ($ProxyDenied.Count -gt 0) { $ProxyText = ($ProxyDenied -join ", ") }
   Add-GateResult "sandbox proxy denied hosts" "PASS" ("informational only: " + $ProxyText)
+}
+
+$ClaudeDir = "agent_adapters/claude-code"
+if (Test-Path -LiteralPath $ClaudeDir) {
+  foreach ($Name in @("CLAUDE.md", "CLAUDE_RUNBOOK.md", "CLAUDE_TASK_PROMPT.md", "CLAUDE_AUTONOMOUS_PROMPT.md", "CLAUDE_END_TO_END_DELIVERY_RUNBOOK.md", "settings.example.json", "run-claude-supervised.md", "run-claude-autonomous.md")) {
+    $ClaudePath = Join-Path $ClaudeDir $Name
+    if (Test-Path -LiteralPath $ClaudePath) { Add-GateResult "claude baseline $Name" "PASS" "exists" } else { Add-GateResult "claude baseline $Name" "FAIL" "missing" }
+  }
+  $LauncherNames = @("settings.json", "run-claude-autonomous.ps1", "run-claude-supervised.ps1", "run-claude-unified-autonomous.ps1", "run-claude-end-to-end-autonomous.ps1", "run-claude-autonomous.sh", "run-claude-supervised.sh", "run-claude-unified-autonomous.sh", "run-claude-end-to-end-autonomous.sh")
+  $Flag = [Environment]::GetEnvironmentVariable("AIMART_ENABLE_CLAUDE_CODE_LAUNCHER")
+  $FlagOn = $false
+  if ($Flag) {
+    $FlagValue = $Flag.Trim().ToLower()
+    if ($FlagValue -ne "" -and $FlagValue -ne "0" -and $FlagValue -ne "false" -and $FlagValue -ne "no" -and $FlagValue -ne "off") { $FlagOn = $true }
+  }
+  $LauncherPresent = $false
+  foreach ($Name in $LauncherNames) {
+    if (Test-Path -LiteralPath (Join-Path $ClaudeDir $Name)) { $LauncherPresent = $true }
+  }
+  if ($FlagOn -or $LauncherPresent) {
+    foreach ($Name in $LauncherNames) {
+      $ClaudePath = Join-Path $ClaudeDir $Name
+      if (Test-Path -LiteralPath $ClaudePath) { Add-GateResult "claude launcher $Name" "PASS" "exists" } else { Add-GateResult "claude launcher $Name" "FAIL" "missing" }
+    }
+    $AutonomousLauncher = Join-Path $ClaudeDir "run-claude-autonomous.ps1"
+    if (Test-Path -LiteralPath $AutonomousLauncher) {
+      $LauncherText = Get-Content -LiteralPath $AutonomousLauncher -Raw
+      if ($LauncherText -match "dangerously-skip-permissions" -or $LauncherText -match "bypassPermissions") {
+        Add-GateResult "claude launcher permission switches" "FAIL" "forbidden permission switch"
+      } else {
+        Add-GateResult "claude launcher permission switches" "PASS" "no forbidden switch"
+      }
+      if ($LauncherText -match "dontAsk" -and $LauncherText -match "stream-json" -and ($LauncherText -match "Get-Content" -or $LauncherText -match "cat ")) {
+        Add-GateResult "claude autonomous stdin" "PASS" "dontAsk stream-json stdin"
+      } else {
+        Add-GateResult "claude autonomous stdin" "FAIL" "missing dontAsk, stream-json, or stdin pipe"
+      }
+    }
+  } else {
+    Add-GateResult "claude launchers" "PASS" "not required while AIMART_ENABLE_CLAUDE_CODE_LAUNCHER is off"
+  }
+} else {
+  Add-GateResult "claude adapter directory" "PASS" "not applicable"
+}
+$ActiveAdapterId = "codex"
+$RunnerStatePath = "runtime/RUNNER_STATE.json"
+if (Test-Path -LiteralPath $RunnerStatePath) {
+  try {
+    $RunnerState = Get-Content -LiteralPath $RunnerStatePath -Raw | ConvertFrom-Json
+    if ($RunnerState.activeAdapterId) { $ActiveAdapterId = [string]$RunnerState.activeAdapterId }
+  } catch {
+    Write-Verbose $_.Exception.Message
+  }
+}
+if ($ActiveAdapterId -eq "claude-code") {
+  $EventsPath = "runtime/events.jsonl"
+  $HasFinished = $false
+  $FinishedError = $false
+  if (Test-Path -LiteralPath $EventsPath) {
+    foreach ($EventLine in @(Get-Content -LiteralPath $EventsPath)) {
+      if (-not $EventLine.Trim()) { continue }
+      try { $Event = $EventLine | ConvertFrom-Json } catch { continue }
+      if ($Event.type -eq "run_finished") {
+        $HasFinished = $true
+        if ($Event.isError -eq $true) { $FinishedError = $true }
+      }
+    }
+  }
+  if ($HasFinished -and -not $FinishedError) { Add-GateResult "claude events run_finished" "PASS" "run_finished isError is not true" } else { Add-GateResult "claude events run_finished" "FAIL" "missing clean run_finished" }
+  $SummaryPath = "runtime/AUTONOMOUS_RUN_SUMMARY.md"
+  $SummaryText = ""
+  if (Test-Path -LiteralPath $SummaryPath) { $SummaryText = Get-Content -LiteralPath $SummaryPath -Raw }
+  if ($SummaryText.Contains("| Adapter | claude-code |")) { Add-GateResult "claude summary adapter" "PASS" "Adapter is claude-code" } else { Add-GateResult "claude summary adapter" "FAIL" "Adapter line is not claude-code" }
+  $GateReportPath = "runtime/COMPLETION_GATE_REPORT.md"
+  $GateText = ""
+  if (Test-Path -LiteralPath $GateReportPath) { $GateText = Get-Content -LiteralPath $GateReportPath -Raw }
+  if ($GateText -match "PASS") { Add-GateResult "claude completion consistency" "PASS" "report contains PASS; costUsd is not a gate condition" } else { Add-GateResult "claude completion consistency" "FAIL" "COMPLETION_GATE_REPORT does not contain PASS" }
+} else {
+  Add-GateResult "claude active adapter events" "PASS" "not applicable"
 }
 
 $Failures = @($Results | Where-Object { $_.Status -eq "FAIL" })

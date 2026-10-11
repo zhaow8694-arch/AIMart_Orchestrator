@@ -1,6 +1,7 @@
 param(
   [string]$TargetVersion = "v0.3.2",
-  [switch]$SkipValidation
+  [switch]$SkipValidation,
+  [string]$AdapterId = "codex"
 )
 
 $ErrorActionPreference = "Stop"
@@ -34,7 +35,7 @@ Write-Host "Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners."
 
 function Invoke-RunnerStage {
   param([string]$Stage)
-  & (Join-Path $RootDir "scripts/runner-stage-machine.ps1") -Stage $Stage -TargetVersion $TargetVersion -RunStartedAt $RunStartedAt.ToString("o")
+  & (Join-Path $RootDir "scripts/runner-stage-machine.ps1") -Stage $Stage -TargetVersion $TargetVersion -RunStartedAt $RunStartedAt.ToString("o") -AdapterId $AdapterId
 }
 
 function Stop-WithClassification {
@@ -113,6 +114,18 @@ function Invoke-Sandbox {
   if ($code -ne 0) {
     throw ("{0} exited {1}. {2}" -f $File, $code, $text)
   }
+}
+
+function Test-ClaudeLauncherEnabled {
+  $raw = [Environment]::GetEnvironmentVariable("AIMART_ENABLE_CLAUDE_CODE_LAUNCHER")
+  if (-not $raw) { return $false }
+  $value = $raw.Trim().ToLower()
+  if ($value -eq "" -or $value -eq "0" -or $value -eq "false" -or $value -eq "no" -or $value -eq "off") { return $false }
+  return $true
+}
+
+if ($AdapterId -eq "claude-code" -and -not (Test-ClaudeLauncherEnabled)) {
+  Stop-WithClassification "CLAUDE_LAUNCHER_DISABLED"
 }
 
 try {

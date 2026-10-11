@@ -157,7 +157,7 @@ function renderTaskPrompt(
 ): string {
   return `# Codex Task Prompt
 
-You are working on ${projectSpec.projectName}. Follow the generated task queue exactly.
+You are working on ${projectSpec.projectName}. Follow the generated task queue exactly. Read common/OPEN_QUESTIONS.md before treating an unknown as a decision.
 
 ## Tasks
 
@@ -220,12 +220,13 @@ Selected execution mode: ${projectSpec.executionMode}
 
 1. common/PROJECT_SPEC.md
 2. common/TASK_QUEUE.md
-3. common/EXECUTION_RULES.md
-4. runtime/AUTONOMOUS_EXECUTION_POLICY.md
-5. runtime/SAFE_COMMANDS.md
-6. runtime/DENIED_COMMANDS.md
-7. runtime/APPROVAL_QUEUE.md
-8. agent_adapters/codex/AGENTS.md
+3. common/OPEN_QUESTIONS.md
+4. common/EXECUTION_RULES.md
+5. runtime/AUTONOMOUS_EXECUTION_POLICY.md
+6. runtime/SAFE_COMMANDS.md
+7. runtime/DENIED_COMMANDS.md
+8. runtime/APPROVAL_QUEUE.md
+9. agent_adapters/codex/AGENTS.md
 
 ## Autonomous Rules
 
@@ -412,6 +413,7 @@ Execution mode: ${projectSpec.executionMode}
 9. runtime/PHASE_GATE_REPORT.md
 10. runtime/COMPLETION_GATE_REPORT.md
 11. runtime/APPROVAL_QUEUE.md
+12. common/OPEN_QUESTIONS.md
 
 ## End-to-End Operating Loop
 

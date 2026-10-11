@@ -15,6 +15,11 @@ case "$MESSAGE" in
   *ParserError*|*Unexpected\ token*|*ForEach-Object\ -Parallel*|*"??"*) echo "POWERSHELL_51_SYNTAX" ;;
   *codex*argument*order*|*--sandbox*after*) echo "CODEX_ARGUMENT_ORDER" ;;
   *prompt*split*|*CODEX_TASK_PROMPT*|*unterminated\ prompt*) echo "CODEX_PROMPT_ARGUMENT_SPLIT" ;;
+  *CLAUDE_NOT_AUTHENTICATED*) echo "CLAUDE_NOT_AUTHENTICATED" ;;
+  *CLAUDE_MAX_TURNS*) echo "CLAUDE_MAX_TURNS" ;;
+  *CLAUDE_STREAM_TRUNCATED*) echo "CLAUDE_STREAM_TRUNCATED" ;;
+  *CLAUDE_PERMISSION_DENIED*) echo "CLAUDE_PERMISSION_DENIED" ;;
+  *CLAUDE_LAUNCHER_DISABLED*) echo "CLAUDE_LAUNCHER_DISABLED" ;;
   *next\ start*argument*|*Invalid\ project\ directory*) echo "NEXT_START_ARGUMENT_ORDER" ;;
   *backslash*|*path\ separator*|*SOURCE_ZIP_PATH_SEPARATOR*) echo "SOURCE_ZIP_PATH_SEPARATOR" ;;
   *Forbidden\ source\ ZIP\ entry*|*node_modules*|*.env*|*credentials*) echo "SOURCE_ZIP_FORBIDDEN_ENTRY" ;;

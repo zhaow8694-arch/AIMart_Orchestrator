@@ -26,6 +26,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { isClaudeCodeLauncherEnabled } from "@/lib/adapters/feature-flag";
 import type { FileEntry, ProjectSpec } from "@/lib/schemas/core";
 
 export type ScriptPack = {
@@ -33,8 +34,7 @@ export type ScriptPack = {
 };
 
 export function generateScriptPack(projectSpec: ProjectSpec): ScriptPack {
-  return {
-    files: [
+  const files: FileEntry[] = [
       file("scripts/preflight.ps1", renderPreflightPs1(projectSpec)),
       file("scripts/preflight.sh", renderPreflightSh(projectSpec)),
       file("scripts/bootstrap.ps1", renderBootstrapPs1()),
@@ -83,8 +83,19 @@ export function generateScriptPack(projectSpec: ProjectSpec): ScriptPack {
       file("scripts/verify-customer-delivery.sh", renderVerifyCustomerDeliverySh()),
       file("scripts/finalize.ps1", renderFinalizePs1()),
       file("scripts/finalize.sh", renderFinalizeSh())
-    ]
-  };
+  ];
+
+  if (
+    isClaudeCodeLauncherEnabled() &&
+    projectSpec.selectedAdapterIds.includes("claude-code")
+  ) {
+    files.push(
+      file("START_CLAUDE_AUTONOMOUS.ps1", renderStartClaudeAutonomousPs1()),
+      file("START_CLAUDE_AUTONOMOUS.cmd", renderStartClaudeAutonomousCmd())
+    );
+  }
+
+  return { files };
 }
 
 function file(path: string, content: string): FileEntry {
@@ -1348,6 +1359,84 @@ if (-not $SandboxAuditPath -or -not (Test-Path -LiteralPath $SandboxAuditPath)) 
   if ($ProxyDenied.Count -gt 0) { $ProxyText = ($ProxyDenied -join ", ") }
   Add-Result "sandbox proxy denied hosts" "PASS" ("informational only: " + $ProxyText)
 }
+$ClaudeDir = "agent_adapters/claude-code"
+if (Test-Path -LiteralPath $ClaudeDir) {
+  foreach ($Name in @("CLAUDE.md", "CLAUDE_RUNBOOK.md", "CLAUDE_TASK_PROMPT.md", "CLAUDE_AUTONOMOUS_PROMPT.md", "CLAUDE_END_TO_END_DELIVERY_RUNBOOK.md", "settings.example.json", "run-claude-supervised.md", "run-claude-autonomous.md")) {
+    $ClaudePath = Join-Path $ClaudeDir $Name
+    if (Test-Path -LiteralPath $ClaudePath) { Add-Result "claude baseline $Name" "PASS" "exists" } else { Add-Result "claude baseline $Name" "FAIL" "missing" }
+  }
+  $LauncherNames = @("settings.json", "run-claude-autonomous.ps1", "run-claude-supervised.ps1", "run-claude-unified-autonomous.ps1", "run-claude-end-to-end-autonomous.ps1", "run-claude-autonomous.sh", "run-claude-supervised.sh", "run-claude-unified-autonomous.sh", "run-claude-end-to-end-autonomous.sh")
+  $Flag = [Environment]::GetEnvironmentVariable("AIMART_ENABLE_CLAUDE_CODE_LAUNCHER")
+  $FlagOn = $false
+  if ($Flag) {
+    $FlagValue = $Flag.Trim().ToLower()
+    if ($FlagValue -ne "" -and $FlagValue -ne "0" -and $FlagValue -ne "false" -and $FlagValue -ne "no" -and $FlagValue -ne "off") { $FlagOn = $true }
+  }
+  $LauncherPresent = $false
+  foreach ($Name in $LauncherNames) {
+    if (Test-Path -LiteralPath (Join-Path $ClaudeDir $Name)) { $LauncherPresent = $true }
+  }
+  if ($FlagOn -or $LauncherPresent) {
+    foreach ($Name in $LauncherNames) {
+      $ClaudePath = Join-Path $ClaudeDir $Name
+      if (Test-Path -LiteralPath $ClaudePath) { Add-Result "claude launcher $Name" "PASS" "exists" } else { Add-Result "claude launcher $Name" "FAIL" "missing" }
+    }
+    $AutonomousLauncher = Join-Path $ClaudeDir "run-claude-autonomous.ps1"
+    if (Test-Path -LiteralPath $AutonomousLauncher) {
+      $LauncherText = Get-Content -LiteralPath $AutonomousLauncher -Raw
+      if ($LauncherText -match "dangerously-skip-permissions" -or $LauncherText -match "bypassPermissions") {
+        Add-Result "claude launcher permission switches" "FAIL" "forbidden permission switch"
+      } else {
+        Add-Result "claude launcher permission switches" "PASS" "no forbidden switch"
+      }
+      if ($LauncherText -match "dontAsk" -and $LauncherText -match "stream-json" -and ($LauncherText -match "Get-Content" -or $LauncherText -match "cat ")) {
+        Add-Result "claude autonomous stdin" "PASS" "dontAsk stream-json stdin"
+      } else {
+        Add-Result "claude autonomous stdin" "FAIL" "missing dontAsk, stream-json, or stdin pipe"
+      }
+    }
+  } else {
+    Add-Result "claude launchers" "PASS" "not required while AIMART_ENABLE_CLAUDE_CODE_LAUNCHER is off"
+  }
+} else {
+  Add-Result "claude adapter directory" "PASS" "not applicable"
+}
+$ActiveAdapterId = "codex"
+$RunnerStatePath = "runtime/RUNNER_STATE.json"
+if (Test-Path -LiteralPath $RunnerStatePath) {
+  try {
+    $RunnerState = Get-Content -LiteralPath $RunnerStatePath -Raw | ConvertFrom-Json
+    if ($RunnerState.activeAdapterId) { $ActiveAdapterId = [string]$RunnerState.activeAdapterId }
+  } catch {
+    Write-Verbose $_.Exception.Message
+  }
+}
+if ($ActiveAdapterId -eq "claude-code") {
+  $EventsPath = "runtime/events.jsonl"
+  $HasFinished = $false
+  $FinishedError = $false
+  if (Test-Path -LiteralPath $EventsPath) {
+    foreach ($EventLine in @(Get-Content -LiteralPath $EventsPath)) {
+      if (-not $EventLine.Trim()) { continue }
+      try { $Event = $EventLine | ConvertFrom-Json } catch { continue }
+      if ($Event.type -eq "run_finished") {
+        $HasFinished = $true
+        if ($Event.isError -eq $true) { $FinishedError = $true }
+      }
+    }
+  }
+  if ($HasFinished -and -not $FinishedError) { Add-Result "claude events run_finished" "PASS" "run_finished isError is not true" } else { Add-Result "claude events run_finished" "FAIL" "missing clean run_finished" }
+  $SummaryPath = "runtime/AUTONOMOUS_RUN_SUMMARY.md"
+  $SummaryText = ""
+  if (Test-Path -LiteralPath $SummaryPath) { $SummaryText = Get-Content -LiteralPath $SummaryPath -Raw }
+  if ($SummaryText.Contains("| Adapter | claude-code |")) { Add-Result "claude summary adapter" "PASS" "Adapter is claude-code" } else { Add-Result "claude summary adapter" "FAIL" "Adapter line is not claude-code" }
+  $GateReportPath = "runtime/COMPLETION_GATE_REPORT.md"
+  $GateText = ""
+  if (Test-Path -LiteralPath $GateReportPath) { $GateText = Get-Content -LiteralPath $GateReportPath -Raw }
+  if ($GateText -match "PASS") { Add-Result "claude completion consistency" "PASS" "report contains PASS; costUsd is not a gate condition" } else { Add-Result "claude completion consistency" "FAIL" "COMPLETION_GATE_REPORT does not contain PASS" }
+} else {
+  Add-Result "claude active adapter events" "PASS" "not applicable"
+}
 $Final = if (($Results | Where-Object { $_.Status -eq "FAIL" }).Count -eq 0) { "PASS" } else { "FAIL" }
 @("# Autonomous Completion Gate Report", "", "TargetVersion: $TargetVersion", "", "| Gate | Status | Details |", "|---|---|---|") + ($Results | ForEach-Object { "| $($_.Gate) | $($_.Status) | $($_.Details -replace '\\|','/') |" }) + @("", "Git status: $($GitStatus -join '; ')", "", "Final result: $Final") | Set-Content -Encoding UTF8 $ReportPath
 Write-Host "[Autonomous Completion Gate] $Final report=$ReportPath"
@@ -1420,6 +1509,80 @@ elif [ -n "$TAG_COMMIT" ]; then
 else
   add_result "target version tag" "PASS" "pre-freeze check; tag will be created after gates pass"
 fi
+CLAUDE_DIR="agent_adapters/claude-code"
+if [ -d "$CLAUDE_DIR" ]; then
+  for name in CLAUDE.md CLAUDE_RUNBOOK.md CLAUDE_TASK_PROMPT.md CLAUDE_AUTONOMOUS_PROMPT.md CLAUDE_END_TO_END_DELIVERY_RUNBOOK.md settings.example.json run-claude-supervised.md run-claude-autonomous.md; do
+    if [ -f "$CLAUDE_DIR/$name" ]; then add_result "claude baseline $name" "PASS" "exists"; else add_result "claude baseline $name" "FAIL" "missing"; fi
+  done
+  FLAG_RAW="\${AIMART_ENABLE_CLAUDE_CODE_LAUNCHER:-}"
+  FLAG_VALUE="$(printf '%s' "$FLAG_RAW" | tr '[:upper:]' '[:lower:]')"
+  FLAG_ON=0
+  case "$FLAG_VALUE" in
+    ""|0|false|no|off) FLAG_ON=0 ;;
+    *) FLAG_ON=1 ;;
+  esac
+  LAUNCHER_PRESENT=0
+  for name in settings.json run-claude-autonomous.ps1 run-claude-supervised.ps1 run-claude-unified-autonomous.ps1 run-claude-end-to-end-autonomous.ps1 run-claude-autonomous.sh run-claude-supervised.sh run-claude-unified-autonomous.sh run-claude-end-to-end-autonomous.sh; do
+    if [ -f "$CLAUDE_DIR/$name" ]; then LAUNCHER_PRESENT=1; fi
+  done
+  if [ "$FLAG_ON" -eq 1 ] || [ "$LAUNCHER_PRESENT" -eq 1 ]; then
+    for name in settings.json run-claude-autonomous.ps1 run-claude-supervised.ps1 run-claude-unified-autonomous.ps1 run-claude-end-to-end-autonomous.ps1 run-claude-autonomous.sh run-claude-supervised.sh run-claude-unified-autonomous.sh run-claude-end-to-end-autonomous.sh; do
+      if [ -f "$CLAUDE_DIR/$name" ]; then add_result "claude launcher $name" "PASS" "exists"; else add_result "claude launcher $name" "FAIL" "missing"; fi
+    done
+    if [ -f "$CLAUDE_DIR/run-claude-autonomous.ps1" ]; then
+      LAUNCHER_TEXT="$(cat "$CLAUDE_DIR/run-claude-autonomous.ps1")"
+      case "$LAUNCHER_TEXT" in
+        *dangerously-skip-permissions*|*bypassPermissions*) add_result "claude launcher permission switches" "FAIL" "forbidden permission switch" ;;
+        *) add_result "claude launcher permission switches" "PASS" "no forbidden switch" ;;
+      esac
+      HAS_DONTASK=0; HAS_STREAM=0; HAS_STDIN=0
+      case "$LAUNCHER_TEXT" in *dontAsk*) HAS_DONTASK=1 ;; esac
+      case "$LAUNCHER_TEXT" in *stream-json*) HAS_STREAM=1 ;; esac
+      case "$LAUNCHER_TEXT" in *Get-Content*|*cat *) HAS_STDIN=1 ;; esac
+      if [ "$HAS_DONTASK" -eq 1 ] && [ "$HAS_STREAM" -eq 1 ] && [ "$HAS_STDIN" -eq 1 ]; then
+        add_result "claude autonomous stdin" "PASS" "dontAsk stream-json stdin"
+      else
+        add_result "claude autonomous stdin" "FAIL" "missing dontAsk, stream-json, or stdin pipe"
+      fi
+    fi
+  else
+    add_result "claude launchers" "PASS" "not required while AIMART_ENABLE_CLAUDE_CODE_LAUNCHER is off"
+  fi
+else
+  add_result "claude adapter directory" "PASS" "not applicable"
+fi
+ACTIVE_ADAPTER_ID="codex"
+if [ -f runtime/RUNNER_STATE.json ]; then
+  PARSED_ADAPTER="$(node -e "const fs=require('fs'); try { const s=JSON.parse(fs.readFileSync('runtime/RUNNER_STATE.json','utf8')); if (s.activeAdapterId) process.stdout.write(String(s.activeAdapterId)); } catch (e) {}")"
+  if [ -n "$PARSED_ADAPTER" ]; then ACTIVE_ADAPTER_ID="$PARSED_ADAPTER"; fi
+fi
+if [ "$ACTIVE_ADAPTER_ID" = "claude-code" ]; then
+  HAS_FINISHED=0
+  FINISHED_ERROR=0
+  if [ -f runtime/events.jsonl ]; then
+    if grep -q '"type":"run_finished"' runtime/events.jsonl; then HAS_FINISHED=1; fi
+    if grep '"type":"run_finished"' runtime/events.jsonl | grep -q '"isError":true'; then FINISHED_ERROR=1; fi
+  fi
+  if [ "$HAS_FINISHED" -eq 1 ] && [ "$FINISHED_ERROR" -eq 0 ]; then
+    add_result "claude events run_finished" "PASS" "run_finished isError is not true"
+  else
+    add_result "claude events run_finished" "FAIL" "missing clean run_finished"
+  fi
+  SUMMARY_TEXT=""
+  if [ -f runtime/AUTONOMOUS_RUN_SUMMARY.md ]; then SUMMARY_TEXT="$(cat runtime/AUTONOMOUS_RUN_SUMMARY.md)"; fi
+  case "$SUMMARY_TEXT" in
+    *"| Adapter | claude-code |"*) add_result "claude summary adapter" "PASS" "Adapter is claude-code" ;;
+    *) add_result "claude summary adapter" "FAIL" "Adapter line is not claude-code" ;;
+  esac
+  GATE_TEXT=""
+  if [ -f runtime/COMPLETION_GATE_REPORT.md ]; then GATE_TEXT="$(cat runtime/COMPLETION_GATE_REPORT.md)"; fi
+  case "$GATE_TEXT" in
+    *PASS*) add_result "claude completion consistency" "PASS" "report contains PASS; costUsd is not a gate condition" ;;
+    *) add_result "claude completion consistency" "FAIL" "COMPLETION_GATE_REPORT does not contain PASS" ;;
+  esac
+else
+  add_result "claude active adapter events" "PASS" "not applicable"
+fi
 if [ "$FAIL_COUNT" -eq 0 ]; then FINAL="PASS"; else FINAL="FAIL"; fi
 {
   echo "# Autonomous Completion Gate Report"
@@ -1463,6 +1626,11 @@ function runnerFailureCategories(): string[] {
     "POWERSHELL_51_SYNTAX",
     "CODEX_ARGUMENT_ORDER",
     "CODEX_PROMPT_ARGUMENT_SPLIT",
+    "CLAUDE_NOT_AUTHENTICATED",
+    "CLAUDE_MAX_TURNS",
+    "CLAUDE_STREAM_TRUNCATED",
+    "CLAUDE_PERMISSION_DENIED",
+    "CLAUDE_LAUNCHER_DISABLED",
     "NEXT_START_ARGUMENT_ORDER",
     "SOURCE_ZIP_PATH_SEPARATOR",
     "SOURCE_ZIP_FORBIDDEN_ENTRY",
@@ -1482,7 +1650,8 @@ function renderRunAutonomousVersionPs1(): string {
   [string]$TargetVersion = "v1.0",
   [ValidateSet("autonomous", "supervised")]
   [string]$Mode = "autonomous",
-  [switch]$SkipAdapterRun
+  [switch]$SkipAdapterRun,
+  [string]$AdapterId = "codex"
 )
 
 $ErrorActionPreference = "Stop"
@@ -1505,7 +1674,7 @@ Write-Host "Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners."
 Write-Host "Next action file: runtime/RUNNER_NEXT_ACTION.md"
 
 function Invoke-RunnerStage([string]$Stage) {
-  & (Join-Path $RootDir "scripts/runner-stage-machine.ps1") -Stage $Stage -TargetVersion $TargetVersion -RunStartedAt $RunStartedAt.ToString("o")
+  & (Join-Path $RootDir "scripts/runner-stage-machine.ps1") -Stage $Stage -TargetVersion $TargetVersion -RunStartedAt $RunStartedAt.ToString("o") -AdapterId $AdapterId
 }
 
 function Write-RunnerFailure([string]$Message) {
@@ -1575,6 +1744,18 @@ function Invoke-Sandbox {
   if ($code -ne 0) { throw ("{0} exited {1}. {2}" -f $File, $code, $text) }
 }
 
+function Test-ClaudeLauncherEnabled {
+  $raw = [Environment]::GetEnvironmentVariable("AIMART_ENABLE_CLAUDE_CODE_LAUNCHER")
+  if (-not $raw) { return $false }
+  $value = $raw.Trim().ToLower()
+  if ($value -eq "" -or $value -eq "0" -or $value -eq "false" -or $value -eq "no" -or $value -eq "off") { return $false }
+  return $true
+}
+
+if ($AdapterId -eq "claude-code" -and -not (Test-ClaudeLauncherEnabled)) {
+  Write-RunnerFailure "CLAUDE_LAUNCHER_DISABLED"
+}
+
 try {
   foreach ($Stage in $Stages) {
     Invoke-RunnerStage $Stage
@@ -1633,6 +1814,8 @@ function renderRunAutonomousVersionSh(): string {
   return `#!/usr/bin/env bash
 set -euo pipefail
 TARGET_VERSION="\${1:-v1.0}"
+ADAPTER_ID="\${2:-}"
+if [ -z "$ADAPTER_ID" ]; then ADAPTER_ID="\${AIMART_ADAPTER_ID:-codex}"; fi
 MODE="\${MODE:-autonomous}"
 SKIP_ADAPTER_RUN="\${SKIP_ADAPTER_RUN:-0}"
 ROOT_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
@@ -1668,8 +1851,16 @@ runner_failure() {
   exit 1
 }
 
+FLAG_RAW="\${AIMART_ENABLE_CLAUDE_CODE_LAUNCHER:-}"
+FLAG_VALUE="$(printf '%s' "$FLAG_RAW" | tr '[:upper:]' '[:lower:]')"
+if [ "$ADAPTER_ID" = "claude-code" ]; then
+  case "$FLAG_VALUE" in
+    ""|0|false|no|off) runner_failure "CLAUDE_LAUNCHER_DISABLED" ;;
+  esac
+fi
+
 for stage in "\${STAGES[@]}"; do
-  bash scripts/runner-stage-machine.sh "$stage" "$TARGET_VERSION" "$RUN_STARTED_AT"
+  bash scripts/runner-stage-machine.sh "$stage" "$TARGET_VERSION" "$RUN_STARTED_AT" "$ADAPTER_ID"
   case "$stage" in
     PREFLIGHT)
       [ -f runtime/RUNNER_STATE.json ] || runner_failure "Missing runtime/RUNNER_STATE.json"
@@ -1713,7 +1904,8 @@ function renderRunnerStageMachinePs1(): string {
   [ValidateSet(${runnerStages().map((stage) => `"${stage}"`).join(", ")})]
   [string]$Stage,
   [string]$TargetVersion = "v1.0",
-  [string]$RunStartedAt = ""
+  [string]$RunStartedAt = "",
+  [string]$AdapterId = "codex"
 )
 
 $ErrorActionPreference = "Stop"
@@ -1737,6 +1929,9 @@ $State = [ordered]@{
   approvedCommand = $ApprovedCommand
   activeAdapterId = "codex"
   oldRunnerPrevention = "Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners."
+}
+if ($AdapterId -and $AdapterId -ne "codex") {
+  $State.activeAdapterId = $AdapterId
 }
 $State | ConvertTo-Json -Depth 6 | Set-Content -Encoding UTF8 $StatePath
 
@@ -1764,6 +1959,8 @@ set -euo pipefail
 STAGE="\${1:-PREFLIGHT}"
 TARGET_VERSION="\${2:-v1.0}"
 RUN_STARTED_AT="\${3:-}"
+ADAPTER_ID="\${4:-}"
+if [ -z "$ADAPTER_ID" ]; then ADAPTER_ID="\${AIMART_ADAPTER_ID:-codex}"; fi
 ROOT_DIR="$(cd "$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 mkdir -p runtime
@@ -1774,7 +1971,7 @@ case " ${runnerStages().join(" ")} " in
   *) echo "Unknown runner stage: $STAGE" >&2; exit 1 ;;
 esac
 
-node -e "const fs=require('fs'); const state={runnerVersion:'v0.3.2',targetVersion:process.argv[1],currentStage:process.argv[2],stages:process.argv[3].split(', '),runStartedAt:process.argv[4],updatedAt:new Date().toISOString(),approvedCommand:process.argv[5],activeAdapterId:'codex',oldRunnerPrevention:'Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners.'}; fs.writeFileSync('runtime/RUNNER_STATE.json', JSON.stringify(state,null,2)+'\\n');" "$TARGET_VERSION" "$STAGE" "$STAGES_TEXT" "$RUN_STARTED_AT" "$APPROVED_COMMAND"
+node -e "const fs=require('fs'); const state={runnerVersion:'v0.3.2',targetVersion:process.argv[1],currentStage:process.argv[2],stages:process.argv[3].split(', '),runStartedAt:process.argv[4],updatedAt:new Date().toISOString(),approvedCommand:process.argv[5],activeAdapterId:(process.argv[6] || 'codex'),oldRunnerPrevention:'Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners.'}; fs.writeFileSync('runtime/RUNNER_STATE.json', JSON.stringify(state,null,2)+'\\n');" "$TARGET_VERSION" "$STAGE" "$STAGES_TEXT" "$RUN_STARTED_AT" "$APPROVED_COMMAND" "$ADAPTER_ID"
 {
   echo "# Runner Next Action"
   echo
@@ -1960,6 +2157,11 @@ $Rules = @(
   @{ Category = "POWERSHELL_51_SYNTAX"; Pattern = "\\?\\?|ForEach-Object -Parallel|ParserError|Unexpected token" },
   @{ Category = "CODEX_ARGUMENT_ORDER"; Pattern = "codex.*argument.*order|--sandbox.*after" },
   @{ Category = "CODEX_PROMPT_ARGUMENT_SPLIT"; Pattern = "prompt.*split|CODEX_TASK_PROMPT|unterminated prompt" },
+  @{ Category = "CLAUDE_NOT_AUTHENTICATED"; Pattern = "CLAUDE_NOT_AUTHENTICATED|claude.{0,80}not authenticated|claude.{0,80}API key" },
+  @{ Category = "CLAUDE_MAX_TURNS"; Pattern = "CLAUDE_MAX_TURNS|claude.{0,80}max.?turns" },
+  @{ Category = "CLAUDE_STREAM_TRUNCATED"; Pattern = "CLAUDE_STREAM_TRUNCATED|claude.{0,80}stream truncated" },
+  @{ Category = "CLAUDE_PERMISSION_DENIED"; Pattern = "CLAUDE_PERMISSION_DENIED|claude.{0,80}permission denied" },
+  @{ Category = "CLAUDE_LAUNCHER_DISABLED"; Pattern = "CLAUDE_LAUNCHER_DISABLED" },
   @{ Category = "NEXT_START_ARGUMENT_ORDER"; Pattern = "next start.*argument|next.*Invalid project directory" },
   @{ Category = "SOURCE_ZIP_PATH_SEPARATOR"; Pattern = "backslash|path separator|SOURCE_ZIP_PATH_SEPARATOR" },
   @{ Category = "SOURCE_ZIP_FORBIDDEN_ENTRY"; Pattern = "Forbidden source ZIP entry|node_modules|\\.env|credentials" },
@@ -2001,6 +2203,11 @@ case "$MESSAGE" in
   *ParserError*|*Unexpected\\ token*|*ForEach-Object\\ -Parallel*|*"??"*) echo "POWERSHELL_51_SYNTAX" ;;
   *codex*argument*order*|*--sandbox*after*) echo "CODEX_ARGUMENT_ORDER" ;;
   *prompt*split*|*CODEX_TASK_PROMPT*|*unterminated\\ prompt*) echo "CODEX_PROMPT_ARGUMENT_SPLIT" ;;
+  *CLAUDE_NOT_AUTHENTICATED*) echo "CLAUDE_NOT_AUTHENTICATED" ;;
+  *CLAUDE_MAX_TURNS*) echo "CLAUDE_MAX_TURNS" ;;
+  *CLAUDE_STREAM_TRUNCATED*) echo "CLAUDE_STREAM_TRUNCATED" ;;
+  *CLAUDE_PERMISSION_DENIED*) echo "CLAUDE_PERMISSION_DENIED" ;;
+  *CLAUDE_LAUNCHER_DISABLED*) echo "CLAUDE_LAUNCHER_DISABLED" ;;
   *next\\ start*argument*|*Invalid\\ project\\ directory*) echo "NEXT_START_ARGUMENT_ORDER" ;;
   *backslash*|*path\\ separator*|*SOURCE_ZIP_PATH_SEPARATOR*) echo "SOURCE_ZIP_PATH_SEPARATOR" ;;
   *Forbidden\\ source\\ ZIP\\ entry*|*node_modules*|*.env*|*credentials*) echo "SOURCE_ZIP_FORBIDDEN_ENTRY" ;;
@@ -2018,6 +2225,44 @@ esac
 }
 
 
+
+function renderStartClaudeAutonomousPs1(): string {
+  return `$ErrorActionPreference = "Stop"
+$RootDir = $PSScriptRoot
+Set-Location $RootDir
+
+$Flag = [Environment]::GetEnvironmentVariable("AIMART_ENABLE_CLAUDE_CODE_LAUNCHER")
+$Enabled = $false
+if ($Flag) {
+  $FlagValue = $Flag.Trim().ToLower()
+  if ($FlagValue -ne "" -and $FlagValue -ne "0" -and $FlagValue -ne "false" -and $FlagValue -ne "no" -and $FlagValue -ne "off") {
+    $Enabled = $true
+  }
+}
+if (-not $Enabled) {
+  Write-Host "CLAUDE_LAUNCHER_DISABLED"
+  exit 1
+}
+
+$SandboxScript = Join-Path $RootDir "scripts/invoke-sandboxed.ps1"
+$RunnerScript = Join-Path $RootDir "scripts/run-autonomous-version.ps1"
+$PreviousErrorAction = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+& $SandboxScript -File $RunnerScript -ArgumentList @("-Mode", "autonomous", "-TargetVersion", "v1.0", "-AdapterId", "claude-code") -Cwd $RootDir -TimeoutSec 28800 -Mode "autonomous" -AdapterId "claude-code" -Stage "CODEX_EXECUTION"
+$Code = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
+$ErrorActionPreference = $PreviousErrorAction
+exit $Code
+`;
+}
+
+function renderStartClaudeAutonomousCmd(): string {
+  return `@echo off
+setlocal
+REM -ExecutionPolicy Bypass applies to this PowerShell process only; it does not change the machine's execution policy.
+powershell -ExecutionPolicy Bypass -File "%~dp0START_CLAUDE_AUTONOMOUS.ps1"
+exit /b %ERRORLEVEL%
+`;
+}
 
 // V0.3.0_KNOWN_ISSUES.md
 

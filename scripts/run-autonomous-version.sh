@@ -2,6 +2,7 @@
 set -euo pipefail
 
 TARGET_VERSION="${1:-v0.3.2}"
+ADAPTER_ID="${2:-${AIMART_ADAPTER_ID:-codex}}"
 SKIP_VALIDATION="${SKIP_VALIDATION:-0}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
@@ -35,8 +36,16 @@ runner_failure() {
   exit 1
 }
 
+FLAG_RAW="${AIMART_ENABLE_CLAUDE_CODE_LAUNCHER:-}"
+FLAG_VALUE="$(printf '%s' "$FLAG_RAW" | tr '[:upper:]' '[:lower:]')"
+if [ "$ADAPTER_ID" = "claude-code" ]; then
+  case "$FLAG_VALUE" in
+    ""|0|false|no|off) runner_failure "CLAUDE_LAUNCHER_DISABLED" ;;
+  esac
+fi
+
 for stage in "${STAGES[@]}"; do
-  bash scripts/runner-stage-machine.sh "$stage" "$TARGET_VERSION" "$RUN_STARTED_AT"
+  bash scripts/runner-stage-machine.sh "$stage" "$TARGET_VERSION" "$RUN_STARTED_AT" "$ADAPTER_ID"
   case "$stage" in
     PREFLIGHT)
       [ -f scripts/normalize-sample-pack.sh ] || runner_failure "Missing sample normalizer"

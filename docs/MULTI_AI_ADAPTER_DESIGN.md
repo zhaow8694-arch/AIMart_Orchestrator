@@ -1,6 +1,6 @@
 # 第二适配器设计：Claude Code CLI
 
-状态：设计稿，未实现。读者是后续在 `src/lib/adapters/` 里加可执行适配器的人。本文不改代码、不提交。默认运行路径继续是 Codex。
+状态：已实现，功能开关 `AIMART_ENABLE_CLAUDE_CODE_LAUNCHER` 默认关闭。默认运行路径继续是 Codex。
 
 ## 1. 选 Claude Code CLI
 

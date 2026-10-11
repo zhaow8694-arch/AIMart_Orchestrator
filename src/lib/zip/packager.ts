@@ -287,6 +287,13 @@ ${asBullets(projectSpec.inferredAssumptions)}
 `
     },
     {
+      path: "common/OPEN_QUESTIONS.md",
+      content: `# Open Questions
+
+${asBullets(projectSpec.openQuestions)}
+`
+    },
+    {
       path: "common/BLOCKERS.md",
       content: `# Blockers
 

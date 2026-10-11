@@ -1,3 +1,4 @@
+import { generateClaudeCodeAdapter } from "@/lib/adapters/claude-code";
 import { generateCodexAdapter } from "@/lib/adapters/codex";
 import type { RuntimePack } from "@/lib/generators/runtime-pack";
 import {
@@ -37,7 +38,7 @@ function generateFilesForAdapter(
   }
 
   if (id === "claude-code") {
-    return generateClaudeCodeAdapter(projectSpec, taskQueue);
+    return generateClaudeCodeAdapter(projectSpec, taskQueue, runtimePack);
   }
 
   if (id === "trae") {
@@ -45,48 +46,6 @@ function generateFilesForAdapter(
   }
 
   return generateCursorAdapter(projectSpec, taskQueue);
-}
-
-function generateClaudeCodeAdapter(
-  projectSpec: ProjectSpec,
-  taskQueue: TaskQueue
-): FileEntry[] {
-  const entry = getAgentAdapterRegistryEntry("claude-code");
-  const base = renderAdapterBase("Claude Code", projectSpec, taskQueue.tasks.length);
-
-  return [
-    file("agent_adapters/claude-code/CLAUDE.md", `${base}
-## Claude Code Rules
-
-- Treat this directory as an independent execution option.
-- Do not run multiple agents against the same workspace unless a human manually coordinates the work.
-- Read EXECUTION_PACK_MANIFEST.md before starting.
-`),
-    file("agent_adapters/claude-code/CLAUDE_RUNBOOK.md", renderRunbook(entry.displayName, projectSpec)),
-    file("agent_adapters/claude-code/CLAUDE_TASK_PROMPT.md", renderTaskPrompt(entry.displayName, projectSpec, taskQueue)),
-    file("agent_adapters/claude-code/CLAUDE_AUTONOMOUS_PROMPT.md", renderAutonomousPrompt(entry.displayName, projectSpec)),
-    file("agent_adapters/claude-code/CLAUDE_END_TO_END_DELIVERY_RUNBOOK.md", renderEndToEndRunbook(entry.displayName, projectSpec)),
-    file(
-      "agent_adapters/claude-code/settings.example.json",
-      JSON.stringify(
-        {
-          permissions: {
-            mode: "workspace",
-            highRiskPolicy: "record in runtime/APPROVAL_QUEUE.md"
-          },
-          requiredFiles: [
-            "EXECUTION_PACK_MANIFEST.md",
-            "runtime/RUN_STATE.json",
-            "runtime/COMPLETION_GATE_REPORT.md"
-          ]
-        },
-        null,
-        2
-      )
-    ),
-    file("agent_adapters/claude-code/run-claude-supervised.md", renderManualStart("Claude Code", "supervised")),
-    file("agent_adapters/claude-code/run-claude-autonomous.md", renderManualStart("Claude Code", "autonomous"))
-  ];
 }
 
 function generateTraeAdapter(
