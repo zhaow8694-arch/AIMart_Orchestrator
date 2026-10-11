@@ -504,10 +504,20 @@ Write-Host "[codex-end-to-end] final result must be PASS or FAIL in runtime/COMP
 # NOTE: codex prints informational lines (e.g. "Reading prompt from stdin...")
 # to stderr; under $ErrorActionPreference="Stop" PowerShell promotes those to
 # terminating errors and kills the pipeline before codex runs. Relax it here.
+$LauncherPath = Join-Path $LogDir "codex-end-to-end-autonomous-$Stamp.launch.ps1"
+$RootEscaped = $RootDir.Replace("'", "''")
+$PromptEscaped = $PromptPath.Replace("'", "''")
+@(
+  '$ErrorActionPreference = "Continue"'
+  "Set-Location -LiteralPath '$RootEscaped'"
+  "Get-Content -LiteralPath '$PromptEscaped' -Raw | codex exec --approve-for-me --skip-git-repo-check --cd '$RootEscaped'"
+  'if ($null -eq $LASTEXITCODE) { exit 0 } else { exit $LASTEXITCODE }'
+) | Set-Content -Encoding UTF8 -Path $LauncherPath
+$SandboxScript = Join-Path $RootDir "scripts/invoke-sandboxed.ps1"
 $PrevEAP = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
 try {
-  Get-Content $PromptPath -Raw | codex exec --approve-for-me --skip-git-repo-check --cd $RootDir 2>&1 | Tee-Object -FilePath $LogPath
+  & $SandboxScript -File $LauncherPath -Cwd $RootDir -TimeoutSec 21600 -Mode "end_to_end_autonomous" -AdapterId "codex" -Stage "CODEX_EXECUTION" -StdoutPath $LogPath -StderrPath $LogPath
 } finally {
   $ErrorActionPreference = $PrevEAP
 }
@@ -916,11 +926,22 @@ Write-RunStatus -State "starting"
 
 # Effective Codex flags: codex exec --approve-for-me --skip-git-repo-check (prompt via stdin; workspace-write sandbox implied)
 $CodexJob = Start-Job -ScriptBlock {
-  param($JobRootDir, $JobPromptPath, $JobLogPath, $JobExitPath)
+  param($JobRootDir, $JobPromptPath, $JobLogPath, $JobExitPath, $JobSandbox)
 
   Set-Location $JobRootDir
+  $Code = 1
   try {
-    Get-Content $JobPromptPath -Raw | codex exec --approve-for-me --skip-git-repo-check --cd $JobRootDir *> $JobLogPath
+    $LauncherPath = "$JobLogPath.launch.ps1"
+    $RootEscaped = $JobRootDir.Replace("'", "''")
+    $PromptEscaped = $JobPromptPath.Replace("'", "''")
+    @(
+      '$ErrorActionPreference = "Continue"'
+      "Set-Location -LiteralPath '$RootEscaped'"
+      ('$CodexArgs = @(''exec'',''--approve-for-me'',''--skip-git-repo-check'',''--cd'',''' + $RootEscaped + ''')')
+      "Get-Content -LiteralPath '$PromptEscaped' -Raw | & codex @CodexArgs"
+      'if ($null -eq $LASTEXITCODE) { exit 0 } else { exit $LASTEXITCODE }'
+    ) | Set-Content -Encoding UTF8 -Path $LauncherPath
+    & $JobSandbox -File $LauncherPath -Cwd $JobRootDir -TimeoutSec 5400 -Mode "autonomous" -AdapterId "codex" -Stage "CODEX_EXECUTION" -StdoutPath $JobLogPath -StderrPath $JobLogPath
     $Code = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
   } catch {
     $_ | Out-String | Add-Content -Encoding UTF8 -Path $JobLogPath
@@ -928,7 +949,7 @@ $CodexJob = Start-Job -ScriptBlock {
   }
 
   Set-Content -Encoding UTF8 -Path $JobExitPath -Value $Code
-} -ArgumentList $RootDir, $PromptPath, $LogPath, $ExitPath
+} -ArgumentList $RootDir, $PromptPath, $LogPath, $ExitPath, (Join-Path $RootDir "scripts/invoke-sandboxed.ps1")
 
 while ($CodexJob.State -eq "Running") {
   Show-Dashboard -State "running"
@@ -977,6 +998,9 @@ $NextAction = if ($FinalExitCode -eq 0) {
 |---|---|
 | Codex exit code | $ExitCode |
 | Final exit code | $FinalExitCode |
+| Sandbox account | not installed |
+| Filesystem isolation | degraded-same-user |
+| Network isolation | none |
 | Release artifacts | $ReleaseStatus |
 | Sample execution pack | $SampleStatus |
 | Autonomous Completion Gate | $($GateResult.Status) |
@@ -1037,13 +1061,27 @@ $CodexArgs = @(
 # NOTE: codex prints informational lines (e.g. "Reading prompt from stdin...")
 # to stderr; under $ErrorActionPreference="Stop" PowerShell promotes those to
 # terminating errors and kills the pipeline before codex runs. Relax it here.
+$LauncherPath = Join-Path $LogDir "codex-${mode}-$Stamp.launch.ps1"
+$RootEscaped = $RootDir.Replace("'", "''")
+$PromptEscaped = $PromptPath.Replace("'", "''")
+$QuotedCodexArgs = @($CodexArgs | ForEach-Object { "'" + $_.Replace("'", "''") + "'" })
+@(
+  '$ErrorActionPreference = "Continue"'
+  "Set-Location -LiteralPath '$RootEscaped'"
+  ('$CodexArgs = @(' + ($QuotedCodexArgs -join ",") + ')')
+  "Get-Content -LiteralPath '$PromptEscaped' -Raw | & codex @CodexArgs"
+  'if ($null -eq $LASTEXITCODE) { exit 0 } else { exit $LASTEXITCODE }'
+) | Set-Content -Encoding UTF8 -Path $LauncherPath
+$SandboxScript = Join-Path $RootDir "scripts/invoke-sandboxed.ps1"
 $PrevEAP = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
 try {
-  Get-Content $PromptPath -Raw | & codex @CodexArgs 2>&1 | Tee-Object -FilePath $LogPath
+  & $SandboxScript -File $LauncherPath -Cwd $RootDir -TimeoutSec 5400 -Mode "${mode}" -AdapterId "codex" -Stage "CODEX_EXECUTION" -StdoutPath $LogPath -StderrPath $LogPath
 } finally {
   $ErrorActionPreference = $PrevEAP
 }
+$Code = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
+exit $Code
 `;
 }
 
@@ -1500,6 +1538,9 @@ cat > "$SUMMARY_PATH" <<EOF
 |---|---|
 | Codex exit code | $EXIT_CODE |
 | Final exit code | $FINAL_EXIT_CODE |
+| Sandbox account | not installed |
+| Filesystem isolation | degraded-same-user |
+| Network isolation | none |
 | Release artifacts | $RELEASE_STATUS |
 | Sample execution pack | $SAMPLE_STATUS |
 | Autonomous Completion Gate | $COMPLETION_GATE_STATUS |

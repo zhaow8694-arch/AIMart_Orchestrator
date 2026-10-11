@@ -464,6 +464,9 @@ This file is updated when the one-window unified autonomous runner exits.
 | Field | Value |
 |---|---|
 | Exit code | pending |
+| Sandbox account | not installed |
+| Filesystem isolation | degraded-same-user |
+| Network isolation | none |
 | Release artifacts | pending |
 | Sample execution pack | pending |
 | Git status | pending |
@@ -541,6 +544,9 @@ Project: ${projectSpec.projectName}
 | source ZIP verification | pending | Exclusions and SHA256 must match. |
 | sample execution-pack verification | pending | Required files must be present. |
 | historical release protection | pending | Frozen release folders must be unchanged. |
+| sandbox filesystem isolation | PARTIAL | Phase 1 reports degraded-same-user. This row is not PASS. |
+| sandbox network isolation | PARTIAL | Phase 1 reports none. This row is not PASS. |
+| sandbox process limits | pending | FAIL when a record is elevated or exits 1460 or 1461. |
 | final delivery documents | pending | Required delivery evidence must exist. |
 | local tag | pending | Target version tag must point to final commit. |
 
@@ -614,6 +620,7 @@ function renderRunnerState(projectSpec: ProjectSpec): string {
       runStartedAt: projectSpec.createdAt,
       artifactHashes: {},
       staleArtifactProtection: "regenerate artifacts or verify artifact timestamp after run start with newly recorded hash",
+      activeAdapterId: "codex",
       oldRunnerPrevention:
         "Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners.",
       lastFailureClassification: "none",
@@ -1055,6 +1062,9 @@ function runnerStages(): string[] {
 
 function runnerFailureCategories(): string[] {
   return [
+    "SANDBOX_TIMEOUT",
+    "SANDBOX_ELEVATED_PARENT",
+    "CODEX_SANDBOX_HELPER_MISSING",
     "PNPM_ARGUMENT_LOSS",
     "POWERSHELL_51_SYNTAX",
     "CODEX_ARGUMENT_ORDER",

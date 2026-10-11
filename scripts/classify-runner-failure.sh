@@ -8,6 +8,9 @@ $(cat "${2:-}")"
 fi
 
 case "$MESSAGE" in
+  *SANDBOX_TIMEOUT*) echo "SANDBOX_TIMEOUT" ;;
+  *SANDBOX_ELEVATED_PARENT*) echo "SANDBOX_ELEVATED_PARENT" ;;
+  *CODEX_SANDBOX_HELPER_MISSING*|*spawn\ setup\ refresh*) echo "CODEX_SANDBOX_HELPER_MISSING" ;;
   *ERR_PNPM*|*Unknown\ option*|*pnpm*argument*) echo "PNPM_ARGUMENT_LOSS" ;;
   *ParserError*|*Unexpected\ token*|*ForEach-Object\ -Parallel*|*"??"*) echo "POWERSHELL_51_SYNTAX" ;;
   *codex*argument*order*|*--sandbox*after*) echo "CODEX_ARGUMENT_ORDER" ;;

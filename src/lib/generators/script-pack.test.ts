@@ -51,6 +51,7 @@ describe("generateScriptPack", () => {
         "scripts/normalize-sample-pack.sh",
         "scripts/classify-runner-failure.ps1",
         "scripts/classify-runner-failure.sh",
+        "scripts/invoke-sandboxed.ps1",
         "scripts/run-customer-autonomous.ps1",
         "scripts/run-customer-autonomous.sh",
         "scripts/verify-customer-delivery.ps1",
@@ -222,6 +223,9 @@ describe("generateScriptPack", () => {
       expect(content).toContain("old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners");
     }
     expect(runnerPs1).toContain("powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion");
+    expect(runnerPs1).toContain("scripts/invoke-sandboxed.ps1");
+    expect(runnerPs1).toContain("-TimeoutSec 1200");
+    expect(stagePs1).toContain('activeAdapterId = "codex"');
     expect(runnerPs1).toContain(
       "# -ExecutionPolicy Bypass applies to this PowerShell process only"
     );
@@ -255,6 +259,9 @@ describe("generateScriptPack", () => {
     );
     const normalizeSh = findFile(scriptPack.files, "scripts/normalize-sample-pack.sh");
     const categories = [
+      "SANDBOX_TIMEOUT",
+      "SANDBOX_ELEVATED_PARENT",
+      "CODEX_SANDBOX_HELPER_MISSING",
       "PNPM_ARGUMENT_LOSS",
       "POWERSHELL_51_SYNTAX",
       "CODEX_ARGUMENT_ORDER",

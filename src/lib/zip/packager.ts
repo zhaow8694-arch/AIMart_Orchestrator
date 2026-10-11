@@ -191,7 +191,15 @@ $RootDir = $PSScriptRoot
 Set-Location $RootDir
 
 # Legacy customer runner path retained for v0.3.1 compatibility: scripts/run-customer-autonomous.ps1
-& (Join-Path $RootDir "scripts/run-autonomous-version.ps1") -Mode ${mode} -TargetVersion v1.0
+# Customer entry arguments: -Mode ${mode} -TargetVersion v1.0
+$SandboxScript = Join-Path $RootDir "scripts/invoke-sandboxed.ps1"
+$RunnerScript = Join-Path $RootDir "scripts/run-autonomous-version.ps1"
+$PreviousErrorAction = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+& $SandboxScript -File $RunnerScript -ArgumentList @("-Mode", "${mode}", "-TargetVersion", "v1.0") -Cwd $RootDir -TimeoutSec 28800 -Mode "${mode}" -AdapterId "codex" -Stage "CODEX_EXECUTION"
+$Code = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
+$ErrorActionPreference = $PreviousErrorAction
+exit $Code
 `;
 }
 

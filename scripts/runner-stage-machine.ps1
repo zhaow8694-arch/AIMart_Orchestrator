@@ -49,6 +49,7 @@ $State = [ordered]@{
   runStartedAt = $RunStartedAt
   updatedAt = (Get-Date -Format s)
   approvedCommand = $ApprovedCommand
+  activeAdapterId = "codex"
   oldRunnerPrevention = "Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners."
 }
 $State | ConvertTo-Json -Depth 6 | Set-Content -Encoding UTF8 $StatePath

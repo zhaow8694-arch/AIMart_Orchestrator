@@ -56,6 +56,7 @@ dogfood_required=(
   "scripts/normalize-sample-pack.sh"
   "scripts/classify-runner-failure.ps1"
   "scripts/classify-runner-failure.sh"
+  "scripts/invoke-sandboxed.ps1"
   "scripts/run-customer-autonomous.ps1"
   "scripts/run-customer-autonomous.sh"
   "scripts/verify-customer-delivery.ps1"
@@ -220,6 +221,7 @@ cat > "$OUT_DIR/RELEASE_MANIFEST.txt" <<EOF
 - scripts/normalize-sample-pack.sh
 - scripts/classify-runner-failure.ps1
 - scripts/classify-runner-failure.sh
+- scripts/invoke-sandboxed.ps1
 - agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md
 - agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md
 - agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md

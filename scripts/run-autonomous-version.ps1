@@ -8,6 +8,9 @@ $RootDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $RootDir
 
 $RunStartedAt = Get-Date
+$RunId = $RunStartedAt.ToUniversalTime().ToString("yyyyMMdd_HHmmss")
+$RunDeadline = $RunStartedAt.AddHours(8)
+$SandboxScript = Join-Path $RootDir "scripts\invoke-sandboxed.ps1"
 $ApprovedCommand = "powershell -ExecutionPolicy Bypass -File .\scripts\run-autonomous-version.ps1 -TargetVersion $TargetVersion"
 $Stages = @(
   "PREFLIGHT",
@@ -52,28 +55,92 @@ $ApprovedCommand
   throw ("Runner failed with {0}: {1}" -f $Category, $Message)
 }
 
+function Get-SandboxTimeout {
+  param([int]$RequestedSec)
+  $remaining = [int][Math]::Floor(($RunDeadline - (Get-Date)).TotalSeconds)
+  if ($remaining -lt 1) {
+    throw "SANDBOX_TIMEOUT: run-autonomous-version.ps1 exceeded 8 hours"
+  }
+  if ($RequestedSec -lt $remaining) { return $RequestedSec }
+  return $remaining
+}
+
+function Invoke-Sandbox {
+  param(
+    [string]$File = "",
+    [string[]]$ArgumentList = @(),
+    [int]$TimeoutSec = 1200,
+    [string]$Stage = "",
+    [ValidateSet("supervised", "autonomous", "end_to_end_autonomous", "stage")]
+    [string]$SandboxMode = "stage",
+    [switch]$StageMark
+  )
+  if (-not (Test-Path -LiteralPath $SandboxScript)) {
+    throw "Missing scripts/invoke-sandboxed.ps1"
+  }
+  $timeout = Get-SandboxTimeout -RequestedSec $TimeoutSec
+  $previous = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  $invokeArgs = @{
+    Cwd = $RootDir
+    TimeoutSec = $timeout
+    RunId = $RunId
+    AdapterId = "runner"
+    Mode = $SandboxMode
+    Stage = $Stage
+    TargetVersion = $TargetVersion
+  }
+  if ($File) { $invokeArgs.File = $File }
+  if ($StageMark) { $invokeArgs.StageMark = $true }
+  if ($ArgumentList -and $ArgumentList.Count -gt 0) { $invokeArgs.ArgumentList = $ArgumentList }
+  $captured = @(& $SandboxScript @invokeArgs 2>&1)
+  $code = $LASTEXITCODE
+  $ErrorActionPreference = $previous
+  if ($null -eq $code) { $code = 0 }
+  $text = ($captured | Out-String)
+  if ($code -eq 1460 -or $text -match "SANDBOX_TIMEOUT") {
+    throw ("SANDBOX_TIMEOUT: {0} {1}" -f $File, $text)
+  }
+  if ($code -eq 1462 -or $text -match "SANDBOX_ELEVATED_PARENT") {
+    throw ("SANDBOX_ELEVATED_PARENT: {0} {1}" -f $File, $text)
+  }
+  if ($text -match "CODEX_SANDBOX_HELPER_MISSING" -or $text -match "spawn setup refresh") {
+    throw ("CODEX_SANDBOX_HELPER_MISSING: {0} {1}" -f $File, $text)
+  }
+  if ($text -match "HISTORICAL_RELEASE_MODIFIED") {
+    throw ("HISTORICAL_RELEASE_MODIFIED: {0} {1}" -f $File, $text)
+  }
+  if ($code -ne 0) {
+    throw ("{0} exited {1}. {2}" -f $File, $code, $text)
+  }
+}
+
 try {
   foreach ($Stage in $Stages) {
     Invoke-RunnerStage $Stage
+    Invoke-Sandbox -StageMark -Stage $Stage -TimeoutSec 60
     if ($Stage -eq "PREFLIGHT") {
       if (-not (Test-Path "scripts/normalize-sample-pack.ps1")) { throw "Missing sample normalizer" }
       if (-not (Test-Path "scripts/classify-runner-failure.ps1")) { throw "Missing failure classifier" }
+      if (-not (Test-Path "scripts/invoke-sandboxed.ps1")) { throw "Missing scripts/invoke-sandboxed.ps1" }
     }
     if ($Stage -eq "VALIDATION_TEST_LINT_BUILD" -and -not $SkipValidation) {
-      pnpm test
-      pnpm lint
-      pnpm build
+      Invoke-Sandbox -File "pnpm" -ArgumentList @("test") -TimeoutSec 1200 -Stage $Stage
+      Invoke-Sandbox -File "pnpm" -ArgumentList @("lint") -TimeoutSec 1200 -Stage $Stage
+      Invoke-Sandbox -File "pnpm" -ArgumentList @("build") -TimeoutSec 1200 -Stage $Stage
     }
     if ($Stage -eq "SOURCE_ZIP" -or $Stage -eq "SAMPLE_PACK") {
-      if (Test-Path ".\scripts\package.ps1") {
-        & ".\scripts\package.ps1"
+      $PackageScript = Join-Path $RootDir "scripts\package.ps1"
+      if (Test-Path -LiteralPath $PackageScript) {
+        Invoke-Sandbox -File $PackageScript -TimeoutSec 1200 -Stage $Stage
       }
     }
     if ($Stage -eq "SAMPLE_PACK_NORMALIZATION") {
-      & ".\scripts\normalize-sample-pack.ps1" -TargetVersion $TargetVersion -RunStartedAt $RunStartedAt.ToString("o")
+      Invoke-Sandbox -File (Join-Path $RootDir "scripts\normalize-sample-pack.ps1") -ArgumentList @("-TargetVersion", $TargetVersion, "-RunStartedAt", $RunStartedAt.ToString("o")) -TimeoutSec 1200 -Stage $Stage
     }
     if ($Stage -eq "COMPLETION_GATE" -and -not $SkipValidation) {
-      & ".\scripts\verify-autonomous-completion.ps1" -TargetVersion $TargetVersion
+      # The gate re-runs test, lint, and build, so it is longer than one validation command.
+      Invoke-Sandbox -File (Join-Path $RootDir "scripts\verify-autonomous-completion.ps1") -ArgumentList @("-TargetVersion", $TargetVersion, "-SandboxRunId", $RunId) -TimeoutSec 3600 -Stage $Stage
     }
   }
 
@@ -84,6 +151,9 @@ TargetVersion: $TargetVersion
 RunStartedAt: $($RunStartedAt.ToString("o"))
 Final result: PASS
 Stages: $($Stages -join ", ")
+Sandbox account: not installed
+Filesystem isolation: degraded-same-user
+Network isolation: none
 "@ | Set-Content -Encoding UTF8 $SummaryPath
   Write-Host "Runner final result: PASS"
 } catch {

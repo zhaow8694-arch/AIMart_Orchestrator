@@ -8,6 +8,9 @@ if ($LogPath -and (Test-Path $LogPath)) {
 }
 
 $Rules = @(
+  @{ Category = "SANDBOX_TIMEOUT"; Pattern = "SANDBOX_TIMEOUT" },
+  @{ Category = "SANDBOX_ELEVATED_PARENT"; Pattern = "SANDBOX_ELEVATED_PARENT" },
+  @{ Category = "CODEX_SANDBOX_HELPER_MISSING"; Pattern = "CODEX_SANDBOX_HELPER_MISSING|spawn setup refresh" },
   @{ Category = "PNPM_ARGUMENT_LOSS"; Pattern = "pnpm.*argument|ERR_PNPM|Unknown option" },
   @{ Category = "POWERSHELL_51_SYNTAX"; Pattern = "\?\?|ForEach-Object -Parallel|ParserError|Unexpected token" },
   @{ Category = "CODEX_ARGUMENT_ORDER"; Pattern = "codex.*argument.*order|--sandbox.*after" },

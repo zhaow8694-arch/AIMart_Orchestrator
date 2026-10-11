@@ -210,6 +210,7 @@ describe("execution pack packager", () => {
       "scripts/normalize-sample-pack.sh",
       "scripts/classify-runner-failure.ps1",
       "scripts/classify-runner-failure.sh",
+      "scripts/invoke-sandboxed.ps1",
       "scripts/run-customer-autonomous.ps1",
       "scripts/run-customer-autonomous.sh",
       "scripts/verify-customer-delivery.ps1",
@@ -361,6 +362,9 @@ describe("execution pack packager", () => {
     expect(startHere).toContain("scripts/verify-customer-delivery.ps1");
     expect(autonomousPs1).toContain("scripts/run-customer-autonomous.ps1");
     expect(autonomousPs1).toContain("-Mode autonomous");
+    expect(autonomousPs1).toContain("scripts/invoke-sandboxed.ps1");
+    expect(autonomousPs1).toContain("-TimeoutSec 28800");
+    expect(supervisedPs1).toContain("scripts/invoke-sandboxed.ps1");
     expect(autonomousCmd).toContain("START_CODEX_AUTONOMOUS.ps1");
     expect(autonomousCmd).toContain(
       "REM -ExecutionPolicy Bypass applies to this PowerShell process only"

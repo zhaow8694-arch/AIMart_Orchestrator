@@ -23,7 +23,8 @@
 # runtime/COMPLETION_GATE_REPORT.md
 # EXECUTION_PACK_MANIFEST.md
 param(
-  [string]$TargetVersion = ""
+  [string]$TargetVersion = "",
+  [string]$SandboxRunId = ""
 )
 
 $ErrorActionPreference = "Continue"
@@ -136,7 +137,8 @@ $RunnerHardeningEntries = @(
   "scripts/normalize-sample-pack.ps1",
   "scripts/normalize-sample-pack.sh",
   "scripts/classify-runner-failure.ps1",
-  "scripts/classify-runner-failure.sh"
+  "scripts/classify-runner-failure.sh",
+  "scripts/invoke-sandboxed.ps1"
 )
 foreach ($Entry in $RunnerHardeningEntries) {
   if ($SamplePackGateContent.Contains($Entry)) {
@@ -154,7 +156,8 @@ $RequiredSourceScripts = @(
   "scripts/normalize-sample-pack.ps1",
   "scripts/normalize-sample-pack.sh",
   "scripts/classify-runner-failure.ps1",
-  "scripts/classify-runner-failure.sh"
+  "scripts/classify-runner-failure.sh",
+  "scripts/invoke-sandboxed.ps1"
 )
 foreach ($Path in $RequiredSourceScripts) {
   if (Test-Path $Path) {
@@ -168,7 +171,7 @@ $ClassifierContent = ""
 foreach ($Path in @("scripts/classify-runner-failure.ps1", "scripts/classify-runner-failure.sh")) {
   if (Test-Path $Path) { $ClassifierContent += "`n" + (Get-Content $Path -Raw) }
 }
-foreach ($Category in @("PNPM_ARGUMENT_LOSS", "POWERSHELL_51_SYNTAX", "CODEX_ARGUMENT_ORDER", "CODEX_PROMPT_ARGUMENT_SPLIT", "NEXT_START_ARGUMENT_ORDER", "SOURCE_ZIP_PATH_SEPARATOR", "SOURCE_ZIP_FORBIDDEN_ENTRY", "SAMPLE_PACK_JSON_BASE64_RESPONSE", "SAMPLE_PACK_STALE_FILE", "SAMPLE_PACK_INVALID_ZIP", "SAMPLE_PACK_MISSING_ADAPTER", "COMPLETION_GATE_FAILURE", "TAG_NULL_TRIM", "DIRTY_WORKTREE", "HISTORICAL_RELEASE_MODIFIED")) {
+foreach ($Category in @("SANDBOX_TIMEOUT", "SANDBOX_ELEVATED_PARENT", "CODEX_SANDBOX_HELPER_MISSING", "PNPM_ARGUMENT_LOSS", "POWERSHELL_51_SYNTAX", "CODEX_ARGUMENT_ORDER", "CODEX_PROMPT_ARGUMENT_SPLIT", "NEXT_START_ARGUMENT_ORDER", "SOURCE_ZIP_PATH_SEPARATOR", "SOURCE_ZIP_FORBIDDEN_ENTRY", "SAMPLE_PACK_JSON_BASE64_RESPONSE", "SAMPLE_PACK_STALE_FILE", "SAMPLE_PACK_INVALID_ZIP", "SAMPLE_PACK_MISSING_ADAPTER", "COMPLETION_GATE_FAILURE", "TAG_NULL_TRIM", "DIRTY_WORKTREE", "HISTORICAL_RELEASE_MODIFIED")) {
   if ($ClassifierContent.Contains($Category)) {
     Add-GateResult "failure classifier category $Category" "PASS" "present"
   } else {
@@ -279,6 +282,78 @@ try {
   }
 } catch {
   Add-GateResult "final git status is clean" "FAIL" $_.Exception.Message
+}
+
+$SandboxStageNames = @(
+  "PREFLIGHT",
+  "CODEX_EXECUTION",
+  "VALIDATION_TEST_LINT_BUILD",
+  "SOURCE_ZIP",
+  "SAMPLE_PACK",
+  "SAMPLE_PACK_NORMALIZATION",
+  "ADAPTER_COMPLETENESS",
+  "SHA256_MANIFEST",
+  "DOGFOOD",
+  "COMMIT_TAG",
+  "COMPLETION_GATE",
+  "FREEZE"
+)
+$SandboxAuditPath = ""
+if ($SandboxRunId) {
+  $SandboxAuditPath = Join-Path $RootDir ("runtime/sandbox/{0}/audit.jsonl" -f $SandboxRunId)
+} else {
+  $SandboxRoot = Join-Path $RootDir "runtime/sandbox"
+  if (Test-Path -LiteralPath $SandboxRoot) {
+    $LatestSandbox = Get-ChildItem -LiteralPath $SandboxRoot -Directory | Sort-Object Name -Descending | Select-Object -First 1
+    if ($LatestSandbox) { $SandboxAuditPath = Join-Path $LatestSandbox.FullName "audit.jsonl" }
+  }
+}
+if (-not $SandboxAuditPath -or -not (Test-Path -LiteralPath $SandboxAuditPath)) {
+  Add-GateResult "sandbox audit.jsonl" "FAIL" "missing audit.jsonl"
+} else {
+  Add-GateResult "sandbox audit.jsonl" "PASS" $SandboxAuditPath
+  $SandboxRecords = @()
+  foreach ($SandboxLine in @(Get-Content -LiteralPath $SandboxAuditPath)) {
+    if (-not $SandboxLine.Trim()) { continue }
+    try {
+      $SandboxRecords += ($SandboxLine | ConvertFrom-Json)
+    } catch {
+      Write-Verbose $_.Exception.Message
+    }
+  }
+  foreach ($SandboxStageName in $SandboxStageNames) {
+    $StageHits = @($SandboxRecords | Where-Object { $_.stage -eq $SandboxStageName })
+    if ($StageHits.Count -eq 0) {
+      Add-GateResult "sandbox stage $SandboxStageName" "FAIL" "no audit line"
+    } else {
+      Add-GateResult "sandbox stage $SandboxStageName" "PASS" "present"
+    }
+  }
+  $SandboxBad = @($SandboxRecords | Where-Object { $_.elevated -eq $true -or $_.exitCode -eq 1460 -or $_.exitCode -eq 1461 })
+  if ($SandboxBad.Count -gt 0) {
+    Add-GateResult "sandbox process limits" "FAIL" "elevated or exit 1460/1461"
+  } else {
+    Add-GateResult "sandbox process limits" "PASS" "not elevated; no timeout or policy deny"
+  }
+  $FilesystemValues = @($SandboxRecords | ForEach-Object { [string]$_.filesystemIsolation } | Select-Object -Unique)
+  if ($FilesystemValues.Count -eq 1 -and $FilesystemValues[0] -eq "aimart-runner-acl") {
+    Add-GateResult "sandbox filesystem isolation" "PASS" "aimart-runner-acl"
+  } else {
+    Add-GateResult "sandbox filesystem isolation" "PARTIAL" ("degraded-same-user is not sandbox PASS: " + ($FilesystemValues -join ", "))
+  }
+  $NetworkValues = @($SandboxRecords | ForEach-Object { [string]$_.networkIsolation } | Select-Object -Unique)
+  if ($NetworkValues.Count -eq 1 -and $NetworkValues[0] -eq "wfp-default-deny") {
+    Add-GateResult "sandbox network isolation" "PASS" "wfp-default-deny"
+  } else {
+    Add-GateResult "sandbox network isolation" "PARTIAL" ("none is not network PASS: " + ($NetworkValues -join ", "))
+  }
+  $ProxyDenied = @()
+  foreach ($SandboxRecord in $SandboxRecords) {
+    if ($SandboxRecord.proxyDeniedHosts) { $ProxyDenied += @($SandboxRecord.proxyDeniedHosts) }
+  }
+  $ProxyText = "none"
+  if ($ProxyDenied.Count -gt 0) { $ProxyText = ($ProxyDenied -join ", ") }
+  Add-GateResult "sandbox proxy denied hosts" "PASS" ("informational only: " + $ProxyText)
 }
 
 $Failures = @($Results | Where-Object { $_.Status -eq "FAIL" })

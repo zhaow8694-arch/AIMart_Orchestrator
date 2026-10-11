@@ -154,6 +154,10 @@ describe("generateCodexAdapter", () => {
     expect(autonomousPs1).not.toContain("$Args = @(");
     expect(supervisedPs1).toContain("$CodexArgs = @(");
     expect(supervisedPs1).not.toContain("$Args = @(");
+    expect(autonomousPs1).toContain("scripts/invoke-sandboxed.ps1");
+    expect(supervisedPs1).toContain("scripts/invoke-sandboxed.ps1");
+    expect(autonomousPs1).toContain("-TimeoutSec 5400");
+    expect(supervisedPs1).toContain("-TimeoutSec 5400");
     expect(scriptContent).not.toContain("dangerously-bypass-approvals-and-sandbox");
     expect(scriptContent).not.toContain("full-access");
   });

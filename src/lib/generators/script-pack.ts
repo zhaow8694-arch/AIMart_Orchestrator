@@ -23,6 +23,9 @@
  * runtime/COMPLETION_GATE_REPORT.md
  * EXECUTION_PACK_MANIFEST.md
  */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import type { FileEntry, ProjectSpec } from "@/lib/schemas/core";
 
 export type ScriptPack = {
@@ -70,6 +73,10 @@ export function generateScriptPack(projectSpec: ProjectSpec): ScriptPack {
       file("scripts/normalize-sample-pack.sh", renderNormalizeSamplePackSh()),
       file("scripts/classify-runner-failure.ps1", renderClassifyRunnerFailurePs1()),
       file("scripts/classify-runner-failure.sh", renderClassifyRunnerFailureSh()),
+      file(
+        "scripts/invoke-sandboxed.ps1",
+        readFileSync(join(process.cwd(), "scripts", "invoke-sandboxed.ps1"), "utf8")
+      ),
       file("scripts/run-customer-autonomous.ps1", renderRunCustomerAutonomousPs1()),
       file("scripts/run-customer-autonomous.sh", renderRunCustomerAutonomousSh()),
       file("scripts/verify-customer-delivery.ps1", renderVerifyCustomerDeliveryPs1()),
@@ -452,8 +459,18 @@ if (-not $SkipAdapterRun) {
   if (-not (Test-Path $AdapterScript)) {
     throw "Missing selected adapter launcher: $AdapterScript"
   }
-  & $AdapterScript 2>&1 | Tee-Object -FilePath $LogPath
+  $AdapterTimeout = 21600
+  $SandboxMode = "end_to_end_autonomous"
+  if ($Mode -eq "supervised") {
+    $AdapterTimeout = 5400
+    $SandboxMode = "supervised"
+  }
+  $SandboxScript = Join-Path $RootDir "scripts/invoke-sandboxed.ps1"
+  $PreviousErrorAction = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  & $SandboxScript -File $AdapterScript -Cwd $RootDir -TimeoutSec $AdapterTimeout -Mode $SandboxMode -AdapterId "codex" -Stage "CODEX_EXECUTION" -StdoutPath $LogPath -StderrPath $LogPath
   $AdapterExitCode = if ($null -eq $LASTEXITCODE) { 0 } else { $LASTEXITCODE }
+  $ErrorActionPreference = $PreviousErrorAction
 }
 
 Show-CustomerDashboard -State "verifying"
@@ -943,6 +960,7 @@ $Required = @(
   "scripts/normalize-sample-pack.sh",
   "scripts/classify-runner-failure.ps1",
   "scripts/classify-runner-failure.sh",
+  "scripts/invoke-sandboxed.ps1",
   "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md",
   "agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md",
   "agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md",
@@ -1057,6 +1075,7 @@ required=(
   "scripts/normalize-sample-pack.sh"
   "scripts/classify-runner-failure.ps1"
   "scripts/classify-runner-failure.sh"
+  "scripts/invoke-sandboxed.ps1"
   "agent_adapters/codex/CODEX_AUTONOMOUS_PROMPT.md"
   "agent_adapters/codex/CODEX_AUTONOMOUS_RUNBOOK.md"
   "agent_adapters/codex/CODEX_UNIFIED_AUTONOMOUS_RUNBOOK.md"
@@ -1224,7 +1243,10 @@ function renderVerifyAutonomousCompletionPs1(): string {
 # V0.3.0_RELEASE_NOTES.md
 # V0.3.0_FINAL_DELIVERY_CHECK.md
 # V0.3.0_KNOWN_ISSUES.md
-param([string]$TargetVersion = "")
+param(
+  [string]$TargetVersion = "",
+  [string]$SandboxRunId = ""
+)
 $ErrorActionPreference = "Continue"
 $RootDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $RootDir
@@ -1269,7 +1291,7 @@ foreach ($AdapterPath in @("agent_adapters/claude-code", "agent_adapters/trae", 
     Add-Result "sample pack adapter gate $AdapterPath" "FAIL" "verify-sample-pack missing $AdapterPath"
   }
 }
-foreach ($RunnerEntry in @("runtime/RUNNER_STATE.json", "runtime/RUNNER_FAILURE_CLASSIFICATION.md", "runtime/RUNNER_RECOVERY_POLICY.md", "runtime/RUNNER_NEXT_ACTION.md", "runtime/RUNNER_FINAL_SUMMARY.md", "scripts/run-autonomous-version.ps1", "scripts/run-autonomous-version.sh", "scripts/runner-stage-machine.ps1", "scripts/runner-stage-machine.sh", "scripts/normalize-sample-pack.ps1", "scripts/normalize-sample-pack.sh", "scripts/classify-runner-failure.ps1", "scripts/classify-runner-failure.sh")) {
+foreach ($RunnerEntry in @("runtime/RUNNER_STATE.json", "runtime/RUNNER_FAILURE_CLASSIFICATION.md", "runtime/RUNNER_RECOVERY_POLICY.md", "runtime/RUNNER_NEXT_ACTION.md", "runtime/RUNNER_FINAL_SUMMARY.md", "scripts/run-autonomous-version.ps1", "scripts/run-autonomous-version.sh", "scripts/runner-stage-machine.ps1", "scripts/runner-stage-machine.sh", "scripts/normalize-sample-pack.ps1", "scripts/normalize-sample-pack.sh", "scripts/classify-runner-failure.ps1", "scripts/classify-runner-failure.sh", "scripts/invoke-sandboxed.ps1")) {
   if ($SamplePackGateContent.Contains($RunnerEntry)) {
     Add-Result "sample pack runner hardening gate $RunnerEntry" "PASS" "verify-sample-pack checks $RunnerEntry"
   } else {
@@ -1289,6 +1311,42 @@ try {
   if ($TagCommit -and $Head -eq $TagCommit) { Add-Result "target version tag" "PASS" "$TargetVersion -> $Head" } elseif ($TagCommit) { Add-Result "target version tag" "PASS" "pre-freeze check recorded mismatch: $TargetVersion -> $TagCommit, HEAD -> $Head" } else { Add-Result "target version tag" "PASS" "pre-freeze check; tag will be created after gates pass" }
 } catch {
   Add-Result "target version tag" "FAIL" $_.Exception.Message
+}
+$SandboxStageNames = @("PREFLIGHT", "CODEX_EXECUTION", "VALIDATION_TEST_LINT_BUILD", "SOURCE_ZIP", "SAMPLE_PACK", "SAMPLE_PACK_NORMALIZATION", "ADAPTER_COMPLETENESS", "SHA256_MANIFEST", "DOGFOOD", "COMMIT_TAG", "COMPLETION_GATE", "FREEZE")
+$SandboxAuditPath = ""
+if ($SandboxRunId) {
+  $SandboxAuditPath = Join-Path $RootDir ("runtime/sandbox/{0}/audit.jsonl" -f $SandboxRunId)
+} else {
+  $SandboxRoot = Join-Path $RootDir "runtime/sandbox"
+  if (Test-Path -LiteralPath $SandboxRoot) {
+    $LatestSandbox = Get-ChildItem -LiteralPath $SandboxRoot -Directory | Sort-Object Name -Descending | Select-Object -First 1
+    if ($LatestSandbox) { $SandboxAuditPath = Join-Path $LatestSandbox.FullName "audit.jsonl" }
+  }
+}
+if (-not $SandboxAuditPath -or -not (Test-Path -LiteralPath $SandboxAuditPath)) {
+  Add-Result "sandbox audit.jsonl" "FAIL" "missing audit.jsonl"
+} else {
+  Add-Result "sandbox audit.jsonl" "PASS" $SandboxAuditPath
+  $SandboxRecords = @()
+  foreach ($SandboxLine in @(Get-Content -LiteralPath $SandboxAuditPath)) {
+    if (-not $SandboxLine.Trim()) { continue }
+    try { $SandboxRecords += ($SandboxLine | ConvertFrom-Json) } catch { Write-Verbose $_.Exception.Message }
+  }
+  foreach ($SandboxStageName in $SandboxStageNames) {
+    $StageHits = @($SandboxRecords | Where-Object { $_.stage -eq $SandboxStageName })
+    if ($StageHits.Count -eq 0) { Add-Result "sandbox stage $SandboxStageName" "FAIL" "no audit line" } else { Add-Result "sandbox stage $SandboxStageName" "PASS" "present" }
+  }
+  $SandboxBad = @($SandboxRecords | Where-Object { $_.elevated -eq $true -or $_.exitCode -eq 1460 -or $_.exitCode -eq 1461 })
+  if ($SandboxBad.Count -gt 0) { Add-Result "sandbox process limits" "FAIL" "elevated or exit 1460/1461" } else { Add-Result "sandbox process limits" "PASS" "not elevated; no timeout or policy deny" }
+  $FilesystemValues = @($SandboxRecords | ForEach-Object { [string]$_.filesystemIsolation } | Select-Object -Unique)
+  if ($FilesystemValues.Count -eq 1 -and $FilesystemValues[0] -eq "aimart-runner-acl") { Add-Result "sandbox filesystem isolation" "PASS" "aimart-runner-acl" } else { Add-Result "sandbox filesystem isolation" "PARTIAL" ("degraded-same-user is not sandbox PASS: " + ($FilesystemValues -join ", ")) }
+  $NetworkValues = @($SandboxRecords | ForEach-Object { [string]$_.networkIsolation } | Select-Object -Unique)
+  if ($NetworkValues.Count -eq 1 -and $NetworkValues[0] -eq "wfp-default-deny") { Add-Result "sandbox network isolation" "PASS" "wfp-default-deny" } else { Add-Result "sandbox network isolation" "PARTIAL" ("none is not network PASS: " + ($NetworkValues -join ", ")) }
+  $ProxyDenied = @()
+  foreach ($SandboxRecord in $SandboxRecords) { if ($SandboxRecord.proxyDeniedHosts) { $ProxyDenied += @($SandboxRecord.proxyDeniedHosts) } }
+  $ProxyText = "none"
+  if ($ProxyDenied.Count -gt 0) { $ProxyText = ($ProxyDenied -join ", ") }
+  Add-Result "sandbox proxy denied hosts" "PASS" ("informational only: " + $ProxyText)
 }
 $Final = if (($Results | Where-Object { $_.Status -eq "FAIL" }).Count -eq 0) { "PASS" } else { "FAIL" }
 @("# Autonomous Completion Gate Report", "", "TargetVersion: $TargetVersion", "", "| Gate | Status | Details |", "|---|---|---|") + ($Results | ForEach-Object { "| $($_.Gate) | $($_.Status) | $($_.Details -replace '\\|','/') |" }) + @("", "Git status: $($GitStatus -join '; ')", "", "Final result: $Final") | Set-Content -Encoding UTF8 $ReportPath
@@ -1341,7 +1399,7 @@ for adapter_path in "agent_adapters/claude-code" "agent_adapters/trae" "agent_ad
     *) add_result "sample pack adapter gate $adapter_path" "FAIL" "verify-sample-pack missing $adapter_path" ;;
   esac
 done
-for runner_entry in runtime/RUNNER_STATE.json runtime/RUNNER_FAILURE_CLASSIFICATION.md runtime/RUNNER_RECOVERY_POLICY.md runtime/RUNNER_NEXT_ACTION.md runtime/RUNNER_FINAL_SUMMARY.md scripts/run-autonomous-version.ps1 scripts/run-autonomous-version.sh scripts/runner-stage-machine.ps1 scripts/runner-stage-machine.sh scripts/normalize-sample-pack.ps1 scripts/normalize-sample-pack.sh scripts/classify-runner-failure.ps1 scripts/classify-runner-failure.sh; do
+for runner_entry in runtime/RUNNER_STATE.json runtime/RUNNER_FAILURE_CLASSIFICATION.md runtime/RUNNER_RECOVERY_POLICY.md runtime/RUNNER_NEXT_ACTION.md runtime/RUNNER_FINAL_SUMMARY.md scripts/run-autonomous-version.ps1 scripts/run-autonomous-version.sh scripts/runner-stage-machine.ps1 scripts/runner-stage-machine.sh scripts/normalize-sample-pack.ps1 scripts/normalize-sample-pack.sh scripts/classify-runner-failure.ps1 scripts/classify-runner-failure.sh scripts/invoke-sandboxed.ps1; do
   case "$SAMPLE_GATE_CONTENT" in
     *"$runner_entry"*) add_result "sample pack runner hardening gate $runner_entry" "PASS" "verify-sample-pack checks $runner_entry" ;;
     *) add_result "sample pack runner hardening gate $runner_entry" "FAIL" "verify-sample-pack missing $runner_entry" ;;
@@ -1398,6 +1456,9 @@ function runnerStages(): string[] {
 
 function runnerFailureCategories(): string[] {
   return [
+    "SANDBOX_TIMEOUT",
+    "SANDBOX_ELEVATED_PARENT",
+    "CODEX_SANDBOX_HELPER_MISSING",
     "PNPM_ARGUMENT_LOSS",
     "POWERSHELL_51_SYNTAX",
     "CODEX_ARGUMENT_ORDER",
@@ -1429,6 +1490,9 @@ $RootDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $RootDir
 
 $RunStartedAt = Get-Date
+$RunId = $RunStartedAt.ToUniversalTime().ToString("yyyyMMdd_HHmmss")
+$RunDeadline = $RunStartedAt.AddHours(8)
+$SandboxScript = Join-Path $RootDir "scripts/invoke-sandboxed.ps1"
 # -ExecutionPolicy Bypass applies to this PowerShell process only; it does not change the machine's execution policy.
 $ApprovedCommand = "powershell -ExecutionPolicy Bypass -File .\\scripts\\run-autonomous-version.ps1 -TargetVersion $TargetVersion"
 $Stages = @(${runnerStages().map((stage) => `"${stage}"`).join(", ")})
@@ -1461,32 +1525,90 @@ $ApprovedCommand
   throw ("Runner failed with {0}: {1}" -f $Category, $Message)
 }
 
+function Get-SandboxTimeout {
+  param([int]$RequestedSec)
+  $remaining = [int][Math]::Floor(($RunDeadline - (Get-Date)).TotalSeconds)
+  if ($remaining -lt 1) {
+    throw "SANDBOX_TIMEOUT: run-autonomous-version.ps1 exceeded 8 hours"
+  }
+  if ($RequestedSec -lt $remaining) { return $RequestedSec }
+  return $remaining
+}
+
+function Invoke-Sandbox {
+  param(
+    [string]$File = "",
+    [string[]]$ArgumentList = @(),
+    [int]$TimeoutSec = 1200,
+    [string]$Stage = "",
+    [ValidateSet("supervised", "autonomous", "end_to_end_autonomous", "stage")]
+    [string]$SandboxMode = "stage",
+    [switch]$StageMark
+  )
+  if (-not (Test-Path -LiteralPath $SandboxScript)) {
+    throw "Missing scripts/invoke-sandboxed.ps1"
+  }
+  $timeout = Get-SandboxTimeout -RequestedSec $TimeoutSec
+  $previous = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  $invokeArgs = @{
+    Cwd = $RootDir
+    TimeoutSec = $timeout
+    RunId = $RunId
+    AdapterId = "runner"
+    Mode = $SandboxMode
+    Stage = $Stage
+    TargetVersion = $TargetVersion
+  }
+  if ($File) { $invokeArgs.File = $File }
+  if ($StageMark) { $invokeArgs.StageMark = $true }
+  if ($ArgumentList -and $ArgumentList.Count -gt 0) { $invokeArgs.ArgumentList = $ArgumentList }
+  $captured = @(& $SandboxScript @invokeArgs 2>&1)
+  $code = $LASTEXITCODE
+  $ErrorActionPreference = $previous
+  if ($null -eq $code) { $code = 0 }
+  $text = ($captured | Out-String)
+  if ($code -eq 1460 -or $text -match "SANDBOX_TIMEOUT") { throw ("SANDBOX_TIMEOUT: {0} {1}" -f $File, $text) }
+  if ($code -eq 1462 -or $text -match "SANDBOX_ELEVATED_PARENT") { throw ("SANDBOX_ELEVATED_PARENT: {0} {1}" -f $File, $text) }
+  if ($text -match "CODEX_SANDBOX_HELPER_MISSING" -or $text -match "spawn setup refresh") { throw ("CODEX_SANDBOX_HELPER_MISSING: {0} {1}" -f $File, $text) }
+  if ($text -match "HISTORICAL_RELEASE_MODIFIED") { throw ("HISTORICAL_RELEASE_MODIFIED: {0} {1}" -f $File, $text) }
+  if ($code -ne 0) { throw ("{0} exited {1}. {2}" -f $File, $code, $text) }
+}
+
 try {
   foreach ($Stage in $Stages) {
     Invoke-RunnerStage $Stage
+    Invoke-Sandbox -StageMark -Stage $Stage -TimeoutSec 60
 
     if ($Stage -eq "PREFLIGHT") {
       if (-not (Test-Path "runtime/RUNNER_STATE.json")) { throw "Missing runtime/RUNNER_STATE.json" }
       if (-not (Test-Path "runtime/RUNNER_NEXT_ACTION.md")) { throw "Missing runtime/RUNNER_NEXT_ACTION.md" }
       if (-not (Test-Path "scripts/classify-runner-failure.ps1")) { throw "Missing classifier script" }
       if (-not (Test-Path "scripts/normalize-sample-pack.ps1")) { throw "Missing sample normalizer script" }
+      if (-not (Test-Path "scripts/invoke-sandboxed.ps1")) { throw "Missing scripts/invoke-sandboxed.ps1" }
     }
 
     if ($Stage -eq "CODEX_EXECUTION" -and -not $SkipAdapterRun) {
       $CustomerRunner = Join-Path $RootDir "scripts/run-customer-autonomous.ps1"
       if (Test-Path $CustomerRunner) {
-        & $CustomerRunner -Mode $Mode -SkipAdapterRun:$SkipAdapterRun
+        $CustomerTimeout = 21600
+        $CustomerSandboxMode = "end_to_end_autonomous"
+        if ($Mode -eq "supervised") {
+          $CustomerTimeout = 5400
+          $CustomerSandboxMode = "supervised"
+        }
+        Invoke-Sandbox -File $CustomerRunner -ArgumentList @("-Mode", $Mode, "-SkipAdapterRun:$SkipAdapterRun") -TimeoutSec $CustomerTimeout -Stage $Stage -SandboxMode $CustomerSandboxMode
       }
     }
 
     if ($Stage -eq "VALIDATION_TEST_LINT_BUILD" -and (Test-Path "package.json")) {
-      pnpm test
-      pnpm lint
-      pnpm build
+      Invoke-Sandbox -File "pnpm" -ArgumentList @("test") -TimeoutSec 1200 -Stage $Stage
+      Invoke-Sandbox -File "pnpm" -ArgumentList @("lint") -TimeoutSec 1200 -Stage $Stage
+      Invoke-Sandbox -File "pnpm" -ArgumentList @("build") -TimeoutSec 1200 -Stage $Stage
     }
 
     if ($Stage -eq "SAMPLE_PACK_NORMALIZATION") {
-      & (Join-Path $RootDir "scripts/normalize-sample-pack.ps1") -TargetVersion $TargetVersion -RunStartedAt $RunStartedAt.ToString("o")
+      Invoke-Sandbox -File (Join-Path $RootDir "scripts/normalize-sample-pack.ps1") -ArgumentList @("-TargetVersion", $TargetVersion, "-RunStartedAt", $RunStartedAt.ToString("o")) -TimeoutSec 1200 -Stage $Stage
     }
   }
 
@@ -1613,6 +1735,7 @@ $State = [ordered]@{
   runStartedAt = $RunStartedAt
   updatedAt = (Get-Date -Format s)
   approvedCommand = $ApprovedCommand
+  activeAdapterId = "codex"
   oldRunnerPrevention = "Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners."
 }
 $State | ConvertTo-Json -Depth 6 | Set-Content -Encoding UTF8 $StatePath
@@ -1651,7 +1774,7 @@ case " ${runnerStages().join(" ")} " in
   *) echo "Unknown runner stage: $STAGE" >&2; exit 1 ;;
 esac
 
-node -e "const fs=require('fs'); const state={runnerVersion:'v0.3.2',targetVersion:process.argv[1],currentStage:process.argv[2],stages:process.argv[3].split(', '),runStartedAt:process.argv[4],updatedAt:new Date().toISOString(),approvedCommand:process.argv[5],oldRunnerPrevention:'Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners.'}; fs.writeFileSync('runtime/RUNNER_STATE.json', JSON.stringify(state,null,2)+'\\n');" "$TARGET_VERSION" "$STAGE" "$STAGES_TEXT" "$RUN_STARTED_AT" "$APPROVED_COMMAND"
+node -e "const fs=require('fs'); const state={runnerVersion:'v0.3.2',targetVersion:process.argv[1],currentStage:process.argv[2],stages:process.argv[3].split(', '),runStartedAt:process.argv[4],updatedAt:new Date().toISOString(),approvedCommand:process.argv[5],activeAdapterId:'codex',oldRunnerPrevention:'Do not use old V1/V2/V3/V4/V5/V6/V7/V8/V9 hotfix runners.'}; fs.writeFileSync('runtime/RUNNER_STATE.json', JSON.stringify(state,null,2)+'\\n');" "$TARGET_VERSION" "$STAGE" "$STAGES_TEXT" "$RUN_STARTED_AT" "$APPROVED_COMMAND"
 {
   echo "# Runner Next Action"
   echo
@@ -1830,6 +1953,9 @@ if ($LogPath -and (Test-Path $LogPath)) {
 }
 
 $Rules = @(
+  @{ Category = "SANDBOX_TIMEOUT"; Pattern = "SANDBOX_TIMEOUT" },
+  @{ Category = "SANDBOX_ELEVATED_PARENT"; Pattern = "SANDBOX_ELEVATED_PARENT" },
+  @{ Category = "CODEX_SANDBOX_HELPER_MISSING"; Pattern = "CODEX_SANDBOX_HELPER_MISSING|spawn setup refresh" },
   @{ Category = "PNPM_ARGUMENT_LOSS"; Pattern = "pnpm.*argument|ERR_PNPM|Unknown option" },
   @{ Category = "POWERSHELL_51_SYNTAX"; Pattern = "\\?\\?|ForEach-Object -Parallel|ParserError|Unexpected token" },
   @{ Category = "CODEX_ARGUMENT_ORDER"; Pattern = "codex.*argument.*order|--sandbox.*after" },
@@ -1868,6 +1994,9 @@ if [ "\${2:-}" != "" ] && [ -f "\${2:-}" ]; then
 $(cat "\${2:-}")"
 fi
 case "$MESSAGE" in
+  *SANDBOX_TIMEOUT*) echo "SANDBOX_TIMEOUT" ;;
+  *SANDBOX_ELEVATED_PARENT*) echo "SANDBOX_ELEVATED_PARENT" ;;
+  *CODEX_SANDBOX_HELPER_MISSING*|*spawn\\ setup\\ refresh*) echo "CODEX_SANDBOX_HELPER_MISSING" ;;
   *ERR_PNPM*|*Unknown\\ option*|*pnpm*argument*) echo "PNPM_ARGUMENT_LOSS" ;;
   *ParserError*|*Unexpected\\ token*|*ForEach-Object\\ -Parallel*|*"??"*) echo "POWERSHELL_51_SYNTAX" ;;
   *codex*argument*order*|*--sandbox*after*) echo "CODEX_ARGUMENT_ORDER" ;;
