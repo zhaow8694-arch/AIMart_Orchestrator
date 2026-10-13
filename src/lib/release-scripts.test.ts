@@ -3,7 +3,12 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 function readProjectFile(path: string): string {
-  return readFileSync(join(process.cwd(), path), "utf8");
+  // 版本化报告已在 793f314 归档到 docs/archive/，根目录找不到时回退到归档目录
+  try {
+    return readFileSync(join(process.cwd(), path), "utf8");
+  } catch {
+    return readFileSync(join(process.cwd(), "docs", "archive", path), "utf8");
+  }
 }
 
 describe("source release scripts and delivery docs", () => {

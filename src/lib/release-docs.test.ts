@@ -5,7 +5,8 @@ import { describe, expect, it } from "vitest";
 
 describe("v0.3.2 delivery docs", () => {
   it("has versioned delivery documents for autonomous runner hardening", () => {
-    const root = process.cwd();
+    // 版本化报告已在 793f314 归档到 docs/archive/
+    const root = join(process.cwd(), "docs", "archive");
     const docs = [
       "V0.3.2_IMPLEMENTATION_REPORT.md",
       "V0.3.2_RELEASE_NOTES.md",
