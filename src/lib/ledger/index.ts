@@ -1,11 +1,11 @@
-/**
+﻿/**
  * Accountability ledger — public entry point.
  */
-export * from "./types.ts";
-export { appendLedgerRecord, queryLedger, readLedgerRecords, LedgerParseError } from "./writer.ts";
-export { verifyLedger } from "./verify.ts";
+export * from "./types";
+export { appendLedgerRecord, queryLedger, readLedgerRecords, LedgerParseError } from "./writer";
+export { verifyLedger } from "./verify";
 export {
   auditRecordToLedgerInput,
   migrateAuditJsonl,
   unparseableLineToLedgerInput,
-} from "./migrate.ts";
+} from "./migrate";

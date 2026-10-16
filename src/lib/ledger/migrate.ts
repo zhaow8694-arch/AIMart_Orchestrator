@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Accountability ledger — migration from legacy sandbox audit logs.
  *
  * Reads a legacy `runtime/sandbox/<runId>/audit.jsonl` (written by
@@ -12,8 +12,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-import { appendLedgerRecord } from "./writer.ts";
-import type { LedgerChangeType, LedgerRecordInput } from "./types.ts";
+import { appendLedgerRecord } from "./writer";
+import type { LedgerChangeType, LedgerRecordInput } from "./types";
 
 const UNKNOWN = "unknown";
 

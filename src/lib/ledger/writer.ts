@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Accountability ledger — append-only writer and query.
  *
  * Every append writes one JSON line and fsyncs before returning, so a crash or
@@ -21,7 +21,7 @@ import {
   type LedgerChangeType,
   type LedgerRecord,
   type LedgerRecordInput,
-} from "./types.ts";
+} from "./types";
 
 export class LedgerParseError extends Error {
   readonly lineIndex: number;

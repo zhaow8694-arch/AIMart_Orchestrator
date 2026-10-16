@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Accountability ledger — integrity verification.
  *
  * Recomputes the hash chain from scratch: every record's stored hash must
@@ -13,7 +13,7 @@ import {
   recordHash,
   type LedgerRecord,
   type LedgerVerifyResult,
-} from "./types.ts";
+} from "./types";
 
 export function verifyLedger(ledgerPath: string): LedgerVerifyResult {
   if (!existsSync(ledgerPath)) {
